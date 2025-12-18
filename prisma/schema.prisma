@@ -466,6 +466,7 @@ model Course {
   description String?
   slug        String   @unique
   thumbnail   String?
+  category    CourseCategory @default(OTHER)
 
   createdById String
   createdBy   User     @relation("CoursesCreated", fields: [createdById], references: [id])
@@ -481,6 +482,7 @@ model Course {
 
   @@index([status])
   @@index([isPublished])
+  @@index([category])
 }
 
 model Lesson {
@@ -531,6 +533,15 @@ enum CourseStatus {
   REVIEW
   PUBLISHED
   ARCHIVED
+}
+
+enum CourseCategory {
+  EMPOWERMENT
+  LEADERSHIP
+  WELLNESS
+  FINANCE
+  STEWARDSHIP
+  OTHER
 }
 
 enum LessonType {

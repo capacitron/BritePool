@@ -12,7 +12,8 @@ import {
   Clock,
   User,
   MessageSquare,
-  Wrench
+  Wrench,
+  CreditCard
 } from 'lucide-react'
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/dashboard/events', label: 'Events', icon: Calendar },
   { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
   { href: '/dashboard/participation', label: 'Participation', icon: Clock },
+  { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ]
 
