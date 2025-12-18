@@ -2,7 +2,7 @@ run = "npm run dev"
 entrypoint = "app/page.tsx"
 
 hidden = [".next", "node_modules", ".git"]
-modules = ["nodejs-20", "nix", "web"]
+modules = ["nodejs-20", "nix", "web", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
