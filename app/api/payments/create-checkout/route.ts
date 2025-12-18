@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { stripe, PRICE_IDS } from '@/lib/stripe'
+import { getStripe, PRICE_IDS } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const stripe = getStripe()
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
       `https://${process.env.REPLIT_DEV_DOMAIN}` ||
       'http://localhost:5000'

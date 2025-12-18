@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const stripe = getStripe()
   let event: Stripe.Event
 
   try {
