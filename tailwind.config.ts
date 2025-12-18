@@ -17,6 +17,10 @@ const config: Config = {
           light: '#A89077',
         },
         // Accent Colors
+        'earth-gold': {
+          DEFAULT: '#C9A227',
+          dark: '#A68520',
+        },
         sage: {
           DEFAULT: '#87A878',
           dark: '#6B8A5F',
