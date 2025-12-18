@@ -5,7 +5,8 @@
       "mcp__claude-flow@alpha",
       "mcp__flow-nexus",
       "Bash(pkill:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

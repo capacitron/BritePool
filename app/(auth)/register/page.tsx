@@ -30,7 +30,7 @@ export default function RegisterPage() {
     const parsed = registerSchema.safeParse(data)
     if (!parsed.success) {
       const errors: Record<string, string> = {}
-      parsed.error.errors.forEach((err) => {
+      parsed.error.issues.forEach((err) => {
         if (err.path[0]) {
           errors[err.path[0] as string] = err.message
         }

@@ -21,6 +21,7 @@ interface EventData {
   committee: { id: string; name: string } | null
   attendeeCount: number
   isRegistered: boolean
+  [key: string]: unknown
 }
 
 interface EventsClientProps {

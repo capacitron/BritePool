@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { loginSchema } from '@/lib/validations/auth'
+import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -83,11 +84,11 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as string
+        session.user.role = token.role as UserRole
         session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
         session.user.covenantVersion = token.covenantVersion as string | null
-        session.user.subscriptionTier = token.subscriptionTier as string
-        session.user.subscriptionStatus = token.subscriptionStatus as string
+        session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier
+        session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus
         session.user.onboardingCompleted = token.onboardingCompleted as boolean
       }
       return session

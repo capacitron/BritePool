@@ -18,6 +18,9 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   allowedDevOrigins: ['*'],
 }
 

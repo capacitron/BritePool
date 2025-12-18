@@ -11,12 +11,13 @@ interface EventData {
   type: string
   startTime: string
   endTime: string
+  [key: string]: unknown
 }
 
-interface CalendarProps {
-  events: EventData[]
-  onDayClick?: (date: Date, dayEvents: EventData[]) => void
-  onEventClick?: (event: EventData) => void
+interface CalendarProps<T extends EventData = EventData> {
+  events: T[]
+  onDayClick?: (date: Date, dayEvents: T[]) => void
+  onEventClick?: (event: T) => void
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -48,7 +49,7 @@ function isSameDay(date1: Date, date2: Date) {
   )
 }
 
-export function Calendar({ events, onDayClick, onEventClick }: CalendarProps) {
+export function Calendar<T extends EventData = EventData>({ events, onDayClick, onEventClick }: CalendarProps<T>) {
   const [currentDate, setCurrentDate] = useState(new Date())
   
   const year = currentDate.getFullYear()
@@ -70,7 +71,7 @@ export function Calendar({ events, onDayClick, onEventClick }: CalendarProps) {
     setCurrentDate(new Date())
   }
 
-  const getEventsForDay = (day: number): EventData[] => {
+  const getEventsForDay = (day: number): T[] => {
     const date = new Date(year, month, day)
     return events.filter(event => {
       const eventDate = new Date(event.startTime)
