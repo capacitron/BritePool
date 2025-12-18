@@ -1,11 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)",
-      "Bash(npx claude-flow@alpha:*)",
-      "Bash(npm install:*)",
-      "Bash(command -v:*)",
-      "Bash(claude-flow:*)"
-    ]
+      "mcp__ruv-swarm",
+      "mcp__claude-flow@alpha",
+      "mcp__flow-nexus",
+      "Bash(pkill:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": []
   }
 }
