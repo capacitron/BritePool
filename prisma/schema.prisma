@@ -370,12 +370,14 @@ model MediaItem {
   uploadedById String
   uploadedBy   User     @relation("MediaUploads", fields: [uploadedById], references: [id])
   albumItems   AlbumItem[]
-  mapLocation  MapLocation?
+  mapLocationId String?
+  mapLocation  MapLocation? @relation(fields: [mapLocationId], references: [id])
   createdAt    DateTime @default(now())
 
   @@index([uploadedById])
   @@index([type])
   @@index([category])
+  @@index([mapLocationId])
 }
 
 model Album {

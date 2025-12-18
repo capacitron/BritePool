@@ -18,6 +18,7 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  allowedDevOrigins: ['*'],
 }
 
 module.exports = nextConfig
