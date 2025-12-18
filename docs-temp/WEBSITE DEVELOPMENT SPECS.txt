@@ -1,0 +1,20 @@
+﻿WEBSITE DEVELOPMENT SPECS
+Purpose:
+The website will function as the central digital ecosystem for communication, transparency, project management integration, and community engagement throughout all phases.
+Core Functional Objectives:
+    • Transparency Hub: Provide real-time project progress, funding milestones, ecological metrics, and visual updates linked to the internal tracking system.
+    • Stakeholder Dashboard: Secure login area for partners and advisory board members to access progress reports, session logs, and project documentation with timestamp verification.
+    • Date Retrieval: Receive advisory technical advancements for review and implementation, receive occupational requests to contribute to functionality of project (i.e applications, interviews, onboarding).
+    • Community Portal: Dedicated area for residents, practitioners, and occupational holders to manage tasks, submit maintenance requests, and track participation in programs.
+    • Educational Gateway: Offer e-learning modules on regenerative practices, wellness programs, and sanctuary updates for internal and external audiences.
+    • Media & Outreach Section: rely on Active Campaign services to promote newsletters, and outreach. 
+Technical Framework:
+    • Cloud-based hosting with SSL encryption, daily backups, and sustainability-optimized servers.
+Design & Aesthetic:**
+    • Minimalist, biophilic design reflecting harmony with nature (earth tones, soft gradients, organic typography).
+    • Media-rich sections with photography, drone footage, and interactive maps of the sanctuary.
+    • Accessibility-compliant and multilingual (English, Spanish).
+Ongoing Management:
+    • Dedicated Web Steward responsible for quality control, content verification, and security management.
+    • Integration with internal management software to auto-update progress logs and maintain consistency across all communication channels.
+
