@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { z } from 'zod'
 import { isAdmin } from '@/lib/auth/roles'
+import { UserRole } from '@prisma/client'
 
 const createDocumentSchema = z.object({
   title: z.string().min(1).max(255),
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userRole = session.user.role
+    const userRole = session.user.role as UserRole
     if (!isAdmin(userRole)) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
