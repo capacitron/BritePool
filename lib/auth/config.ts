@@ -42,12 +42,13 @@ export const authConfig: NextAuthConfig = {
           covenantVersion: user.covenantVersion,
           subscriptionTier: user.subscriptionTier,
           subscriptionStatus: user.subscriptionStatus,
+          onboardingCompleted: user.onboardingCompleted,
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
         token.role = user.role
@@ -55,6 +56,17 @@ export const authConfig: NextAuthConfig = {
         token.covenantVersion = user.covenantVersion
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionStatus = user.subscriptionStatus
+        token.onboardingCompleted = user.onboardingCompleted
+      }
+      if (trigger === 'update') {
+        const { prisma } = await import('@/lib/prisma')
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardingCompleted: true },
+        })
+        if (freshUser) {
+          token.onboardingCompleted = freshUser.onboardingCompleted
+        }
       }
       return token
     },
@@ -66,6 +78,7 @@ export const authConfig: NextAuthConfig = {
         session.user.covenantVersion = token.covenantVersion as string | null
         session.user.subscriptionTier = token.subscriptionTier as string
         session.user.subscriptionStatus = token.subscriptionStatus as string
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
       }
       return session
     },

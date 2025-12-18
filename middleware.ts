@@ -14,6 +14,7 @@ export default auth((req) => {
   const isAuthRoute = authRoutes.includes(path)
   const isApiRoute = path.startsWith('/api')
   const isStaticRoute = path.startsWith('/_next') || path.startsWith('/favicon')
+  const isOnboardingRoute = path.startsWith('/onboarding')
 
   if (isStaticRoute || isApiRoute) {
     return NextResponse.next()
@@ -23,14 +24,30 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
+  if (!isLoggedIn && !isPublicRoute && !isOnboardingRoute) {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
-  if (isLoggedIn && !isPublicRoute && path !== '/contract-review') {
+  if (!isLoggedIn && isOnboardingRoute) {
+    return NextResponse.redirect(new URL('/login', nextUrl))
+  }
+
+  if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
     const covenantAccepted = req.auth?.user?.covenantAcceptedAt
     if (!covenantAccepted) {
       return NextResponse.redirect(new URL('/contract-review', nextUrl))
+    }
+
+    const onboardingCompleted = req.auth?.user?.onboardingCompleted
+    if (!onboardingCompleted) {
+      return NextResponse.redirect(new URL('/onboarding', nextUrl))
+    }
+  }
+
+  if (isLoggedIn && isOnboardingRoute) {
+    const onboardingCompleted = req.auth?.user?.onboardingCompleted
+    if (onboardingCompleted) {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl))
     }
   }
 

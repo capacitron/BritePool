@@ -24,6 +24,10 @@ model User {
   covenantVersion     String?
   covenantIpAddress   String?
 
+  // Onboarding
+  onboardingCompleted Boolean  @default(false)
+  onboardingStep      Int      @default(0)
+
   // Subscription
   subscriptionTier    SubscriptionTier @default(FREE)
   subscriptionStatus  SubscriptionStatus @default(INACTIVE)

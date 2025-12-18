@@ -10,6 +10,7 @@ declare module 'next-auth' {
       covenantVersion: string | null
       subscriptionTier: string
       subscriptionStatus: string
+      onboardingCompleted: boolean
     } & DefaultSession['user']
   }
 
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     covenantVersion: string | null
     subscriptionTier: string
     subscriptionStatus: string
+    onboardingCompleted: boolean
   }
 }
 
@@ -31,5 +33,6 @@ declare module 'next-auth/jwt' {
     covenantVersion: string | null
     subscriptionTier: string
     subscriptionStatus: string
+    onboardingCompleted: boolean
   }
 }
