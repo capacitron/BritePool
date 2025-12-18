@@ -135,7 +135,7 @@ Run `npm install` again to ensure all dependencies are installed.
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 15+ (App Router)
 - **Language:** TypeScript 5
 - **Database:** PostgreSQL + Prisma ORM
 - **Styling:** Tailwind CSS (Biophilic Design System)
