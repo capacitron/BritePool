@@ -204,6 +204,25 @@ async function main() {
     }
   }
 
+  const forumCategories = [
+    { name: 'General Discussion', slug: 'general-discussion', description: 'Open discussions about BRITE POOL and community topics' },
+    { name: 'Governance', slug: 'governance', description: 'Discussions about policies, procedures, and organizational decisions' },
+    { name: 'Wealth', slug: 'wealth', description: 'Financial strategies, investments, and resource management discussions' },
+    { name: 'Education', slug: 'education', description: 'Learning opportunities, courses, and educational resources' },
+    { name: 'Health', slug: 'health', description: 'Wellness practices, healing modalities, and health-related topics' },
+    { name: 'Operations', slug: 'operations', description: 'Day-to-day operations, sanctuary management, and logistics' },
+  ]
+
+  for (const category of forumCategories) {
+    const existing = await prisma.forumCategory.findUnique({
+      where: { slug: category.slug }
+    })
+    if (!existing) {
+      await prisma.forumCategory.create({ data: category })
+      console.log(`Created forum category: ${category.name}`)
+    }
+  }
+
   console.log('Seed completed!')
 }
 

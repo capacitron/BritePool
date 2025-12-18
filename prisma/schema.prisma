@@ -45,6 +45,9 @@ model User {
   mapLocations  MapLocation[] @relation("MapLocationsCreated")
   coursesCreated Course[] @relation("CoursesCreated")
   courseProgress CourseProgress[] @relation("CourseProgress")
+  maintenanceSubmitted MaintenanceRequest[] @relation("MaintenanceRequestsSubmitted")
+  maintenanceAssigned MaintenanceRequest[] @relation("MaintenanceRequestsAssigned")
+  maintenanceResolved MaintenanceRequest[] @relation("MaintenanceRequestsResolved")
 
   @@index([email])
   @@index([role])
@@ -568,4 +571,61 @@ enum PartnerStatus {
   PENDING
   ACTIVE
   INACTIVE
+}
+
+// Maintenance Requests
+
+model MaintenanceRequest {
+  id          String   @id @default(cuid())
+
+  title       String
+  description String
+  location    String
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  status      MaintenanceStatus @default(SUBMITTED)
+
+  submittedById String
+  submittedBy   User @relation("MaintenanceRequestsSubmitted", fields: [submittedById], references: [id])
+  submittedAt   DateTime @default(now())
+
+  assignedToId  String?
+  assignedTo    User? @relation("MaintenanceRequestsAssigned", fields: [assignedToId], references: [id])
+  assignedAt    DateTime?
+
+  resolvedById  String?
+  resolvedBy    User? @relation("MaintenanceRequestsResolved", fields: [resolvedById], references: [id])
+  resolvedAt    DateTime?
+  resolutionNotes String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([submittedById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+}
+
+enum MaintenanceCategory {
+  PLUMBING
+  ELECTRICAL
+  STRUCTURAL
+  GROUNDS
+  HVAC
+  OTHER
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceStatus {
+  SUBMITTED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
 }

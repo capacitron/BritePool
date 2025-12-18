@@ -10,13 +10,17 @@ import {
   Calendar,
   BookOpen,
   Clock,
-  User
+  User,
+  MessageSquare,
+  Wrench
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/committees', label: 'Committees', icon: Users },
+  { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
+  { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench },
   { href: '/dashboard/events', label: 'Events', icon: Calendar },
   { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
   { href: '/dashboard/participation', label: 'Participation', icon: Clock },
