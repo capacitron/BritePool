@@ -66,3 +66,8 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[userenv]
+
+[userenv.shared]
+AUTH_SECRET = "gdvOnMR/Hrc+CQkaRaY1rvdvOs21FaidvSAJBBhsFZ8="
