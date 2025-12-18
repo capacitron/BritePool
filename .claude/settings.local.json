@@ -6,7 +6,8 @@
       "mcp__flow-nexus",
       "Bash(pkill:*)",
       "Bash(cat:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
