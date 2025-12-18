@@ -10,23 +10,35 @@ import {
   Calendar,
   BookOpen,
   Clock,
-  User,
+  UserCircle,
   MessageSquare,
   Wrench,
-  CreditCard
+  CreditCard,
+  Image,
+  Map,
+  Handshake,
+  FileText,
+  Eye,
+  PieChart,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/stakeholder', label: 'Stakeholder', icon: PieChart },
   { href: '/dashboard/committees', label: 'Committees', icon: Users },
   { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare },
   { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench },
   { href: '/dashboard/events', label: 'Events', icon: Calendar },
   { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
+  { href: '/dashboard/documents', label: 'Documents', icon: FileText },
+  { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
+  { href: '/dashboard/media', label: 'Media', icon: Image },
+  { href: '/dashboard/map', label: 'Map', icon: Map },
+  { href: '/dashboard/partners', label: 'Partners', icon: Handshake },
   { href: '/dashboard/participation', label: 'Participation', icon: Clock },
   { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
-  { href: '/dashboard/profile', label: 'Profile', icon: User },
+  { href: '/dashboard/profile', label: 'Profile', icon: UserCircle },
 ]
 
 export function Sidebar() {

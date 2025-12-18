@@ -48,6 +48,7 @@ model User {
   maintenanceSubmitted MaintenanceRequest[] @relation("MaintenanceRequestsSubmitted")
   maintenanceAssigned MaintenanceRequest[] @relation("MaintenanceRequestsAssigned")
   maintenanceResolved MaintenanceRequest[] @relation("MaintenanceRequestsResolved")
+  documentsUploaded Document[] @relation("DocumentsUploaded")
 
   @@index([email])
   @@index([role])
@@ -639,4 +640,35 @@ enum MaintenanceStatus {
   ASSIGNED
   IN_PROGRESS
   RESOLVED
+}
+
+// Document Management
+
+model Document {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  category        DocumentCategory
+  fileUrl         String
+  fileType        String
+  fileSize        Int
+  mimeType        String
+  uploadedById    String
+  uploadedBy      User     @relation("DocumentsUploaded", fields: [uploadedById], references: [id])
+  version         String   @default("1.0")
+  isPublic        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([uploadedById])
+  @@index([category])
+  @@index([createdAt])
+}
+
+enum DocumentCategory {
+  GOVERNANCE
+  FINANCIAL
+  LEGAL
+  EDUCATIONAL
+  OPERATIONAL
 }
