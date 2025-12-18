@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(npx claude-flow@alpha:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(command -v:*)",
+      "Bash(claude-flow:*)"
     ]
   }
 }
