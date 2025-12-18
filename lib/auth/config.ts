@@ -62,10 +62,20 @@ export const authConfig: NextAuthConfig = {
         const { prisma } = await import('@/lib/prisma')
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { onboardingCompleted: true },
+          select: { 
+            onboardingCompleted: true,
+            covenantAcceptedAt: true,
+            covenantVersion: true,
+            subscriptionTier: true,
+            subscriptionStatus: true,
+          },
         })
         if (freshUser) {
           token.onboardingCompleted = freshUser.onboardingCompleted
+          token.covenantAcceptedAt = freshUser.covenantAcceptedAt
+          token.covenantVersion = freshUser.covenantVersion
+          token.subscriptionTier = freshUser.subscriptionTier
+          token.subscriptionStatus = freshUser.subscriptionStatus
         }
       }
       return token

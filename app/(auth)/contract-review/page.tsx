@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 
 interface Contract {
@@ -13,6 +14,7 @@ interface Contract {
 
 export default function ContractReviewPage() {
   const router = useRouter()
+  const { update: updateSession } = useSession()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   
   const [contract, setContract] = useState<Contract | null>(null)
@@ -90,6 +92,7 @@ export default function ContractReviewPage() {
         return
       }
 
+      await updateSession()
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
