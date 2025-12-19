@@ -3,21 +3,7 @@
     "allow": [
       "mcp__ruv-swarm",
       "mcp__claude-flow@alpha",
-      "mcp__flow-nexus",
-      "Bash(cat:*)",
-      "Bash(mkdir:*)",
-      "Bash(npm install:*)",
-      "Bash(npx husky init)",
-      "Bash(npm run test:run:*)",
-      "Bash(chmod:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(npx prisma db seed --help:*)",
-      "Bash(npx prisma:*)",
-      "Bash(git push:*)",
-      "Bash(curl:*)",
-      "Bash(lsof:*)",
-      "Bash(xargs:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "mcp__flow-nexus"
     ],
     "deny": []
   },
