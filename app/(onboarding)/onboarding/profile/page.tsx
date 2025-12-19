@@ -33,15 +33,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const matchedTimezone = timezones.find(tz => tz.value === detectedTimezone)
+    const matchedTimezone = timezones.find((tz) => tz.value === detectedTimezone)
     if (matchedTimezone) {
-      setFormData(prev => ({ ...prev, timezone: matchedTimezone.value }))
+      setFormData((prev) => ({ ...prev, timezone: matchedTimezone.value }))
     }
   }, [])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleNext = async () => {
@@ -78,8 +80,18 @@ export default function ProfilePage() {
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center mb-6">
             <div className="w-24 h-24 bg-earth-brown-light/20 rounded-full flex items-center justify-center mb-3">
-              <svg className="w-12 h-12 text-earth-brown-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-12 h-12 text-earth-brown-light"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
             <p className="text-sm text-earth-brown-light">
@@ -144,7 +156,7 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 className="mt-1 w-full rounded-md border border-earth-brown-light/30 bg-white px-3 py-2 text-earth-brown focus:border-earth-gold focus:outline-none focus:ring-1 focus:ring-earth-gold"
               >
-                {timezones.map(tz => (
+                {timezones.map((tz) => (
                   <option key={tz.value} value={tz.value}>
                     {tz.label}
                   </option>
@@ -159,21 +171,31 @@ export default function ProfilePage() {
         <Button
           variant="outline"
           onClick={handleBack}
-          className="border-earth-brown-light/30 text-earth-brown hover:bg-earth-brown-light/10"
+          className="border-earth-brown-dark border-2 text-earth-brown-dark hover:bg-earth-brown-dark hover:text-white font-semibold"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 17l-5-5m0 0l5-5m-5 5h12"
+            />
           </svg>
           Back
         </Button>
         <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="bg-earth-gold hover:bg-earth-gold-dark text-white px-8"
+          className="bg-earth-brown-dark hover:bg-earth-brown text-white px-8 font-semibold shadow-lg"
         >
           {isLoading ? 'Saving...' : 'Continue'}
           <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
           </svg>
         </Button>
       </div>
