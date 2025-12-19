@@ -4,13 +4,20 @@
       "mcp__ruv-swarm",
       "mcp__claude-flow@alpha",
       "mcp__flow-nexus",
-      "Bash(pkill:*)",
       "Bash(cat:*)",
-      "Bash(curl:*)",
-      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npx husky init)",
+      "Bash(npm run test:run:*)",
       "Bash(chmod:*)",
-      "Bash(npm run killall:*)"
+      "Bash(npm run typecheck:*)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "claude-flow",
+    "ruv-swarm",
+    "claude-flow@alpha",
+    "flow-nexus"
+  ]
 }
