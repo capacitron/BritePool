@@ -16,7 +16,7 @@ export default function ContractReviewPage() {
   const router = useRouter()
   const { update: updateSession } = useSession()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  
+
   const [contract, setContract] = useState<Contract | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,7 +54,7 @@ export default function ContractReviewPage() {
 
     const { scrollTop, scrollHeight, clientHeight } = container
     const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20
-    
+
     if (isAtBottom && !hasScrolledToBottom) {
       setHasScrolledToBottom(true)
     }
@@ -93,7 +93,13 @@ export default function ContractReviewPage() {
       }
 
       await updateSession()
-      router.push('/dashboard')
+      // Redirect to onboarding if not completed, otherwise dashboard
+      const session = await fetch('/api/auth/session').then((res) => res.json())
+      if (!session?.user?.onboardingCompleted) {
+        router.push('/onboarding')
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err) {
       setError('Failed to accept agreement. Please try again.')
@@ -120,10 +126,17 @@ export default function ContractReviewPage() {
       <div className="bg-white rounded-2xl shadow-warm-md p-8 text-center">
         <div className="text-terracotta mb-4">
           <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
         </div>
-        <h2 className="text-xl font-serif font-semibold text-earth-dark mb-2">Unable to Load Agreement</h2>
+        <h2 className="text-xl font-serif font-semibold text-earth-dark mb-2">
+          Unable to Load Agreement
+        </h2>
         <p className="text-earth-brown-light mb-4">{error}</p>
         <Button onClick={() => window.location.reload()} variant="outline">
           Try Again
@@ -143,16 +156,13 @@ export default function ContractReviewPage() {
         </p>
       </div>
 
-      <div 
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-6 py-4 bg-earth-light/30"
-      >
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 py-4 bg-earth-light/30">
         <div className="prose prose-stone max-w-none">
           <div className="whitespace-pre-wrap text-earth-dark text-sm leading-relaxed">
             {contract?.content}
           </div>
         </div>
-        
+
         {!hasScrolledToBottom && (
           <div className="sticky bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-earth-light/80 to-transparent pointer-events-none flex items-end justify-center pb-2">
             <span className="text-xs text-earth-brown-light bg-white/80 px-3 py-1 rounded-full shadow-sm">
@@ -168,7 +178,7 @@ export default function ContractReviewPage() {
             {error}
           </div>
         )}
-        
+
         <div className="flex items-start space-x-3 mb-4">
           <input
             type="checkbox"
@@ -178,11 +188,12 @@ export default function ContractReviewPage() {
             disabled={!hasScrolledToBottom || isSubmitting}
             className="mt-1 h-4 w-4 rounded border-earth-brown text-earth-brown focus:ring-earth-brown focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <label 
-            htmlFor="agree" 
+          <label
+            htmlFor="agree"
             className={`text-sm ${!hasScrolledToBottom ? 'text-earth-brown-light' : 'text-earth-dark'}`}
           >
-            I have read and agree to the Membership Agreement and understand my rights and obligations as a BRITE POOL member.
+            I have read and agree to the Membership Agreement and understand my rights and
+            obligations as a BRITE POOL member.
           </label>
         </div>
 

@@ -123,7 +123,6 @@ export default function WelcomePage() {
   }
 
   const handleNext = async () => {
-    if (!allCommitmentsAccepted) return
     setIsLoading(true)
     try {
       await fetch('/api/onboarding', {
@@ -225,10 +224,10 @@ export default function WelcomePage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl font-serif text-earth-brown-dark">
-                Community Commitments
+                Community Values
               </CardTitle>
               <CardDescription className="text-earth-brown-light">
-                Please acknowledge our community values to continue
+                Review our core values (optional - you can proceed at any time)
               </CardDescription>
             </div>
             <button
@@ -327,12 +326,8 @@ export default function WelcomePage() {
       <div className="flex justify-end">
         <Button
           onClick={handleNext}
-          disabled={isLoading || !allCommitmentsAccepted}
-          className={`px-8 py-3 text-lg font-semibold shadow-lg transition-all duration-300 ${
-            allCommitmentsAccepted
-              ? 'bg-earth-brown-dark hover:bg-earth-brown text-white'
-              : 'bg-earth-brown-light/50 text-earth-brown-light cursor-not-allowed'
-          }`}
+          disabled={isLoading}
+          className="bg-earth-brown-dark hover:bg-earth-brown text-white px-8 py-3 text-lg font-semibold shadow-lg transition-all duration-300"
         >
           {isLoading ? (
             <>
@@ -357,7 +352,7 @@ export default function WelcomePage() {
               </svg>
               Saving...
             </>
-          ) : allCommitmentsAccepted ? (
+          ) : (
             <>
               Let&apos;s Get Started
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,18 +361,6 @@ export default function WelcomePage() {
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </>
-          ) : (
-            <>
-              Accept all commitments to continue
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                 />
               </svg>
             </>
