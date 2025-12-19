@@ -13,7 +13,9 @@
       "Bash(npm run typecheck:*)",
       "Bash(npx prisma db seed --help:*)",
       "Bash(npx prisma:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)"
     ],
     "deny": []
   },
