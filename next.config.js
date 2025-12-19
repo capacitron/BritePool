@@ -18,10 +18,8 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  allowedDevOrigins: ['*'],
+  // Security headers applied via middleware
+  // ESLint runs during builds to catch issues early
 }
 
 module.exports = nextConfig
