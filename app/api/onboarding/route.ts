@@ -53,10 +53,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { step, profile, interests } = body
+    const { step, name, profile, interests } = body
 
     const updateData: Record<string, unknown> = {
       onboardingStep: step,
+    }
+
+    // Update name if provided
+    if (name && typeof name === 'string' && name.trim()) {
+      updateData.name = name.trim()
     }
 
     await prisma.user.update({

@@ -1,59 +1,53 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useEffect, useState } from 'react'
 
 export default function OnboardingPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession()
+  const [status, setStatus] = useState('loading')
 
   useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session?.user) {
-      router.push('/login')
-      return
-    }
-
-    // Fetch user's onboarding step and redirect
-    async function checkOnboardingStep() {
+    async function checkAndRedirect() {
       try {
+        // Check onboarding status from database
         const response = await fetch('/api/onboarding/status')
         if (response.ok) {
           const data = await response.json()
 
           if (data.onboardingCompleted) {
-            router.push('/dashboard')
+            // Already completed - go to dashboard
+            setStatus('completed')
+            window.location.href = '/dashboard'
             return
           }
 
+          // Not completed - go to appropriate step
           const stepRoutes = [
             '/onboarding/welcome',
             '/onboarding/profile',
             '/onboarding/interests',
             '/onboarding/complete',
           ]
-
           const currentStep = data.onboardingStep || 0
-          router.push(stepRoutes[Math.min(currentStep, stepRoutes.length - 1)])
+          window.location.href = stepRoutes[Math.min(currentStep, stepRoutes.length - 1)]
         } else {
-          // Default to welcome if we can't get status
-          router.push('/onboarding/welcome')
+          // Error or unauthorized - go to welcome
+          window.location.href = '/onboarding/welcome'
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error)
-        router.push('/onboarding/welcome')
+        console.error('Error checking onboarding:', error)
+        window.location.href = '/onboarding/welcome'
       }
     }
 
-    checkOnboardingStep()
-  }, [session, status, router])
+    checkAndRedirect()
+  }, [])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh]">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-earth-gold mb-4"></div>
-      <p className="text-earth-brown-light">Loading your onboarding experience...</p>
+      <p className="text-earth-brown-light">
+        {status === 'completed' ? 'Redirecting to dashboard...' : 'Loading...'}
+      </p>
     </div>
   )
 }

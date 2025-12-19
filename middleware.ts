@@ -35,25 +35,14 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
-  // Check covenant acceptance and onboarding for authenticated users
+  // Check covenant acceptance for authenticated users (NOT onboarding - handled by pages)
   if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
     const covenantAccepted = req.auth?.user?.covenantAcceptedAt
     if (!covenantAccepted) {
       return NextResponse.redirect(new URL('/contract-review', nextUrl))
     }
-
-    const onboardingCompleted = req.auth?.user?.onboardingCompleted
-    if (!onboardingCompleted) {
-      return NextResponse.redirect(new URL('/onboarding', nextUrl))
-    }
-  }
-
-  // Redirect completed users away from onboarding
-  if (isLoggedIn && isOnboardingRoute) {
-    const onboardingCompleted = req.auth?.user?.onboardingCompleted
-    if (onboardingCompleted) {
-      return NextResponse.redirect(new URL('/dashboard', nextUrl))
-    }
+    // Note: Onboarding check removed from middleware - handled by dashboard/pages
+    // This prevents redirect loops when JWT isn't updated yet
   }
 
   return NextResponse.next()

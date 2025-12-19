@@ -65,33 +65,37 @@ const quickStartItems = [
   },
 ]
 
-// Confetti particle component
-function ConfettiParticle({ delay, left }: { delay: number; left: number }) {
-  const colors = ['#C9A227', '#6B5638', '#87A878', '#D4A574', '#8B7355']
-  const color = colors[Math.floor(Math.random() * colors.length)]
-
-  return (
-    <div
-      className="absolute w-3 h-3 rounded-full animate-confetti"
-      style={{
-        left: `${left}%`,
-        backgroundColor: color,
-        animationDelay: `${delay}ms`,
-        animationDuration: `${2000 + Math.random() * 1000}ms`,
-      }}
-    />
-  )
+// Confetti particle data type
+interface ConfettiData {
+  id: number
+  delay: number
+  left: number
+  color: string
+  duration: number
 }
 
 export default function CompletePage() {
   const router = useRouter()
   const { update } = useSession()
   const [isLoading, setIsLoading] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(true)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [confettiParticles, setConfettiParticles] = useState<ConfettiData[]>([])
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [celebrationStep, setCelebrationStep] = useState(0)
 
   useEffect(() => {
+    // Generate confetti only on client side to avoid hydration mismatch
+    const colors = ['#C9A227', '#6B5638', '#87A878', '#D4A574', '#8B7355']
+    const particles: ConfettiData[] = Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      delay: i * 50,
+      left: Math.random() * 100,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      duration: 2000 + Math.random() * 1000,
+    }))
+    setConfettiParticles(particles)
+    setShowConfetti(true)
+
     // Celebration animation sequence
     const timer1 = setTimeout(() => setCelebrationStep(1), 300)
     const timer2 = setTimeout(() => setCelebrationStep(2), 600)
@@ -113,28 +117,43 @@ export default function CompletePage() {
   const handleComplete = async () => {
     setIsLoading(true)
     try {
-      await fetch('/api/onboarding', {
+      const response = await fetch('/api/onboarding', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
       })
+
+      if (!response.ok) {
+        throw new Error('Failed to complete onboarding')
+      }
+
+      // Update session to get fresh data
       await update()
-      // Navigate to first selected item or dashboard
+
+      // Use hard redirect to ensure fresh session is loaded by middleware
       const firstSelected = quickStartItems.find((item) => selectedItems.includes(item.id))
-      router.push(firstSelected?.href || '/dashboard')
+      window.location.href = firstSelected?.href || '/dashboard'
     } catch (error) {
       console.error('Error completing onboarding:', error)
-    } finally {
       setIsLoading(false)
     }
   }
 
   return (
     <div className="space-y-8 relative overflow-hidden">
-      {/* Confetti animation */}
-      {showConfetti && (
+      {/* Confetti animation - rendered client-side only */}
+      {showConfetti && confettiParticles.length > 0 && (
         <div className="fixed inset-0 pointer-events-none z-50">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <ConfettiParticle key={i} delay={i * 50} left={Math.random() * 100} />
+          {confettiParticles.map((particle) => (
+            <div
+              key={particle.id}
+              className="absolute w-3 h-3 rounded-full animate-confetti"
+              style={{
+                left: `${particle.left}%`,
+                backgroundColor: particle.color,
+                animationDelay: `${particle.delay}ms`,
+                animationDuration: `${particle.duration}ms`,
+              }}
+            />
           ))}
         </div>
       )}

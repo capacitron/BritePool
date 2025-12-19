@@ -140,76 +140,112 @@ export default function WelcomePage() {
 
   return (
     <div className="space-y-8">
-      <Card className="border-earth-brown-light/20 shadow-lg">
-        <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 w-20 h-20 bg-gradient-to-br from-earth-gold to-earth-gold-dark rounded-full flex items-center justify-center animate-pulse">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
+      {/* Hero Welcome Card - Refined Organic Luxury */}
+      <Card className="border-0 shadow-2xl overflow-hidden relative bg-gradient-to-br from-stone-warm via-white to-earth-light">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%236B5638' fill-opacity='1'/%3E%3C/svg%3E")`,
+          backgroundSize: '30px 30px'
+        }} />
+
+        <CardHeader className="text-center pb-2 pt-10 relative">
+          {/* Animated sun/light symbol with glow */}
+          <div className="mx-auto mb-6 relative">
+            <div className="absolute inset-0 w-28 h-28 bg-earth-gold/20 rounded-full blur-xl animate-pulse" />
+            <div className="relative w-24 h-24 bg-gradient-to-br from-earth-gold via-earth-gold-dark to-amber-700 rounded-full flex items-center justify-center shadow-xl ring-4 ring-white/50">
+              <svg
+                className="w-12 h-12 text-white drop-shadow-lg"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            </div>
           </div>
-          <CardTitle className="text-3xl font-serif text-earth-brown-dark">
-            Welcome to BRITE POOL, {session?.user?.name?.split(' ')[0] || 'Friend'}!
+
+          {/* Welcome text with refined typography */}
+          <CardTitle className="text-4xl md:text-5xl font-serif text-earth-brown-dark tracking-tight">
+            Welcome, <span className="text-earth-gold-dark italic">{session?.user?.name?.split(' ')[0] || 'Friend'}</span>
           </CardTitle>
-          <CardDescription className="text-lg text-earth-brown-light mt-2">
-            Ministerium of Empowerment
-          </CardDescription>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-earth-gold" />
+            <CardDescription className="text-base uppercase tracking-[0.3em] text-earth-brown font-medium">
+              Ministerium of Empowerment
+            </CardDescription>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-earth-gold" />
+          </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="prose prose-earth max-w-none">
-            <p className="text-earth-brown text-center text-lg leading-relaxed">
-              You&apos;re about to join a community dedicated to empowerment, growth, and collective
-              prosperity. Let us guide you through setting up your membership experience.
+
+        <CardContent className="pt-6 pb-10 relative">
+          <div className="max-w-xl mx-auto">
+            <p className="text-earth-brown text-center text-xl leading-relaxed font-light">
+              You&apos;re about to join a community dedicated to{' '}
+              <span className="font-medium text-earth-brown-dark">empowerment</span>,{' '}
+              <span className="font-medium text-earth-brown-dark">growth</span>, and{' '}
+              <span className="font-medium text-earth-brown-dark">collective prosperity</span>.
+            </p>
+            <p className="text-earth-brown-light text-center mt-4 text-lg">
+              Let us guide you through setting up your membership experience.
             </p>
           </div>
+
+          {/* Decorative bottom flourish */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-earth-gold/30 to-transparent" />
         </CardContent>
       </Card>
 
-      {/* Interactive Feature Cards */}
+      {/* Interactive Feature Cards - Distinctive Grid */}
       <div className="grid md:grid-cols-3 gap-6">
-        {features.map((feature) => (
+        {features.map((feature, index) => (
           <Card
             key={feature.id}
-            className={`border-earth-brown-light/20 cursor-pointer transition-all duration-300 ${
+            className={`group border-0 cursor-pointer transition-all duration-500 overflow-hidden relative ${
               expandedFeature === feature.id
-                ? 'ring-2 ring-earth-gold shadow-xl scale-[1.02]'
-                : 'hover:shadow-lg hover:border-earth-gold/50'
+                ? 'shadow-2xl scale-[1.03] bg-gradient-to-br from-earth-gold/10 to-white'
+                : 'shadow-lg hover:shadow-xl hover:-translate-y-1 bg-white'
             }`}
             onClick={() => setExpandedFeature(expandedFeature === feature.id ? null : feature.id)}
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            <CardContent className="pt-6">
+            {/* Accent bar at top */}
+            <div className={`absolute top-0 left-0 right-0 h-1 transition-all duration-300 ${
+              expandedFeature === feature.id
+                ? 'bg-gradient-to-r from-earth-gold via-earth-gold-dark to-earth-gold'
+                : 'bg-gradient-to-r from-transparent via-earth-gold/30 to-transparent group-hover:via-earth-gold/60'
+            }`} />
+
+            <CardContent className="pt-8 pb-6">
               <div className="flex flex-col items-center text-center">
                 <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors duration-300 ${
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-all duration-500 ${
                     expandedFeature === feature.id
-                      ? 'bg-earth-gold text-white'
-                      : 'bg-earth-gold/10 text-earth-gold-dark'
+                      ? 'bg-gradient-to-br from-earth-gold to-earth-gold-dark text-white shadow-lg rotate-3'
+                      : 'bg-earth-brown-light/10 text-earth-brown group-hover:bg-earth-gold/20 group-hover:text-earth-gold-dark'
                   }`}
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {feature.icon}
                   </svg>
                 </div>
-                <h3 className="font-semibold text-earth-brown-dark mb-2">{feature.title}</h3>
+                <h3 className="font-serif text-xl font-semibold text-earth-brown-dark mb-3">{feature.title}</h3>
                 <p
-                  className={`text-sm text-earth-brown-light transition-all duration-300 ${
-                    expandedFeature === feature.id ? 'opacity-100' : 'opacity-70'
+                  className={`text-sm leading-relaxed transition-all duration-300 ${
+                    expandedFeature === feature.id ? 'text-earth-brown' : 'text-earth-brown-light'
                   }`}
                 >
                   {feature.description}
                 </p>
                 {expandedFeature === feature.id && (
-                  <div className="mt-3 text-xs text-earth-gold-dark font-medium animate-fade-in">
-                    Click to collapse
+                  <div className="mt-4 flex items-center gap-2 text-xs text-earth-gold-dark font-medium">
+                    <span className="w-4 h-px bg-earth-gold" />
+                    Tap to collapse
+                    <span className="w-4 h-px bg-earth-gold" />
                   </div>
                 )}
               </div>
@@ -323,16 +359,20 @@ export default function WelcomePage() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
+      {/* CTA Section - Distinctive Button */}
+      <div className="flex justify-center pt-4">
         <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="bg-earth-brown-dark hover:bg-earth-brown text-white px-8 py-3 text-lg font-semibold shadow-lg transition-all duration-300"
+          className="group relative bg-gradient-to-r from-earth-brown-dark via-earth-brown to-earth-brown-dark hover:from-earth-gold-dark hover:via-earth-gold hover:to-earth-gold-dark text-white px-12 py-6 text-xl font-serif font-semibold shadow-xl transition-all duration-500 hover:shadow-2xl hover:scale-105 rounded-xl overflow-hidden"
         >
+          {/* Shine effect */}
+          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
           {isLoading ? (
-            <>
+            <span className="flex items-center relative">
               <svg
-                className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -350,12 +390,12 @@ export default function WelcomePage() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              Saving...
-            </>
+              Preparing Your Journey...
+            </span>
           ) : (
-            <>
-              Let&apos;s Get Started
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="flex items-center relative">
+              Begin Your Journey
+              <svg className="w-6 h-6 ml-3 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -363,7 +403,7 @@ export default function WelcomePage() {
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
-            </>
+            </span>
           )}
         </Button>
       </div>
