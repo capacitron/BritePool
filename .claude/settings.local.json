@@ -3,14 +3,30 @@
     "allow": [
       "mcp__ruv-swarm",
       "mcp__claude-flow@alpha",
-      "mcp__flow-nexus"
+      "mcp__flow-nexus",
+      "Bash(npm run typecheck:*)",
+      "Bash(grep:*)",
+      "Bash(if [ -f /home/runner/workspace/.env ])",
+      "Bash(then grep -E \"^\\(AUTH_SECRET|NEXTAUTH_SECRET\\)\" /home/runner/workspace/.env)",
+      "Bash(else echo \"No .env file\")",
+      "Bash(fi)",
+      "Bash(echo:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Skill(sparc:designer)",
+      "WebSearch",
+      "Bash(cat:*)",
+      "Bash(then grep -E \"^\\(AUTH_SECRET|NEXTAUTH_SECRET|AUTH_URL|NEXTAUTH_URL\\)\" /home/runner/workspace/.env)",
+      "Bash(env)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "claude-flow",
-    "ruv-swarm",
     "claude-flow@alpha",
+    "ruv-swarm",
     "flow-nexus"
   ]
 }

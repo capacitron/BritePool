@@ -5,7 +5,45 @@ import { prisma } from '@/lib/prisma'
 import { loginSchema } from '@/lib/validations/auth'
 import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
 
+// Detect if running in production/Replit environment
+const isProduction = process.env.NODE_ENV === 'production'
+const isReplit = !!process.env.REPL_SLUG
+// Use simpler cookie names in Replit to avoid proxy issues with __Secure- prefix
+const useSecureCookies = isProduction && !isReplit
+
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
+  // Cookie configuration for Replit/proxy environments
+  // Using non-prefixed names in Replit to ensure cookies work with their proxy
+  cookies: {
+    sessionToken: {
+      name: useSecureCookies ? '__Secure-authjs.session-token' : 'authjs.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction || isReplit,
+      },
+    },
+    callbackUrl: {
+      name: useSecureCookies ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction || isReplit,
+      },
+    },
+    csrfToken: {
+      name: useSecureCookies ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction || isReplit,
+      },
+    },
+  },
   providers: [
     Credentials({
       name: 'credentials',
@@ -14,8 +52,12 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('Auth: authorize called')
         const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        if (!parsed.success) {
+          console.log('Auth: validation failed')
+          return null
+        }
 
         const { email, password } = parsed.data
 
@@ -24,15 +66,23 @@ export const authConfig: NextAuthConfig = {
           include: { profile: true },
         })
 
-        if (!user) return null
+        if (!user) {
+          console.log('Auth: user not found')
+          return null
+        }
 
         const passwordMatch = await bcrypt.compare(password, user.passwordHash)
-        if (!passwordMatch) return null
+        if (!passwordMatch) {
+          console.log('Auth: password mismatch')
+          return null
+        }
 
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         })
+
+        console.log('Auth: login successful for user:', user.id)
 
         return {
           id: user.id,
@@ -50,6 +100,7 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
+      console.log('Auth JWT callback:', { hasUser: !!user, trigger, tokenId: token.id })
       if (user) {
         token.id = user.id
         token.role = user.role
@@ -58,6 +109,7 @@ export const authConfig: NextAuthConfig = {
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionStatus = user.subscriptionStatus
         token.onboardingCompleted = user.onboardingCompleted
+        console.log('Auth JWT: user data stored in token, id:', token.id)
       }
       if (trigger === 'update') {
         const { prisma } = await import('@/lib/prisma')
@@ -82,15 +134,17 @@ export const authConfig: NextAuthConfig = {
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as UserRole
-        session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
-        session.user.covenantVersion = token.covenantVersion as string | null
-        session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier
-        session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus
-        session.user.onboardingCompleted = token.onboardingCompleted as boolean
-      }
+      console.log('Auth session callback:', { hasToken: !!token, tokenId: token?.id, hasSessionUser: !!session?.user })
+      // Ensure session.user exists (required for auth() to work in API routes)
+      session.user = session.user || {}
+      session.user.id = token.id as string
+      console.log('Auth session: user.id set to:', session.user.id)
+      session.user.role = token.role as UserRole
+      session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
+      session.user.covenantVersion = token.covenantVersion as string | null
+      session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier
+      session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus
+      session.user.onboardingCompleted = token.onboardingCompleted as boolean
       return session
     },
   },

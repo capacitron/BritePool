@@ -1,18 +1,30 @@
 import type { Metadata } from 'next'
-import { Inter, Spectral } from 'next/font/google'
+import { Inter, Playfair_Display, Lora } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
-const spectral = Spectral({ 
-  weight: ['400', '600', '700'], 
-  subsets: ['latin'], 
-  variable: '--font-serif' 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter'
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+})
+
+const lora = Lora({
+  subsets: ['latin'],
+  variable: '--font-lora',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 })
 
 export const metadata: Metadata = {
   title: 'BRITE POOL Ministerium of Empowerment',
-  description: 'Building sovereign futures through empowered communities',
+  description: 'Building Resources Investing Together for Empowerment',
 }
 
 export default function RootLayout({
@@ -22,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${spectral.variable}`}>
+      <body className={`${inter.variable} ${playfair.variable} ${lora.variable}`}>
         <Providers>
           {children}
         </Providers>

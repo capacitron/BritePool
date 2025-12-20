@@ -133,7 +133,7 @@ You further affirm that you are entering into this Agreement voluntarily and wit
 ---
 
 **BRITE POOL Ministerium of Empowerment**
-*Building sovereign futures through empowered communities*
+*Building Resources Investing Together for Empowerment*
 `
 
 export async function GET() {

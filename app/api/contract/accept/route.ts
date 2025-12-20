@@ -1,14 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
+    // Debug: Check what cookies are available
+    const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+    const sessionCookie = allCookies.find(c => c.name.includes('authjs') || c.name.includes('next-auth'))
+
+    console.log('Contract accept - Cookies debug:', {
+      cookieCount: allCookies.length,
+      cookieNames: allCookies.map(c => c.name),
+      hasSessionCookie: !!sessionCookie,
+    })
+
     const session = await auth()
-    
+
+    console.log('Contract accept - Session debug:', {
+      hasSession: !!session,
+      sessionKeys: session ? Object.keys(session) : [],
+      hasUser: !!session?.user,
+      userKeys: session?.user ? Object.keys(session.user) : [],
+      userId: session?.user?.id,
+    })
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized. Please log in again.' },
         { status: 401 }
       )
     }

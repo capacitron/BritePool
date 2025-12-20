@@ -3,11 +3,84 @@
 @tailwind utilities;
 
 @layer base {
+  /* Forest Wealth Design System - Base Styles */
   body {
-    @apply bg-earth-light text-earth-dark font-sans;
+    @apply bg-cream text-bark font-body;
   }
-  
+
+  /* All headlines use Playfair Display */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-display;
+  }
+
+  /* Body text needs room to breathe with serifs */
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+@layer components {
+  /* Primary Button */
+  .btn-primary {
+    @apply px-8 py-4 bg-forest-600 hover:bg-forest-700 text-sand-50 rounded-lg font-medium transition-colors;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply px-8 py-4 bg-sand-100 hover:bg-sand-200 text-forest-800 border border-sand-300 rounded-lg font-medium transition-colors;
+  }
+
+  /* Accent/CTA Button */
+  .btn-accent {
+    @apply px-8 py-4 bg-earth-500 hover:bg-earth-600 text-white rounded-lg font-medium transition-colors;
+  }
+
+  /* Card Component */
+  .card {
+    @apply bg-white rounded-2xl p-8 border border-sand-200 hover:shadow-lg transition-shadow;
+  }
+
+  /* Card on sand background */
+  .card-sand {
+    @apply bg-sand-100 rounded-2xl p-8 border border-sand-200 hover:shadow-lg transition-shadow;
+  }
+
+  /* Input Field */
+  .input-field {
+    @apply w-full px-5 py-4 rounded-xl border border-sand-300 bg-cream focus:outline-none focus:ring-2 focus:ring-forest-500 font-body transition-all;
+  }
+
+  /* Section with forest tint */
+  .section-forest {
+    @apply bg-forest-50;
+  }
+
+  /* Section with sand tint */
+  .section-sand {
+    @apply bg-sand-100;
+  }
+
+  /* Dark section */
+  .section-dark {
+    @apply bg-forest-900 text-sand-100;
+  }
+}
+
+@layer utilities {
+  /* Text styles following design system */
+  .text-headline {
+    @apply text-forest-950 font-display font-medium;
+  }
+
+  .text-subheadline {
+    @apply text-forest-900 font-display;
+  }
+
+  .text-body-primary {
+    @apply text-bark font-body leading-relaxed;
+  }
+
+  .text-body-secondary {
+    @apply text-forest-600 font-body leading-relaxed;
   }
 }

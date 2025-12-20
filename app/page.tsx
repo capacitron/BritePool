@@ -44,7 +44,7 @@ export default function Home() {
 
             {/* Description */}
             <p className="mt-8 text-lg md:text-xl text-earth-brown leading-relaxed max-w-2xl mx-auto">
-              Building sovereign futures through empowered communities. Join us in creating a movement
+              Building Resources Investing Together for Empowerment. Join us in creating a movement
               of collective prosperity and growth.
             </p>
 

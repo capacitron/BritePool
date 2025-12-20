@@ -15,7 +15,7 @@ interface Contract {
 
 export default function ContractReviewPage() {
   const router = useRouter()
-  const { update: updateSession } = useSession()
+  const { data: session, status, update: updateSession } = useSession()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const [contract, setContract] = useState<Contract | null>(null)
@@ -25,6 +25,13 @@ export default function ContractReviewPage() {
   const [isAgreed, setIsAgreed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login')
+    }
+  }, [status, router])
 
   useEffect(() => {
     async function fetchContract() {
@@ -47,8 +54,11 @@ export default function ContractReviewPage() {
       }
     }
 
-    fetchContract()
-  }, [])
+    // Only fetch contract if authenticated
+    if (status === 'authenticated') {
+      fetchContract()
+    }
+  }, [status])
 
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current
@@ -85,6 +95,7 @@ export default function ContractReviewPage() {
       const response = await fetch('/api/contract/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           contractVersionId: contract.id,
           version: contract.version,
@@ -93,13 +104,21 @@ export default function ContractReviewPage() {
 
       if (!response.ok) {
         const data = await response.json()
+        if (response.status === 401) {
+          // Session expired or not authenticated - redirect to login
+          setError('Your session has expired. Redirecting to login...')
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 2000)
+          return
+        }
         setError(data.error || 'Failed to accept agreement. Please try again.')
         return
       }
 
       await updateSession()
       // Redirect to onboarding if not completed, otherwise dashboard
-      const session = await fetch('/api/auth/session').then((res) => res.json())
+      const session = await fetch('/api/auth/session', { credentials: 'include' }).then((res) => res.json())
       if (!session?.user?.onboardingCompleted) {
         router.push('/onboarding')
       } else {
@@ -113,7 +132,8 @@ export default function ContractReviewPage() {
     }
   }
 
-  if (isLoading) {
+  // Show loading state while session or contract is loading
+  if (status === 'loading' || isLoading) {
     return (
       <div className="relative overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Decorative header */}
