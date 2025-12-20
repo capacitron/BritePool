@@ -36,14 +36,13 @@ export default auth((req) => {
   }
 
   // Check covenant acceptance for authenticated users (NOT onboarding - handled by pages)
-  if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
-    const covenantAccepted = req.auth?.user?.covenantAcceptedAt
-    if (!covenantAccepted) {
-      return NextResponse.redirect(new URL('/contract-review', nextUrl))
-    }
-    // Note: Onboarding check removed from middleware - handled by dashboard/pages
-    // This prevents redirect loops when JWT isn't updated yet
-  }
+  // TEMPORARILY DISABLED - Direct page access enabled
+  // if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
+  //   const covenantAccepted = req.auth?.user?.covenantAcceptedAt
+  //   if (!covenantAccepted) {
+  //     return NextResponse.redirect(new URL('/contract-review', nextUrl))
+  //   }
+  // }
 
   return NextResponse.next()
 })

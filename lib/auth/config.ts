@@ -1,8 +1,5 @@
 import type { NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
-import { loginSchema } from '@/lib/validations/auth'
 import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
 
 // Detect if running in production/Replit environment
@@ -53,6 +50,11 @@ export const authConfig: NextAuthConfig = {
       },
       async authorize(credentials) {
         console.log('Auth: authorize called')
+        // Dynamic imports to avoid Edge Runtime issues
+        const { prisma } = await import('@/lib/prisma')
+        const { loginSchema } = await import('@/lib/validations/auth')
+        const bcrypt = await import('bcryptjs')
+
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) {
           console.log('Auth: validation failed')
