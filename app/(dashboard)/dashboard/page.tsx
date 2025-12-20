@@ -23,7 +23,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ onboarding_complete?: string }>
+}) {
   const session = await auth()
 
   if (!session?.user?.id) {
@@ -55,7 +59,11 @@ export default async function DashboardPage() {
   }
 
   // Check if onboarding is completed - redirect if not
-  if (!user.onboardingCompleted) {
+  // Skip check if user just completed onboarding (prevents redirect loop)
+  const params = await searchParams
+  const justCompletedOnboarding = params?.onboarding_complete === 'true'
+
+  if (!user.onboardingCompleted && !justCompletedOnboarding) {
     redirect('/onboarding')
   }
 

@@ -19,7 +19,8 @@
       "Bash(cat:*)",
       "Bash(then grep -E \"^\\(AUTH_SECRET|NEXTAUTH_SECRET|AUTH_URL|NEXTAUTH_URL\\)\" /home/runner/workspace/.env)",
       "Bash(env)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx prisma:*)"
     ],
     "deny": []
   },

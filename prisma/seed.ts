@@ -174,8 +174,7 @@ async function main() {
         subscriptionTier: 'PLATINUM',
         subscriptionStatus: 'ACTIVE',
         covenantAcceptedAt: now,
-        onboardingStep: 4,
-        onboardingComplete: true,
+        onboardingCompleted: true,
         profile: {
           create: {
             bio: 'Platform administrator',
@@ -193,8 +192,7 @@ async function main() {
       where: { id: existingAdmin.id },
       data: {
         covenantAcceptedAt: existingAdmin.covenantAcceptedAt || new Date(),
-        onboardingStep: 4,
-        onboardingComplete: true,
+        onboardingCompleted: true,
       }
     })
     console.log('Admin user exists - ensured covenant accepted and onboarding complete')

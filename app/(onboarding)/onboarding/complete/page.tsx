@@ -23,7 +23,7 @@ const quickStartItems = [
   },
   {
     id: 'committees',
-    href: '/committees',
+    href: '/dashboard/committees',
     icon: (
       <path
         strokeLinecap="round"
@@ -37,7 +37,7 @@ const quickStartItems = [
   },
   {
     id: 'courses',
-    href: '/courses',
+    href: '/dashboard/courses',
     icon: (
       <path
         strokeLinecap="round"
@@ -51,7 +51,7 @@ const quickStartItems = [
   },
   {
     id: 'events',
-    href: '/events',
+    href: '/dashboard/events',
     icon: (
       <path
         strokeLinecap="round"
@@ -129,9 +129,12 @@ export default function CompletePage() {
       // Update session to get fresh data
       await update()
 
-      // Use hard redirect to ensure fresh session is loaded by middleware
+      // Use hard redirect with flag to prevent redirect loop
       const firstSelected = quickStartItems.find((item) => selectedItems.includes(item.id))
-      window.location.href = firstSelected?.href || '/dashboard'
+      const targetPath = firstSelected?.href || '/dashboard'
+      // Add flag to indicate fresh onboarding completion - prevents redirect loop
+      const separator = targetPath.includes('?') ? '&' : '?'
+      window.location.href = `${targetPath}${separator}onboarding_complete=true`
     } catch (error) {
       console.error('Error completing onboarding:', error)
       setIsLoading(false)
