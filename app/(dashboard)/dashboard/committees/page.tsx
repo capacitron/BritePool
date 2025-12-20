@@ -19,11 +19,11 @@ interface Committee {
 }
 
 const committeeTypeColors: Record<string, string> = {
-  GOVERNANCE: 'bg-purple-100 text-purple-800',
-  WEALTH: 'bg-green-100 text-green-800',
-  EDUCATION: 'bg-blue-100 text-blue-800',
-  HEALTH: 'bg-rose-100 text-rose-800',
-  OPERATIONS: 'bg-amber-100 text-amber-800',
+  GOVERNANCE: 'bg-forest-100 text-forest-800',
+  WEALTH: 'bg-earth-100 text-earth-800',
+  EDUCATION: 'bg-sand-200 text-sand-800',
+  HEALTH: 'bg-earth-100 text-earth-700',
+  OPERATIONS: 'bg-sand-100 text-sand-700',
 }
 
 export default function CommitteesPage() {
@@ -84,7 +84,7 @@ export default function CommitteesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-earth-brown" />
+        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
       </div>
     )
   }
@@ -92,47 +92,47 @@ export default function CommitteesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+        <h1 className="text-3xl font-display font-bold text-forest-800">
           Committees
         </h1>
-        <p className="text-earth-brown-light mt-1">
+        <p className="text-forest-500 mt-1 font-body">
           Join committees to participate in community governance and activities
         </p>
       </div>
 
       {committees.length === 0 ? (
-        <Card>
+        <Card className="border-sand-200">
           <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-earth-brown-light mb-4" />
-            <p className="text-earth-brown-light">No committees available yet</p>
+            <Users className="h-12 w-12 mx-auto text-forest-400 mb-4" />
+            <p className="text-forest-500 font-body">No committees available yet</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {committees.map((committee) => (
-            <Card key={committee.id} className="hover:shadow-lg transition-shadow">
+            <Card key={committee.id} className="border-sand-200 hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-2 ${committeeTypeColors[committee.type] || 'bg-gray-100 text-gray-800'}`}>
+                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mb-2 font-body ${committeeTypeColors[committee.type] || 'bg-sand-100 text-sand-800'}`}>
                       {committee.type}
                     </span>
-                    <CardTitle className="text-xl">{committee.name}</CardTitle>
+                    <CardTitle className="text-xl font-display text-forest-800">{committee.name}</CardTitle>
                   </div>
                 </div>
-                <CardDescription className="line-clamp-2">
+                <CardDescription className="line-clamp-2 text-forest-500 font-body">
                   {committee.description || 'No description provided'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 text-sm text-earth-brown-light">
+                <div className="flex items-center gap-4 text-sm text-forest-500 font-body">
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     <span>{committee.memberCount} members</span>
                   </div>
                   {committee.leader && (
                     <div className="flex items-center gap-1">
-                      <Crown className="h-4 w-4 text-amber-500" />
+                      <Crown className="h-4 w-4 text-earth-500" />
                       <span>{committee.leader.name}</span>
                     </div>
                   )}
@@ -146,6 +146,7 @@ export default function CommitteesPage() {
                         size="sm"
                         onClick={() => handleLeave(committee.id)}
                         disabled={actionLoading === committee.id}
+                        className="border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white"
                       >
                         {actionLoading === committee.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -154,7 +155,7 @@ export default function CommitteesPage() {
                         )}
                       </Button>
                       <Link href={`/dashboard/committees/${committee.id}`} className="flex-1">
-                        <Button size="sm" className="w-full">
+                        <Button size="sm" className="w-full bg-forest-600 hover:bg-forest-700 text-white">
                           View Details
                           <ArrowRight className="h-4 w-4 ml-2" />
                         </Button>
@@ -163,7 +164,7 @@ export default function CommitteesPage() {
                   ) : (
                     <Button
                       size="sm"
-                      className="w-full"
+                      className="w-full bg-forest-600 hover:bg-forest-700 text-white"
                       onClick={() => handleJoin(committee.id)}
                       disabled={actionLoading === committee.id}
                     >

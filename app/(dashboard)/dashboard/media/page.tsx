@@ -99,24 +99,24 @@ export default function MediaGalleryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">Media Gallery</h1>
-          <p className="text-earth-brown-light mt-1">Browse and manage media files</p>
+          <h1 className="text-3xl font-display font-bold text-forest-800">Media Gallery</h1>
+          <p className="text-forest-500 mt-1 font-body">Browse and manage media files</p>
         </div>
-        <Button onClick={() => setShowUploadModal(true)}>
+        <Button onClick={() => setShowUploadModal(true)} className="bg-forest-600 hover:bg-forest-700 text-white">
           <Upload className="h-4 w-4 mr-2" />
           Upload Media
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <Filter className="h-5 w-5 text-forest-600" />
               Filters
             </CardTitle>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-forest-600 hover:text-forest-700">
                 <X className="h-4 w-4 mr-1" />
                 Clear Filters
               </Button>
@@ -126,7 +126,7 @@ export default function MediaGalleryPage() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <h4 className="text-sm font-medium mb-2">Media Type</h4>
+              <h4 className="text-sm font-medium mb-2 font-body text-forest-700">Media Type</h4>
               <div className="flex flex-wrap gap-2">
                 {MEDIA_TYPES.map((type) => {
                   const Icon = type.icon
@@ -136,6 +136,7 @@ export default function MediaGalleryPage() {
                       variant={selectedType === type.value ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedType(selectedType === type.value ? null : type.value)}
+                      className={selectedType === type.value ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
                     >
                       <Icon className="h-4 w-4 mr-1" />
                       {type.label}
@@ -146,7 +147,7 @@ export default function MediaGalleryPage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-medium mb-2">Category</h4>
+              <h4 className="text-sm font-medium mb-2 font-body text-forest-700">Category</h4>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
                   <Button
@@ -154,6 +155,7 @@ export default function MediaGalleryPage() {
                     variant={selectedCategory === cat.value ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedCategory(selectedCategory === cat.value ? null : cat.value)}
+                    className={selectedCategory === cat.value ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
                   >
                     {cat.label}
                   </Button>
@@ -163,7 +165,7 @@ export default function MediaGalleryPage() {
 
             {allTags.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium mb-2">Tags</h4>
+                <h4 className="text-sm font-medium mb-2 font-body text-forest-700">Tags</h4>
                 <div className="flex flex-wrap gap-2">
                   {allTags.map((tag) => (
                     <Button
@@ -171,6 +173,7 @@ export default function MediaGalleryPage() {
                       variant={selectedTag === tag ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                      className={selectedTag === tag ? 'bg-earth-500 hover:bg-earth-600 text-white' : 'border-earth-400 text-earth-600 hover:bg-earth-50'}
                     >
                       #{tag}
                     </Button>
@@ -184,20 +187,20 @@ export default function MediaGalleryPage() {
 
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-earth-brown-light">Loading media...</p>
+          <p className="text-forest-500 font-body">Loading media...</p>
         </div>
       ) : mediaItems.length === 0 ? (
-        <Card>
+        <Card className="border-sand-200">
           <CardContent className="py-12 text-center">
-            <Image className="h-12 w-12 mx-auto text-earth-brown-light mb-4" />
-            <h3 className="text-lg font-medium text-earth-brown-dark mb-2">No media found</h3>
-            <p className="text-earth-brown-light mb-4">
+            <Image className="h-12 w-12 mx-auto text-forest-400 mb-4" />
+            <h3 className="text-lg font-medium font-display text-forest-800 mb-2">No media found</h3>
+            <p className="text-forest-500 mb-4 font-body">
               {hasActiveFilters
                 ? 'No media items match your filters. Try adjusting your selection.'
                 : 'Start by uploading your first media item.'}
             </p>
             {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
+              <Button variant="outline" onClick={clearFilters} className="border-forest-600 text-forest-700 hover:bg-forest-50">
                 Clear Filters
               </Button>
             )}
@@ -207,8 +210,8 @@ export default function MediaGalleryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {mediaItems.map((item) => (
             <Link key={item.id} href={`/dashboard/media/${item.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-                <div className="aspect-square relative bg-stone-warm">
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-sand-200">
+                <div className="aspect-square relative bg-sand-100">
                   <img
                     src={item.thumbnailUrl}
                     alt={item.filename}
@@ -219,25 +222,25 @@ export default function MediaGalleryPage() {
                       <Play className="h-12 w-12 text-white" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                  <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center gap-1 font-body">
                     {getTypeIcon(item.type)}
                     {item.type.replace('_', ' ')}
                   </div>
                 </div>
                 <CardContent className="p-3">
-                  <p className="text-sm font-medium text-earth-brown-dark truncate">{item.filename}</p>
-                  <p className="text-xs text-earth-brown-light mt-1">
+                  <p className="text-sm font-medium font-display text-forest-800 truncate">{item.filename}</p>
+                  <p className="text-xs text-forest-500 mt-1 font-body">
                     {item.category.replace('_', ' ')} • {formatFileSize(item.filesize)}
                   </p>
                   {item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {item.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="text-xs bg-stone-warm px-2 py-0.5 rounded">
+                        <span key={tag} className="text-xs bg-sand-100 px-2 py-0.5 rounded text-forest-600 font-body">
                           #{tag}
                         </span>
                       ))}
                       {item.tags.length > 3 && (
-                        <span className="text-xs text-earth-brown-light">+{item.tags.length - 3}</span>
+                        <span className="text-xs text-forest-500 font-body">+{item.tags.length - 3}</span>
                       )}
                     </div>
                   )}
@@ -305,11 +308,11 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto border-sand-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Upload Media</CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <CardTitle className="font-display text-forest-800">Upload Media</CardTitle>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-forest-600 hover:text-forest-700">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -317,15 +320,15 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>
+              <div className="bg-red-50 text-red-600 p-3 rounded text-sm font-body">{error}</div>
             )}
 
             <div>
-              <label className="block text-sm font-medium mb-1">Media URL *</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Media URL *</label>
               <input
                 type="url"
                 required
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="https://example.com/image.jpg"
                 value={formData.url}
                 onChange={(e) => setFormData({ ...formData, url: e.target.value })}
@@ -333,11 +336,11 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Thumbnail URL *</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Thumbnail URL *</label>
               <input
                 type="url"
                 required
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="https://example.com/thumbnail.jpg"
                 value={formData.thumbnailUrl}
                 onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
@@ -345,11 +348,11 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Filename *</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Filename *</label>
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="my-photo.jpg"
                 value={formData.filename}
                 onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
@@ -358,10 +361,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Type *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Type *</label>
                 <select
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as typeof formData.type })}
                 >
@@ -372,10 +375,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Category *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Category *</label>
                 <select
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value as typeof formData.category })}
                 >
@@ -387,10 +390,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Tags (comma-separated)</label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="nature, landscape, sunset"
                 value={formData.tags}
                 onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
@@ -398,10 +401,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1 border-forest-600 text-forest-700 hover:bg-forest-50">
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting} className="flex-1">
+              <Button type="submit" disabled={submitting} className="flex-1 bg-forest-600 hover:bg-forest-700 text-white">
                 {submitting ? 'Uploading...' : 'Upload'}
               </Button>
             </div>

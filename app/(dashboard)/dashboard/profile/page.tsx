@@ -14,7 +14,6 @@ import {
   Phone,
   MapPin,
   Clock,
-  Globe,
   Lock,
   Bell,
   Save,
@@ -169,16 +168,16 @@ export default function ProfilePage() {
 
   function getRoleBadgeStyles(role: string): string {
     const styles: Record<string, string> = {
-      WEB_STEWARD: 'bg-purple-100 text-purple-800 border-purple-200',
-      BOARD_CHAIR: 'bg-amber-100 text-amber-800 border-amber-200',
-      COMMITTEE_LEADER: 'bg-blue-100 text-blue-800 border-blue-200',
-      CONTENT_MODERATOR: 'bg-teal-100 text-teal-800 border-teal-200',
-      SUPPORT_STAFF: 'bg-gray-100 text-gray-800 border-gray-200',
-      STEWARD: 'bg-green-100 text-green-800 border-green-200',
-      PARTNER: 'bg-orange-100 text-orange-800 border-orange-200',
-      RESIDENT: 'bg-stone-100 text-stone-800 border-stone-200',
+      WEB_STEWARD: 'bg-earth-100 text-earth-700 border-earth-300',
+      BOARD_CHAIR: 'bg-sand-200 text-sand-800 border-sand-400',
+      COMMITTEE_LEADER: 'bg-forest-100 text-forest-700 border-forest-300',
+      CONTENT_MODERATOR: 'bg-forest-50 text-forest-600 border-forest-200',
+      SUPPORT_STAFF: 'bg-sand-100 text-sand-700 border-sand-300',
+      STEWARD: 'bg-forest-100 text-forest-800 border-forest-300',
+      PARTNER: 'bg-earth-50 text-earth-600 border-earth-200',
+      RESIDENT: 'bg-sand-50 text-sand-600 border-sand-200',
     }
-    return styles[role] || 'bg-gray-100 text-gray-800'
+    return styles[role] || 'bg-sand-100 text-sand-700'
   }
 
   function getInitials(name: string): string {
@@ -193,7 +192,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-earth-brown" />
+        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
       </div>
     )
   }
@@ -201,7 +200,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="text-center py-12">
-        <p className="text-earth-brown-light">Failed to load profile</p>
+        <p className="text-forest-500 font-body">Failed to load profile</p>
       </div>
     )
   }
@@ -209,35 +208,35 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">Profile Settings</h1>
-        <p className="text-earth-brown-light mt-1">Manage your account information and preferences</p>
+        <h1 className="text-3xl font-display font-bold text-forest-800">Profile Settings</h1>
+        <p className="text-forest-500 mt-1 font-body">Manage your account information and preferences</p>
       </div>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
           <div className="flex items-center gap-6">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="bg-earth-brown text-white text-2xl">
+              <AvatarFallback className="bg-forest-600 text-white text-2xl font-display">
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-2xl font-serif font-bold text-earth-brown-dark">{profile.name}</h2>
+              <h2 className="text-2xl font-display font-bold text-forest-800">{profile.name}</h2>
               <div className="flex items-center gap-3 mt-2">
                 <span
                   className={cn(
-                    'px-3 py-1 rounded-full text-xs font-medium border',
+                    'px-3 py-1 rounded-full text-xs font-medium border font-body',
                     getRoleBadgeStyles(profile.role)
                   )}
                 >
                   {profile.role.replace(/_/g, ' ')}
                 </span>
-                <span className="text-sm text-earth-brown-light flex items-center gap-1">
+                <span className="text-sm text-forest-500 flex items-center gap-1 font-body">
                   <Mail className="h-4 w-4" />
                   {profile.email}
                 </span>
               </div>
-              <p className="text-xs text-earth-brown-light mt-2">
+              <p className="text-xs text-forest-400 mt-2 font-body">
                 Member since {formatDate(profile.createdAt)}
                 {profile.lastLoginAt && ` • Last login ${formatDate(profile.lastLoginAt)}`}
               </p>
@@ -246,21 +245,21 @@ export default function ProfilePage() {
         </CardHeader>
       </Card>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-sage" />
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <User className="h-5 w-5 text-forest-500" />
             Profile Information
           </CardTitle>
-          <CardDescription>Update your personal information</CardDescription>
+          <CardDescription className="text-forest-500 font-body">Update your personal information</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveProfile} className="space-y-4">
             {message && (
               <div
                 className={cn(
-                  'flex items-center gap-2 p-3 rounded-lg text-sm',
-                  message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  'flex items-center gap-2 p-3 rounded-lg text-sm font-body',
+                  message.type === 'success' ? 'bg-forest-50 text-forest-700' : 'bg-earth-50 text-earth-700'
                 )}
               >
                 {message.type === 'success' ? (
@@ -274,22 +273,23 @@ export default function ProfilePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className="text-forest-700 font-body">Full Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Your full name"
+                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-forest-700 font-body">Phone Number</Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-brown-light" />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <Input
                     id="phone"
-                    className="pl-10"
+                    className="pl-10 border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+1 (555) 000-0000"
@@ -298,12 +298,12 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location" className="text-forest-700 font-body">Location</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-brown-light" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <Input
                     id="location"
-                    className="pl-10"
+                    className="pl-10 border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="City, Country"
@@ -312,12 +312,12 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
+                <Label htmlFor="timezone" className="text-forest-700 font-body">Timezone</Label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-brown-light" />
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <select
                     id="timezone"
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-stone bg-white text-earth-dark focus:outline-none focus:ring-2 focus:ring-earth-brown"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-sand-300 bg-white text-forest-700 focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
                     value={formData.timezone}
                     onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
                   >
@@ -332,19 +332,19 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio" className="text-forest-700 font-body">Bio</Label>
               <textarea
                 id="bio"
-                className="w-full px-4 py-2 rounded-lg border border-stone bg-white text-earth-dark focus:outline-none focus:ring-2 focus:ring-earth-brown min-h-[100px]"
+                className="w-full px-4 py-2 rounded-lg border border-sand-300 bg-white text-forest-700 focus:outline-none focus:ring-2 focus:ring-forest-500 min-h-[100px] font-body"
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 placeholder="Tell us about yourself..."
                 maxLength={500}
               />
-              <p className="text-xs text-earth-brown-light">{formData.bio.length}/500 characters</p>
+              <p className="text-xs text-forest-400 font-body">{formData.bio.length}/500 characters</p>
             </div>
 
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="bg-forest-600 hover:bg-forest-700 text-white">
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -361,21 +361,21 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5 text-terracotta" />
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <Lock className="h-5 w-5 text-earth-500" />
             Change Password
           </CardTitle>
-          <CardDescription>Update your password to keep your account secure</CardDescription>
+          <CardDescription className="text-forest-500 font-body">Update your password to keep your account secure</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
             {passwordMessage && (
               <div
                 className={cn(
-                  'flex items-center gap-2 p-3 rounded-lg text-sm',
-                  passwordMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  'flex items-center gap-2 p-3 rounded-lg text-sm font-body',
+                  passwordMessage.type === 'success' ? 'bg-forest-50 text-forest-700' : 'bg-earth-50 text-earth-700'
                 )}
               >
                 {passwordMessage.type === 'success' ? (
@@ -389,44 +389,47 @@ export default function ProfilePage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
+                <Label htmlFor="currentPassword" className="text-forest-700 font-body">Current Password</Label>
                 <Input
                   id="currentPassword"
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                   placeholder="••••••••"
+                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword" className="text-forest-700 font-body">New Password</Label>
                 <Input
                   id="newPassword"
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                   placeholder="••••••••"
+                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword" className="text-forest-700 font-body">Confirm New Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                   placeholder="••••••••"
+                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
                 />
               </div>
             </div>
 
-            <p className="text-xs text-earth-brown-light">
+            <p className="text-xs text-forest-400 font-body">
               Password must be at least 8 characters long
             </p>
 
-            <Button type="submit" variant="outline" disabled={changingPassword}>
+            <Button type="submit" variant="outline" disabled={changingPassword} className="border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white">
               {changingPassword ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -443,57 +446,57 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-sky-soft" />
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <Bell className="h-5 w-5 text-sand-600" />
             Notification Preferences
           </CardTitle>
-          <CardDescription>Manage how you receive notifications</CardDescription>
+          <CardDescription className="text-forest-500 font-body">Manage how you receive notifications</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-earth-dark">Email Notifications</p>
-                <p className="text-sm text-earth-brown-light">Receive updates about events and announcements</p>
+                <p className="font-medium text-forest-700 font-body">Email Notifications</p>
+                <p className="text-sm text-forest-500 font-body">Receive updates about events and announcements</p>
               </div>
               <input
                 type="checkbox"
                 defaultChecked
-                className="h-4 w-4 rounded border-stone text-earth-brown focus:ring-earth-brown"
+                className="h-4 w-4 rounded border-sand-300 text-forest-600 focus:ring-forest-500"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-earth-dark">Task Reminders</p>
-                <p className="text-sm text-earth-brown-light">Get notified about upcoming task deadlines</p>
+                <p className="font-medium text-forest-700 font-body">Task Reminders</p>
+                <p className="text-sm text-forest-500 font-body">Get notified about upcoming task deadlines</p>
               </div>
               <input
                 type="checkbox"
                 defaultChecked
-                className="h-4 w-4 rounded border-stone text-earth-brown focus:ring-earth-brown"
+                className="h-4 w-4 rounded border-sand-300 text-forest-600 focus:ring-forest-500"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-earth-dark">Committee Updates</p>
-                <p className="text-sm text-earth-brown-light">Notifications about your committee activities</p>
+                <p className="font-medium text-forest-700 font-body">Committee Updates</p>
+                <p className="text-sm text-forest-500 font-body">Notifications about your committee activities</p>
               </div>
               <input
                 type="checkbox"
                 defaultChecked
-                className="h-4 w-4 rounded border-stone text-earth-brown focus:ring-earth-brown"
+                className="h-4 w-4 rounded border-sand-300 text-forest-600 focus:ring-forest-500"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-earth-dark">Weekly Digest</p>
-                <p className="text-sm text-earth-brown-light">Summary of community activities</p>
+                <p className="font-medium text-forest-700 font-body">Weekly Digest</p>
+                <p className="text-sm text-forest-500 font-body">Summary of community activities</p>
               </div>
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-stone text-earth-brown focus:ring-earth-brown"
+                className="h-4 w-4 rounded border-sand-300 text-forest-600 focus:ring-forest-500"
               />
             </div>
           </div>

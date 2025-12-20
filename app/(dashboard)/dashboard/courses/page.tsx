@@ -53,7 +53,7 @@ export default function CoursesPage() {
       if (activeTab === 'my') {
         params.append('enrolled', 'true')
       }
-      
+
       const response = await fetch(`/api/courses?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
@@ -66,7 +66,7 @@ export default function CoursesPage() {
     }
   }
 
-  const displayedCourses = activeTab === 'my' 
+  const displayedCourses = activeTab === 'my'
     ? courses.filter(c => c.isEnrolled)
     : courses
 
@@ -74,10 +74,10 @@ export default function CoursesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+          <h1 className="text-3xl font-display font-bold text-forest-800">
             Learning Center
           </h1>
-          <p className="text-earth-brown-light mt-1">
+          <p className="text-forest-500 mt-1 font-body">
             Expand your knowledge with our curated courses
           </p>
         </div>
@@ -88,6 +88,7 @@ export default function CoursesPage() {
           <Button
             variant={activeTab === 'browse' ? 'default' : 'outline'}
             onClick={() => setActiveTab('browse')}
+            className={activeTab === 'browse' ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Browse Courses
@@ -95,6 +96,7 @@ export default function CoursesPage() {
           <Button
             variant={activeTab === 'my' ? 'default' : 'outline'}
             onClick={() => setActiveTab('my')}
+            className={activeTab === 'my' ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
           >
             <User className="h-4 w-4 mr-2" />
             My Courses
@@ -102,11 +104,11 @@ export default function CoursesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-earth-brown-light" />
+          <Filter className="h-4 w-4 text-forest-500" />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="border border-stone rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-earth-brown"
+            className="border border-sand-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat.value} value={cat.value}>
@@ -120,29 +122,29 @@ export default function CoursesPage() {
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-40 bg-stone-warm rounded-t-xl" />
+            <Card key={i} className="animate-pulse border-sand-200">
+              <div className="h-40 bg-sand-100 rounded-t-xl" />
               <CardHeader>
-                <div className="h-6 bg-stone-warm rounded w-3/4" />
-                <div className="h-4 bg-stone-warm rounded w-1/2 mt-2" />
+                <div className="h-6 bg-sand-100 rounded w-3/4" />
+                <div className="h-4 bg-sand-100 rounded w-1/2 mt-2" />
               </CardHeader>
             </Card>
           ))}
         </div>
       ) : displayedCourses.length === 0 ? (
-        <Card className="p-12 text-center">
-          <BookOpen className="h-12 w-12 mx-auto text-earth-brown-light mb-4" />
-          <h3 className="text-lg font-medium text-earth-brown-dark">
+        <Card className="p-12 text-center border-sand-200">
+          <BookOpen className="h-12 w-12 mx-auto text-forest-400 mb-4" />
+          <h3 className="text-lg font-medium font-display text-forest-800">
             {activeTab === 'my' ? 'No enrolled courses yet' : 'No courses found'}
           </h3>
-          <p className="text-earth-brown-light mt-1">
-            {activeTab === 'my' 
+          <p className="text-forest-500 mt-1 font-body">
+            {activeTab === 'my'
               ? 'Browse our catalog to find courses that interest you'
               : 'Check back soon for new courses'
             }
           </p>
           {activeTab === 'my' && (
-            <Button className="mt-4" onClick={() => setActiveTab('browse')}>
+            <Button className="mt-4 bg-forest-600 hover:bg-forest-700 text-white" onClick={() => setActiveTab('browse')}>
               Browse Courses
             </Button>
           )}
@@ -151,10 +153,10 @@ export default function CoursesPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedCourses.map((course) => (
             <Link key={course.id} href={`/dashboard/courses/${course.id}`}>
-              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
-                <div 
-                  className="h-40 bg-gradient-to-br from-earth-brown to-earth-brown-dark flex items-center justify-center"
-                  style={course.thumbnail ? { 
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border-sand-200">
+                <div
+                  className="h-40 bg-gradient-to-br from-forest-600 to-forest-800 flex items-center justify-center"
+                  style={course.thumbnail ? {
                     backgroundImage: `url(${course.thumbnail})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
@@ -166,24 +168,24 @@ export default function CoursesPage() {
                 </div>
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-2 py-1 bg-stone-warm rounded-full text-earth-brown-dark capitalize">
+                    <span className="text-xs px-2 py-1 bg-sand-100 rounded-full text-forest-700 capitalize font-body">
                       {course.category.toLowerCase()}
                     </span>
                     {course.isEnrolled && (
-                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                      <span className="text-xs px-2 py-1 bg-forest-100 text-forest-700 rounded-full font-body">
                         Enrolled
                       </span>
                     )}
                   </div>
-                  <CardTitle className="text-lg line-clamp-2">
+                  <CardTitle className="text-lg line-clamp-2 font-display text-forest-800">
                     {course.title}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-2 text-forest-500 font-body">
                     {course.description || 'No description available'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-earth-brown-light">
+                  <div className="flex items-center gap-4 text-sm text-forest-500 font-body">
                     <div className="flex items-center gap-1">
                       <User className="h-4 w-4" />
                       {course.createdBy.name}
@@ -193,18 +195,18 @@ export default function CoursesPage() {
                       {course.lessonCount} lessons
                     </div>
                   </div>
-                  
+
                   {course.userProgress && (
                     <div className="mt-4">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-earth-brown-light">Progress</span>
-                        <span className="font-medium text-earth-brown-dark">
+                      <div className="flex justify-between text-xs mb-1 font-body">
+                        <span className="text-forest-500">Progress</span>
+                        <span className="font-medium text-forest-800">
                           {Math.round(course.userProgress.progress)}%
                         </span>
                       </div>
-                      <div className="h-2 bg-stone-warm rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-earth-brown rounded-full transition-all"
+                      <div className="h-2 bg-sand-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-forest-600 rounded-full transition-all"
                           style={{ width: `${course.userProgress.progress}%` }}
                         />
                       </div>

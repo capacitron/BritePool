@@ -20,32 +20,32 @@ export default function OnboardingLayout({
   const progress = currentStepIndex >= 0 ? ((currentStepIndex + 1) / steps.length) * 100 : 25
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-earth-light via-stone-warm to-earth-light">
-      <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-earth-brown-light/20 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-sand-100 via-cream to-forest-50">
+      <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-sand-200 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-serif font-bold text-earth-brown-dark">
+              <h1 className="text-2xl font-display font-bold text-forest-900">
                 BRITE POOL
               </h1>
-              <p className="text-sm text-earth-brown-light">
+              <p className="text-sm text-forest-600 font-body">
                 Ministerium of Empowerment
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium text-earth-brown">
+              <p className="text-sm font-medium text-forest-700 font-body">
                 Step {currentStepIndex + 1} of {steps.length}
               </p>
-              <p className="text-xs text-earth-brown-light">
+              <p className="text-xs text-forest-500 font-body">
                 {steps[currentStepIndex]?.name || 'Getting Started'}
               </p>
             </div>
           </div>
 
           <div className="relative">
-            <div className="h-2 bg-earth-brown-light/20 rounded-full overflow-hidden">
+            <div className="h-2 bg-sand-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-earth-gold to-earth-gold-dark transition-all duration-500 ease-out rounded-full"
+                className="h-full bg-gradient-to-r from-forest-500 to-forest-600 transition-all duration-500 ease-out rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -54,19 +54,19 @@ export default function OnboardingLayout({
                 <div
                   key={step.id}
                   className={`flex flex-col items-center ${
-                    index <= currentStepIndex ? 'text-earth-gold-dark' : 'text-earth-brown-light'
+                    index <= currentStepIndex ? 'text-forest-600' : 'text-forest-300'
                   }`}
                 >
                   <div
                     className={`w-3 h-3 rounded-full border-2 ${
                       index < currentStepIndex
-                        ? 'bg-earth-gold border-earth-gold'
+                        ? 'bg-forest-600 border-forest-600'
                         : index === currentStepIndex
-                        ? 'bg-white border-earth-gold'
-                        : 'bg-white border-earth-brown-light/40'
+                        ? 'bg-white border-forest-600'
+                        : 'bg-white border-sand-300'
                     }`}
                   />
-                  <span className="text-xs mt-1 hidden sm:block">{step.name}</span>
+                  <span className="text-xs mt-1 hidden sm:block font-body">{step.name}</span>
                 </div>
               ))}
             </div>

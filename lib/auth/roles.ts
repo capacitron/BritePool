@@ -33,16 +33,16 @@ export function canManageCommittees(role: UserRole): boolean {
 
 export function getRoleBadgeStyles(role: UserRole): string {
   const styles: Record<UserRole, string> = {
-    WEB_STEWARD: 'bg-purple-100 text-purple-800 border-purple-200',
-    BOARD_CHAIR: 'bg-amber-100 text-amber-800 border-amber-200',
-    COMMITTEE_LEADER: 'bg-blue-100 text-blue-800 border-blue-200',
-    CONTENT_MODERATOR: 'bg-teal-100 text-teal-800 border-teal-200',
-    SUPPORT_STAFF: 'bg-gray-100 text-gray-800 border-gray-200',
-    STEWARD: 'bg-green-100 text-green-800 border-green-200',
-    PARTNER: 'bg-orange-100 text-orange-800 border-orange-200',
-    RESIDENT: 'bg-stone-100 text-stone-800 border-stone-200',
+    WEB_STEWARD: 'bg-earth-100 text-earth-700 border-earth-300',
+    BOARD_CHAIR: 'bg-sand-200 text-sand-800 border-sand-400',
+    COMMITTEE_LEADER: 'bg-forest-100 text-forest-700 border-forest-300',
+    CONTENT_MODERATOR: 'bg-forest-50 text-forest-600 border-forest-200',
+    SUPPORT_STAFF: 'bg-sand-100 text-sand-700 border-sand-300',
+    STEWARD: 'bg-forest-100 text-forest-800 border-forest-300',
+    PARTNER: 'bg-earth-50 text-earth-600 border-earth-200',
+    RESIDENT: 'bg-sand-50 text-sand-600 border-sand-200',
   }
-  return styles[role] || 'bg-gray-100 text-gray-800'
+  return styles[role] || 'bg-sand-100 text-sand-700 border-sand-200'
 }
 
 export function getRoleDisplayName(role: UserRole): string {

@@ -85,7 +85,7 @@ export default function CompletePage() {
 
   useEffect(() => {
     // Generate confetti only on client side to avoid hydration mismatch
-    const colors = ['#C9A227', '#6B5638', '#87A878', '#D4A574', '#8B7355']
+    const colors = ['#ea8f6f', '#324c3a', '#4f7658', '#d0a46d', '#6f9379']
     const particles: ConfettiData[] = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
       delay: i * 50,
@@ -158,11 +158,11 @@ export default function CompletePage() {
         </div>
       )}
 
-      <Card className="border-earth-brown-light/20 shadow-lg text-center overflow-hidden">
+      <Card className="border-sand-200 shadow-lg text-center overflow-hidden">
         <CardHeader className="pb-4 relative">
           {/* Animated success icon */}
           <div
-            className={`mx-auto mb-4 w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center transition-all duration-500 ${
+            className={`mx-auto mb-4 w-24 h-24 bg-gradient-to-br from-forest-400 to-forest-600 rounded-full flex items-center justify-center transition-all duration-500 ${
               celebrationStep >= 1 ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
             }`}
           >
@@ -185,7 +185,7 @@ export default function CompletePage() {
           </div>
 
           <CardTitle
-            className={`text-3xl font-serif text-earth-brown-dark transition-all duration-500 ${
+            className={`text-3xl font-display text-forest-800 transition-all duration-500 ${
               celebrationStep >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
@@ -197,11 +197,11 @@ export default function CompletePage() {
             celebrationStep >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          <p className="text-lg text-earth-brown mb-6">
+          <p className="text-lg text-forest-700 mb-6 font-body">
             Welcome to the BRITE POOL community! Your profile is set up and you&apos;re ready to
             start your journey.
           </p>
-          <div className="inline-flex items-center gap-2 bg-earth-gold/10 text-earth-gold-dark px-4 py-2 rounded-full text-sm font-medium animate-pulse">
+          <div className="inline-flex items-center gap-2 bg-earth-100 text-earth-700 px-4 py-2 rounded-full text-sm font-medium animate-pulse font-body">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -215,19 +215,19 @@ export default function CompletePage() {
         </CardContent>
       </Card>
 
-      <Card className="border-earth-brown-light/20">
+      <Card className="border-sand-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-serif text-earth-brown-dark">
+            <CardTitle className="text-xl font-display text-forest-800">
               What would you like to explore first?
             </CardTitle>
             {selectedItems.length > 0 && (
-              <span className="text-sm text-earth-gold-dark font-medium">
+              <span className="text-sm text-earth-600 font-medium font-body">
                 {selectedItems.length} selected
               </span>
             )}
           </div>
-          <p className="text-sm text-earth-brown-light mt-1">
+          <p className="text-sm text-forest-500 mt-1 font-body">
             Select the areas you&apos;d like to explore (optional)
           </p>
         </CardHeader>
@@ -241,8 +241,8 @@ export default function CompletePage() {
                   onClick={() => toggleItem(item.id)}
                   className={`flex items-start gap-4 p-4 rounded-lg text-left transition-all duration-200 border-2 ${
                     isSelected
-                      ? 'border-earth-gold bg-earth-gold/10 shadow-md'
-                      : 'border-transparent bg-earth-brown-light/5 hover:bg-earth-brown-light/10 hover:border-earth-gold/30'
+                      ? 'border-earth-400 bg-earth-50 shadow-md'
+                      : 'border-transparent bg-sand-50 hover:bg-sand-100 hover:border-earth-200'
                   }`}
                   style={{
                     animationDelay: `${index * 100}ms`,
@@ -251,8 +251,8 @@ export default function CompletePage() {
                   <div
                     className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-200 ${
                       isSelected
-                        ? 'bg-earth-gold text-white'
-                        : 'bg-earth-gold/10 text-earth-gold-dark'
+                        ? 'bg-earth-500 text-white'
+                        : 'bg-earth-100 text-earth-600'
                     }`}
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,15 +262,15 @@ export default function CompletePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h4
-                        className={`font-medium ${
-                          isSelected ? 'text-earth-brown-dark' : 'text-earth-brown-dark'
+                        className={`font-medium font-body ${
+                          isSelected ? 'text-forest-800' : 'text-forest-800'
                         }`}
                       >
                         {item.title}
                       </h4>
                       {isSelected && (
                         <svg
-                          className="w-5 h-5 text-earth-gold"
+                          className="w-5 h-5 text-earth-500"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -282,7 +282,7 @@ export default function CompletePage() {
                         </svg>
                       )}
                     </div>
-                    <p className="text-sm text-earth-brown-light mt-1">{item.description}</p>
+                    <p className="text-sm text-forest-500 mt-1 font-body">{item.description}</p>
                   </div>
                 </button>
               )
@@ -296,7 +296,7 @@ export default function CompletePage() {
           <Button
             variant="outline"
             onClick={() => setSelectedItems([])}
-            className="border-earth-brown-dark border-2 text-earth-brown-dark hover:bg-earth-brown-dark hover:text-white font-semibold"
+            className="border-forest-600 border-2 text-forest-700 hover:bg-forest-600 hover:text-white font-semibold"
           >
             Clear selection
           </Button>
@@ -305,7 +305,7 @@ export default function CompletePage() {
           onClick={handleComplete}
           disabled={isLoading}
           size="lg"
-          className="bg-earth-brown-dark hover:bg-earth-brown text-white px-12 py-4 text-lg font-semibold shadow-lg transition-all duration-300 hover:scale-105"
+          className="bg-forest-600 hover:bg-forest-700 text-white px-12 py-4 text-lg font-semibold shadow-lg transition-all duration-300 hover:scale-105"
         >
           {isLoading ? (
             <>

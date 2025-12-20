@@ -164,6 +164,7 @@ async function main() {
 
   if (!existingAdmin) {
     const passwordHash = await bcrypt.hash('Admin123!', 12)
+    const now = new Date()
     await prisma.user.create({
       data: {
         name: 'Web Steward',
@@ -172,18 +173,31 @@ async function main() {
         role: 'WEB_STEWARD',
         subscriptionTier: 'PLATINUM',
         subscriptionStatus: 'ACTIVE',
+        covenantAcceptedAt: now,
+        onboardingStep: 4,
+        onboardingComplete: true,
         profile: {
           create: {
             bio: 'Platform administrator',
-            totalEquityUnits: 0,
-            totalHoursLogged: 0,
+            totalEquityUnits: 100,
+            totalHoursLogged: 50,
           }
         }
       }
     })
     console.log('Created admin user: admin@britepool.org / Admin123!')
+    console.log('Admin has covenant pre-accepted and onboarding completed for demo purposes')
   } else {
-    console.log('Admin user already exists, skipping...')
+    // Update existing admin to ensure covenant is accepted for demo
+    await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: {
+        covenantAcceptedAt: existingAdmin.covenantAcceptedAt || new Date(),
+        onboardingStep: 4,
+        onboardingComplete: true,
+      }
+    })
+    console.log('Admin user exists - ensured covenant accepted and onboarding complete')
   }
 
   const committees = [

@@ -95,11 +95,11 @@ export default function MapPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PLANNED': return 'bg-blue-100 text-blue-800'
-      case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800'
-      case 'COMPLETED': return 'bg-green-100 text-green-800'
-      case 'OPERATIONAL': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'PLANNED': return 'bg-sand-200 text-sand-800'
+      case 'IN_PROGRESS': return 'bg-earth-100 text-earth-800'
+      case 'COMPLETED': return 'bg-forest-100 text-forest-800'
+      case 'OPERATIONAL': return 'bg-forest-200 text-forest-900'
+      default: return 'bg-sand-100 text-sand-700'
     }
   }
 
@@ -107,23 +107,23 @@ export default function MapPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">Interactive Map</h1>
-          <p className="text-earth-brown-light mt-1">Explore sanctuary locations and points of interest</p>
+          <h1 className="text-3xl font-display font-bold text-forest-800">Interactive Map</h1>
+          <p className="text-forest-500 mt-1 font-body">Explore sanctuary locations and points of interest</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setShowAddModal(true)}>
+          <Button onClick={() => setShowAddModal(true)} className="bg-forest-600 hover:bg-forest-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
             Add Location
           </Button>
         )}
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-earth-brown/10 to-stone-warm aspect-video flex items-center justify-center relative">
+      <Card className="overflow-hidden border-sand-200">
+        <div className="bg-gradient-to-br from-forest-100 to-sand-100 aspect-video flex items-center justify-center relative">
           <div className="text-center">
-            <Map className="h-16 w-16 mx-auto text-earth-brown-light mb-4" />
-            <h3 className="text-lg font-medium text-earth-brown-dark">Interactive Map Area</h3>
-            <p className="text-earth-brown-light text-sm mt-1">
+            <Map className="h-16 w-16 mx-auto text-forest-400 mb-4" />
+            <h3 className="text-lg font-medium font-display text-forest-800">Interactive Map Area</h3>
+            <p className="text-forest-500 text-sm mt-1 font-body">
               Map integration coming soon. Locations are listed below.
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function MapPage() {
             {locations.slice(0, 5).map((loc, idx) => (
               <div
                 key={loc.id}
-                className="w-8 h-8 bg-earth-brown text-white rounded-full flex items-center justify-center text-xs font-medium shadow-lg"
+                className="w-8 h-8 bg-forest-600 text-white rounded-full flex items-center justify-center text-xs font-medium shadow-lg font-body"
                 title={loc.name}
                 style={{
                   transform: `translateX(${idx * -10}px)`,
@@ -141,7 +141,7 @@ export default function MapPage() {
               </div>
             ))}
             {locations.length > 5 && (
-              <div className="w-8 h-8 bg-stone text-earth-dark rounded-full flex items-center justify-center text-xs font-medium shadow-lg">
+              <div className="w-8 h-8 bg-sand-300 text-forest-700 rounded-full flex items-center justify-center text-xs font-medium shadow-lg font-body">
                 +{locations.length - 5}
               </div>
             )}
@@ -149,15 +149,15 @@ export default function MapPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <Filter className="h-5 w-5 text-forest-600" />
               Filters
             </CardTitle>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-forest-600 hover:text-forest-700">
                 <X className="h-4 w-4 mr-1" />
                 Clear Filters
               </Button>
@@ -167,7 +167,7 @@ export default function MapPage() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <h4 className="text-sm font-medium mb-2">Location Type</h4>
+              <h4 className="text-sm font-medium mb-2 font-body text-forest-700">Location Type</h4>
               <div className="flex flex-wrap gap-2">
                 {LOCATION_TYPES.map((type) => {
                   const Icon = type.icon
@@ -177,6 +177,7 @@ export default function MapPage() {
                       variant={selectedType === type.value ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedType(selectedType === type.value ? null : type.value)}
+                      className={selectedType === type.value ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
                     >
                       <Icon className="h-4 w-4 mr-1" />
                       {type.label}
@@ -187,7 +188,7 @@ export default function MapPage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-medium mb-2">Status</h4>
+              <h4 className="text-sm font-medium mb-2 font-body text-forest-700">Status</h4>
               <div className="flex flex-wrap gap-2">
                 {LOCATION_STATUSES.map((status) => (
                   <Button
@@ -195,6 +196,7 @@ export default function MapPage() {
                     variant={selectedStatus === status.value ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedStatus(selectedStatus === status.value ? null : status.value)}
+                    className={selectedStatus === status.value ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
                   >
                     {status.label}
                   </Button>
@@ -207,20 +209,20 @@ export default function MapPage() {
 
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-earth-brown-light">Loading locations...</p>
+          <p className="text-forest-500 font-body">Loading locations...</p>
         </div>
       ) : locations.length === 0 ? (
-        <Card>
+        <Card className="border-sand-200">
           <CardContent className="py-12 text-center">
-            <MapPin className="h-12 w-12 mx-auto text-earth-brown-light mb-4" />
-            <h3 className="text-lg font-medium text-earth-brown-dark mb-2">No locations found</h3>
-            <p className="text-earth-brown-light mb-4">
+            <MapPin className="h-12 w-12 mx-auto text-forest-400 mb-4" />
+            <h3 className="text-lg font-medium font-display text-forest-800 mb-2">No locations found</h3>
+            <p className="text-forest-500 mb-4 font-body">
               {hasActiveFilters
                 ? 'No locations match your filters. Try adjusting your selection.'
                 : 'No map locations have been added yet.'}
             </p>
             {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
+              <Button variant="outline" onClick={clearFilters} className="border-forest-600 text-forest-700 hover:bg-forest-50">
                 Clear Filters
               </Button>
             )}
@@ -230,35 +232,35 @@ export default function MapPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {locations.map((location, index) => (
             <Link key={location.id} href={`/dashboard/map/${location.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full border-sand-200">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-earth-brown text-white rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium">{index + 1}</span>
+                    <div className="w-10 h-10 bg-forest-600 text-white rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-medium font-body">{index + 1}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-earth-brown-dark truncate">{location.name}</h3>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-earth-brown-light">
+                      <h3 className="font-medium font-display text-forest-800 truncate">{location.name}</h3>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-forest-500 font-body">
                         {getTypeIcon(location.type)}
                         <span>{location.type.replace(/_/g, ' ')}</span>
                       </div>
                       {location.description && (
-                        <p className="text-sm text-earth-brown-light mt-2 line-clamp-2">
+                        <p className="text-sm text-forest-500 mt-2 line-clamp-2 font-body">
                           {location.description}
                         </p>
                       )}
                       <div className="flex items-center gap-2 mt-3">
-                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(location.status)}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full font-body ${getStatusColor(location.status)}`}>
                           {location.status.replace(/_/g, ' ')}
                         </span>
                         {location.photos.length > 0 && (
-                          <span className="text-xs text-earth-brown-light">
+                          <span className="text-xs text-forest-500 font-body">
                             {location.photos.length} photo{location.photos.length !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-earth-brown-light mt-2">
-                        📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                      <p className="text-xs text-forest-500 mt-2 font-body">
+                        {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                       </p>
                     </div>
                   </div>
@@ -343,11 +345,11 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto border-sand-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Add New Location</CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <CardTitle className="font-display text-forest-800">Add New Location</CardTitle>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-forest-600 hover:text-forest-700">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -355,15 +357,15 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>
+              <div className="bg-red-50 text-red-600 p-3 rounded text-sm font-body">{error}</div>
             )}
 
             <div>
-              <label className="block text-sm font-medium mb-1">Location Name *</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Location Name *</label>
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="e.g., Main Sanctuary Building"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -371,9 +373,9 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1 font-body text-forest-700">Description</label>
               <textarea
-                className="w-full px-3 py-2 border rounded-lg"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 rows={3}
                 placeholder="Brief description of this location..."
                 value={formData.description}
@@ -383,24 +385,24 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Latitude *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Latitude *</label>
                 <input
                   type="number"
                   step="any"
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   placeholder="e.g., 10.1234"
                   value={formData.latitude}
                   onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Longitude *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Longitude *</label>
                 <input
                   type="number"
                   step="any"
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   placeholder="e.g., -84.5678"
                   value={formData.longitude}
                   onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
@@ -410,10 +412,10 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Type *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Type *</label>
                 <select
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as typeof formData.type })}
                 >
@@ -424,10 +426,10 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Status *</label>
+                <label className="block text-sm font-medium mb-1 font-body text-forest-700">Status *</label>
                 <select
                   required
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
                 >
@@ -439,10 +441,10 @@ function AddLocationModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1 border-forest-600 text-forest-700 hover:bg-forest-50">
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting} className="flex-1">
+              <Button type="submit" disabled={submitting} className="flex-1 bg-forest-600 hover:bg-forest-700 text-white">
                 {submitting ? 'Creating...' : 'Create Location'}
               </Button>
             </div>

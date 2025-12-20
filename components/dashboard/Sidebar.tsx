@@ -54,13 +54,13 @@ export function Sidebar({ userRole }: SidebarProps) {
   const isAdmin = userRole && adminRoles.includes(userRole)
 
   return (
-    <aside className="w-64 bg-white border-r border-stone h-screen sticky top-0 flex flex-col">
-      <div className="p-6 border-b border-stone">
+    <aside className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col">
+      <div className="p-6 border-b border-forest-700">
         <Link href="/dashboard" className="block">
-          <h1 className="text-xl font-serif font-bold text-earth-brown-dark">
+          <h1 className="text-xl font-display font-bold text-sand-100">
             BRITE POOL
           </h1>
-          <p className="text-xs text-earth-brown-light mt-1">
+          <p className="text-xs text-forest-300 mt-1 font-body">
             Ministerium of Empowerment
           </p>
         </Link>
@@ -74,8 +74,8 @@ export function Sidebar({ userRole }: SidebarProps) {
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                 pathname.startsWith('/dashboard/admin')
-                  ? 'bg-purple-600 text-white'
-                  : 'text-purple-700 bg-purple-50 hover:bg-purple-100'
+                  ? 'bg-earth-500 text-white'
+                  : 'text-earth-300 bg-earth-500/10 hover:bg-earth-500/20'
               )}
             >
               <Settings className="h-5 w-5" />
@@ -86,30 +86,30 @@ export function Sidebar({ userRole }: SidebarProps) {
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                 pathname === '/dashboard/analytics'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-purple-700 bg-purple-50 hover:bg-purple-100'
+                  ? 'bg-earth-500 text-white'
+                  : 'text-earth-300 bg-earth-500/10 hover:bg-earth-500/20'
               )}
             >
               <BarChart3 className="h-5 w-5" />
               Analytics
             </Link>
-            <div className="border-b border-stone my-2" />
+            <div className="border-b border-forest-700 my-2" />
           </>
         )}
-        
+
         {navItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors font-body',
                 isActive
-                  ? 'bg-earth-brown text-white'
-                  : 'text-earth-dark hover:bg-stone-warm'
+                  ? 'bg-forest-600 text-sand-100'
+                  : 'text-forest-200 hover:bg-forest-800 hover:text-sand-100'
               )}
             >
               <Icon className="h-5 w-5" />
@@ -119,8 +119,8 @@ export function Sidebar({ userRole }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-stone">
-        <p className="text-xs text-earth-brown-light text-center">
+      <div className="p-4 border-t border-forest-700">
+        <p className="text-xs text-forest-400 text-center font-body">
           © 2024 BRITE POOL
         </p>
       </div>

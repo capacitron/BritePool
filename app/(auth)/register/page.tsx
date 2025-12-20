@@ -78,7 +78,7 @@ export default function RegisterPage() {
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="bg-terracotta/10 border border-terracotta text-terracotta px-4 py-3 rounded-lg text-sm">
+            <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
             </div>
           )}
@@ -93,7 +93,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.name && (
-              <p className="text-sm text-terracotta">{fieldErrors.name}</p>
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.name}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -107,7 +107,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.email && (
-              <p className="text-sm text-terracotta">{fieldErrors.email}</p>
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -121,9 +121,9 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.password && (
-              <p className="text-sm text-terracotta">{fieldErrors.password}</p>
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.password}</p>
             )}
-            <p className="text-xs text-earth-brown-light">
+            <p className="text-xs text-forest-500 font-body">
               Must be at least 8 characters with uppercase, lowercase, and a number
             </p>
           </div>
@@ -132,9 +132,9 @@ export default function RegisterPage() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </Button>
-          <p className="text-sm text-earth-brown-light text-center">
+          <p className="text-sm text-forest-600 text-center font-body">
             Already have an account?{' '}
-            <Link href="/login" className="text-earth-brown hover:underline font-medium">
+            <Link href="/login" className="text-forest-700 hover:text-forest-800 hover:underline font-medium">
               Sign in
             </Link>
           </p>

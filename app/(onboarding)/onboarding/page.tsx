@@ -44,8 +44,8 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-earth-gold mb-4"></div>
-      <p className="text-earth-brown-light">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-600 mb-4"></div>
+      <p className="text-forest-600 font-body">
         {status === 'completed' ? 'Redirecting to dashboard...' : 'Loading...'}
       </p>
     </div>

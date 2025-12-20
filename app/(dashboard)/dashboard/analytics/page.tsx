@@ -98,10 +98,10 @@ export default async function AnalyticsDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+        <h1 className="text-3xl font-display font-bold text-forest-800">
           Analytics Dashboard
         </h1>
-        <p className="text-earth-brown-light mt-1">
+        <p className="text-forest-500 mt-1 font-body">
           Comprehensive platform statistics and insights
         </p>
       </div>
@@ -120,13 +120,13 @@ export default async function AnalyticsDashboardPage() {
           icon={UserCheck}
           value={`${activeUserPercentage}%`}
           label="Active Users (30d)"
-          iconClassName="bg-sky-soft/20"
+          iconClassName="bg-forest-100"
         />
         <StatCard
           icon={Clock}
           value={Math.round(participationStats._sum.hours || 0)}
           label="Participation Hours"
-          iconClassName="bg-terracotta/20"
+          iconClassName="bg-earth-100"
         />
         <StatCard
           icon={TrendingUp}
@@ -175,90 +175,90 @@ export default async function AnalyticsDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-earth-brown-light" />
+            <CardTitle className="text-base font-medium font-display text-forest-800">Courses</CardTitle>
+            <BookOpen className="h-4 w-4 text-forest-500" />
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Total Enrollments</span>
-                <span className="font-semibold">{courseStats}</span>
+                <span className="text-sm text-forest-500 font-body">Total Enrollments</span>
+                <span className="font-semibold text-forest-800">{courseStats}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Completed</span>
-                <span className="font-semibold">{courseCompletionStats}</span>
+                <span className="text-sm text-forest-500 font-body">Completed</span>
+                <span className="font-semibold text-forest-800">{courseCompletionStats}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Completion Rate</span>
-                <span className="font-semibold text-sage">{courseCompletionRate}%</span>
+                <span className="text-sm text-forest-500 font-body">Completion Rate</span>
+                <span className="font-semibold text-forest-600">{courseCompletionRate}%</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Events</CardTitle>
-            <Calendar className="h-4 w-4 text-earth-brown-light" />
+            <CardTitle className="text-base font-medium font-display text-forest-800">Events</CardTitle>
+            <Calendar className="h-4 w-4 text-earth-500" />
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Total Registrations</span>
-                <span className="font-semibold">{eventStats}</span>
+                <span className="text-sm text-forest-500 font-body">Total Registrations</span>
+                <span className="font-semibold text-forest-800">{eventStats}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Attended</span>
-                <span className="font-semibold">{eventAttendanceStats}</span>
+                <span className="text-sm text-forest-500 font-body">Attended</span>
+                <span className="font-semibold text-forest-800">{eventAttendanceStats}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Attendance Rate</span>
-                <span className="font-semibold text-sage">{eventAttendanceRate}%</span>
+                <span className="text-sm text-forest-500 font-body">Attendance Rate</span>
+                <span className="font-semibold text-forest-600">{eventAttendanceRate}%</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Forums</CardTitle>
-            <MessageSquare className="h-4 w-4 text-earth-brown-light" />
+            <CardTitle className="text-base font-medium font-display text-forest-800">Forums</CardTitle>
+            <MessageSquare className="h-4 w-4 text-forest-600" />
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Total Posts</span>
-                <span className="font-semibold">{forumStats}</span>
+                <span className="text-sm text-forest-500 font-body">Total Posts</span>
+                <span className="font-semibold text-forest-800">{forumStats}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Participation Logs</span>
-                <span className="font-semibold">{participationStats._count}</span>
+                <span className="text-sm text-forest-500 font-body">Participation Logs</span>
+                <span className="font-semibold text-forest-800">{participationStats._count}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-earth-brown-light">Engagement</span>
-                <span className="font-semibold text-sage">Active</span>
+                <span className="text-sm text-forest-500 font-body">Engagement</span>
+                <span className="font-semibold text-forest-600">Active</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-sage" />
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <Award className="h-5 w-5 text-forest-600" />
             Committee Activity Breakdown
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-forest-500 font-body">
             Top committees ranked by member count, tasks, and events
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {topCommittees.length === 0 ? (
-              <p className="text-sm text-earth-brown-light text-center py-8">
+              <p className="text-sm text-forest-500 text-center py-8 font-body">
                 No committee data available
               </p>
             ) : (
@@ -278,22 +278,22 @@ export default async function AnalyticsDashboardPage() {
                   <div key={committee.id} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-earth-brown-light w-6">
+                        <span className="text-sm font-medium text-forest-400 w-6 font-body">
                           #{index + 1}
                         </span>
-                        <span className="font-medium text-earth-dark">
+                        <span className="font-medium text-forest-800 font-body">
                           {committee.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-earth-brown-light">
+                      <div className="flex items-center gap-4 text-sm text-forest-500 font-body">
                         <span>{committee._count.members} members</span>
                         <span>{committee._count.tasks} tasks</span>
                         <span>{committee._count.events} events</span>
                       </div>
                     </div>
-                    <div className="h-2 bg-stone-warm rounded-full overflow-hidden">
+                    <div className="h-2 bg-sand-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-sage rounded-full transition-all duration-500"
+                        className="h-full bg-forest-600 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

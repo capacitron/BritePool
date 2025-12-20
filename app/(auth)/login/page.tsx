@@ -72,7 +72,7 @@ export default function LoginPage() {
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="bg-terracotta/10 border border-terracotta text-terracotta px-4 py-3 rounded-lg text-sm">
+            <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
             </div>
           )}
@@ -87,7 +87,7 @@ export default function LoginPage() {
               disabled={isLoading}
             />
             {fieldErrors.email && (
-              <p className="text-sm text-terracotta">{fieldErrors.email}</p>
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -101,7 +101,7 @@ export default function LoginPage() {
               disabled={isLoading}
             />
             {fieldErrors.password && (
-              <p className="text-sm text-terracotta">{fieldErrors.password}</p>
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.password}</p>
             )}
           </div>
         </CardContent>
@@ -109,9 +109,9 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
-          <p className="text-sm text-earth-brown-light text-center">
+          <p className="text-sm text-forest-600 text-center font-body">
             Don't have an account?{' '}
-            <Link href="/register" className="text-earth-brown hover:underline font-medium">
+            <Link href="/register" className="text-forest-700 hover:text-forest-800 hover:underline font-medium">
               Create one
             </Link>
           </p>

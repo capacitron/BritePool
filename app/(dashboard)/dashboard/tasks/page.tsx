@@ -51,10 +51,10 @@ export default async function TasksPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+        <h1 className="text-3xl font-display font-bold text-forest-800">
           Tasks
         </h1>
-        <p className="text-earth-brown-light mt-1">
+        <p className="text-forest-500 mt-1 font-body">
           Manage and track community tasks
         </p>
       </div>

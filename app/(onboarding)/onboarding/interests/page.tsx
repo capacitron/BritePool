@@ -114,30 +114,30 @@ export default function InterestsPage() {
 
   return (
     <div className="space-y-8">
-      <Card className="border-earth-brown-light/20 shadow-lg">
+      <Card className="border-sand-200 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-serif text-earth-brown-dark">
+          <CardTitle className="text-2xl font-display text-forest-800">
             Select Your Interests
           </CardTitle>
-          <CardDescription className="text-earth-brown-light">
+          <CardDescription className="text-forest-500 font-body">
             Tell us about your interests and expertise to help connect you with the right
             opportunities.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           <div>
-            <h3 className="font-semibold text-earth-brown-dark mb-3">Committee Interests</h3>
-            <p className="text-sm text-earth-brown-light mb-4">
+            <h3 className="font-semibold text-forest-800 mb-3 font-display">Committee Interests</h3>
+            <p className="text-sm text-forest-500 mb-4 font-body">
               Which committees would you like to participate in?
             </p>
             <div className="space-y-3">
               {committees.map((committee) => (
                 <label
                   key={committee.id}
-                  className={`flex items-start p-4 rounded-lg border cursor-pointer transition-all ${
+                  className={`flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedCommittees.includes(committee.id)
-                      ? 'border-earth-gold bg-earth-gold/5'
-                      : 'border-earth-brown-light/20 hover:border-earth-gold/50'
+                      ? 'border-earth-400 bg-earth-50'
+                      : 'border-sand-200 hover:border-earth-300'
                   }`}
                 >
                   <input
@@ -146,11 +146,11 @@ export default function InterestsPage() {
                     onChange={() =>
                       toggleSelection(committee.id, selectedCommittees, setSelectedCommittees)
                     }
-                    className="mt-1 h-4 w-4 rounded border-earth-brown-light text-earth-gold focus:ring-earth-gold"
+                    className="mt-1 h-4 w-4 rounded border-sand-300 text-earth-500 focus:ring-earth-500"
                   />
                   <div className="ml-3">
-                    <span className="font-medium text-earth-brown-dark">{committee.name}</span>
-                    <p className="text-sm text-earth-brown-light mt-0.5">{committee.description}</p>
+                    <span className="font-medium text-forest-800 font-body">{committee.name}</span>
+                    <p className="text-sm text-forest-500 mt-0.5 font-body">{committee.description}</p>
                   </div>
                 </label>
               ))}
@@ -158,8 +158,8 @@ export default function InterestsPage() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-earth-brown-dark mb-3">Skills & Abilities</h3>
-            <p className="text-sm text-earth-brown-light mb-4">
+            <h3 className="font-semibold text-forest-800 mb-3 font-display">Skills & Abilities</h3>
+            <p className="text-sm text-forest-500 mb-4 font-body">
               What skills can you contribute to the community?
             </p>
             <div className="flex flex-wrap gap-2">
@@ -168,10 +168,10 @@ export default function InterestsPage() {
                   key={skill}
                   type="button"
                   onClick={() => toggleSelection(skill, selectedSkills, setSelectedSkills)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all font-body ${
                     selectedSkills.includes(skill)
-                      ? 'bg-earth-gold text-white'
-                      : 'bg-earth-brown-light/10 text-earth-brown hover:bg-earth-brown-light/20'
+                      ? 'bg-earth-500 text-white'
+                      : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
                   }`}
                 >
                   {skill}
@@ -181,8 +181,8 @@ export default function InterestsPage() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-earth-brown-dark mb-3">Areas of Expertise</h3>
-            <p className="text-sm text-earth-brown-light mb-4">
+            <h3 className="font-semibold text-forest-800 mb-3 font-display">Areas of Expertise</h3>
+            <p className="text-sm text-forest-500 mb-4 font-body">
               Do you have professional expertise in any of these areas?
             </p>
             <div className="flex flex-wrap gap-2">
@@ -191,10 +191,10 @@ export default function InterestsPage() {
                   key={area}
                   type="button"
                   onClick={() => toggleSelection(area, selectedExpertise, setSelectedExpertise)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all font-body ${
                     selectedExpertise.includes(area)
-                      ? 'bg-earth-brown-dark text-white'
-                      : 'bg-earth-brown-light/10 text-earth-brown hover:bg-earth-brown-light/20'
+                      ? 'bg-forest-600 text-white'
+                      : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
                   }`}
                 >
                   {area}
@@ -209,7 +209,7 @@ export default function InterestsPage() {
         <Button
           variant="outline"
           onClick={handleBack}
-          className="border-earth-brown-dark border-2 text-earth-brown-dark hover:bg-earth-brown-dark hover:text-white font-semibold"
+          className="border-forest-600 border-2 text-forest-700 hover:bg-forest-600 hover:text-white font-semibold"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -224,7 +224,7 @@ export default function InterestsPage() {
         <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="bg-earth-brown-dark hover:bg-earth-brown text-white px-8 font-semibold shadow-lg"
+          className="bg-forest-600 hover:bg-forest-700 text-white px-8 font-semibold shadow-lg"
         >
           {isLoading ? 'Saving...' : 'Continue'}
           <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

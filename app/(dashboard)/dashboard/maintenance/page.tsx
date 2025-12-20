@@ -20,17 +20,17 @@ type MaintenanceRequest = {
 }
 
 const priorityStyles: Record<string, string> = {
-  LOW: 'bg-gray-100 text-gray-700 border-gray-200',
-  MEDIUM: 'bg-blue-100 text-blue-700 border-blue-200',
-  HIGH: 'bg-orange-100 text-orange-700 border-orange-200',
+  LOW: 'bg-sand-100 text-sand-700 border-sand-300',
+  MEDIUM: 'bg-forest-100 text-forest-700 border-forest-300',
+  HIGH: 'bg-earth-100 text-earth-700 border-earth-300',
   URGENT: 'bg-red-100 text-red-700 border-red-200',
 }
 
 const statusStyles: Record<string, string> = {
-  SUBMITTED: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  ASSIGNED: 'bg-purple-100 text-purple-700 border-purple-200',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700 border-blue-200',
-  RESOLVED: 'bg-green-100 text-green-700 border-green-200',
+  SUBMITTED: 'bg-sand-200 text-sand-800 border-sand-400',
+  ASSIGNED: 'bg-forest-100 text-forest-700 border-forest-300',
+  IN_PROGRESS: 'bg-earth-100 text-earth-700 border-earth-300',
+  RESOLVED: 'bg-forest-200 text-forest-800 border-forest-400',
 }
 
 const categories = ['PLUMBING', 'ELECTRICAL', 'STRUCTURAL', 'GROUNDS', 'HVAC', 'OTHER']
@@ -104,28 +104,28 @@ export default function MaintenancePage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+          <h1 className="text-3xl font-display font-bold text-forest-800">
             Maintenance Requests
           </h1>
-          <p className="text-earth-brown-light mt-1">
+          <p className="text-forest-500 mt-1 font-body">
             Submit and track maintenance requests
           </p>
         </div>
         <Link href="/dashboard/maintenance/new">
-          <Button>
+          <Button className="bg-forest-600 hover:bg-forest-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Submit Request
           </Button>
         </Link>
       </div>
 
-      <div className="flex gap-4 border-b border-stone-200">
+      <div className="flex gap-4 border-b border-sand-200">
         <button
           onClick={() => setActiveTab('my')}
-          className={`pb-3 px-1 text-sm font-medium transition-colors ${
+          className={`pb-3 px-1 text-sm font-medium transition-colors font-body ${
             activeTab === 'my'
-              ? 'border-b-2 border-earth-brown text-earth-brown'
-              : 'text-earth-brown-light hover:text-earth-brown'
+              ? 'border-b-2 border-forest-600 text-forest-700'
+              : 'text-forest-500 hover:text-forest-700'
           }`}
         >
           My Requests
@@ -133,10 +133,10 @@ export default function MaintenancePage() {
         {isAdmin && (
           <button
             onClick={() => setActiveTab('all')}
-            className={`pb-3 px-1 text-sm font-medium transition-colors ${
+            className={`pb-3 px-1 text-sm font-medium transition-colors font-body ${
               activeTab === 'all'
-                ? 'border-b-2 border-earth-brown text-earth-brown'
-                : 'text-earth-brown-light hover:text-earth-brown'
+                ? 'border-b-2 border-forest-600 text-forest-700'
+                : 'text-forest-500 hover:text-forest-700'
             }`}
           >
             All Requests
@@ -149,6 +149,7 @@ export default function MaintenancePage() {
           variant="outline"
           size="sm"
           onClick={() => setShowFilters(!showFilters)}
+          className="border-forest-600 text-forest-700 hover:bg-forest-50"
         >
           <Filter className="w-4 h-4 mr-2" />
           Filters
@@ -156,7 +157,7 @@ export default function MaintenancePage() {
         {(statusFilter || priorityFilter || categoryFilter) && (
           <button
             onClick={clearFilters}
-            className="text-sm text-earth-brown hover:underline"
+            className="text-sm text-forest-600 hover:underline font-body"
           >
             Clear filters
           </button>
@@ -164,17 +165,17 @@ export default function MaintenancePage() {
       </div>
 
       {showFilters && (
-        <Card>
+        <Card className="border-sand-200">
           <CardContent className="pt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-earth-brown-dark mb-1">
+                <label className="block text-sm font-medium text-forest-800 mb-1 font-body">
                   Status
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-earth-brown"
+                  className="w-full rounded-lg border border-sand-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
                 >
                   <option value="">All Statuses</option>
                   {statuses.map((status) => (
@@ -185,13 +186,13 @@ export default function MaintenancePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-earth-brown-dark mb-1">
+                <label className="block text-sm font-medium text-forest-800 mb-1 font-body">
                   Priority
                 </label>
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-earth-brown"
+                  className="w-full rounded-lg border border-sand-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
                 >
                   <option value="">All Priorities</option>
                   {priorities.map((priority) => (
@@ -202,13 +203,13 @@ export default function MaintenancePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-earth-brown-dark mb-1">
+                <label className="block text-sm font-medium text-forest-800 mb-1 font-body">
                   Category
                 </label>
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-earth-brown"
+                  className="w-full rounded-lg border border-sand-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
                 >
                   <option value="">All Categories</option>
                   {categories.map((category) => (
@@ -224,23 +225,23 @@ export default function MaintenancePage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-earth-brown-light">
+        <div className="text-center py-12 text-forest-500 font-body">
           Loading requests...
         </div>
       ) : requests.length === 0 ? (
-        <Card>
+        <Card className="border-sand-200">
           <CardContent className="py-12 text-center">
-            <Wrench className="w-12 h-12 mx-auto text-earth-brown-light mb-4" />
-            <h3 className="text-lg font-medium text-earth-brown-dark mb-2">
+            <Wrench className="w-12 h-12 mx-auto text-forest-400 mb-4" />
+            <h3 className="text-lg font-medium font-display text-forest-800 mb-2">
               No maintenance requests
             </h3>
-            <p className="text-earth-brown-light mb-4">
+            <p className="text-forest-500 mb-4 font-body">
               {activeTab === 'my'
                 ? "You haven't submitted any maintenance requests yet."
                 : 'There are no maintenance requests matching your filters.'}
             </p>
             <Link href="/dashboard/maintenance/new">
-              <Button>
+              <Button className="bg-forest-600 hover:bg-forest-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Request
               </Button>
@@ -251,12 +252,12 @@ export default function MaintenancePage() {
         <div className="space-y-4">
           {requests.map((request) => (
             <Link key={request.id} href={`/dashboard/maintenance/${request.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer border-sand-200">
                 <CardContent className="py-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-medium text-earth-brown-dark">
+                        <h3 className="font-medium font-display text-forest-800">
                           {request.title}
                         </h3>
                         <span
@@ -274,10 +275,10 @@ export default function MaintenancePage() {
                           {request.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <p className="text-sm text-earth-brown-light line-clamp-2 mb-2">
+                      <p className="text-sm text-forest-500 line-clamp-2 mb-2 font-body">
                         {request.description}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-earth-brown-light">
+                      <div className="flex items-center gap-4 text-xs text-forest-500 font-body">
                         <span>Location: {request.location}</span>
                         <span>Category: {request.category}</span>
                         <span>Submitted: {formatDate(request.submittedAt)}</span>

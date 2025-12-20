@@ -157,23 +157,23 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-earth-brown-dark via-earth-brown to-earth-brown-dark p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-8 text-white">
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='20' fill='none' stroke='%23fff' stroke-width='1'/%3E%3Ccircle cx='30' cy='30' r='10' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E")`,
           backgroundSize: '60px 60px'
         }} />
-        <div className="absolute top-0 right-0 w-48 h-48 bg-earth-gold/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-sage/15 rounded-full blur-2xl" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-earth-400/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-forest-400/15 rounded-full blur-2xl" />
 
         <div className="relative flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-px flex-1 max-w-[40px] bg-gradient-to-r from-earth-gold to-transparent" />
-              <span className="text-earth-gold text-sm font-medium uppercase tracking-wider">Step 2 of 4</span>
+              <div className="h-px flex-1 max-w-[40px] bg-gradient-to-r from-earth-400 to-transparent" />
+              <span className="text-earth-300 text-sm font-medium uppercase tracking-wider font-body">Step 2 of 4</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-serif font-bold mb-2">Create Your Profile</h1>
-            <p className="text-white/70 max-w-md">Tell us about yourself to personalize your BRITE POOL experience</p>
+            <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">Create Your Profile</h1>
+            <p className="text-sand-200 max-w-md font-body">Tell us about yourself to personalize your BRITE POOL experience</p>
           </div>
 
           {/* Progress Ring */}
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                   cy="48"
                   r="40"
                   fill="none"
-                  stroke="#C9A227"
+                  stroke="#ea8f6f"
                   strokeWidth="6"
                   strokeDasharray={`${percentage * 2.51} 251`}
                   strokeLinecap="round"
@@ -201,38 +201,38 @@ export default function ProfilePage() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl font-bold">{percentage}%</span>
+                <span className="text-2xl font-bold font-display">{percentage}%</span>
               </div>
             </div>
-            <span className="text-white/60 text-xs mt-2">Complete</span>
+            <span className="text-sand-300 text-xs mt-2 font-body">Complete</span>
           </div>
         </div>
       </div>
 
       {/* Avatar Section */}
       <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-stone-warm/50 to-earth-light/50 p-8">
+        <div className="bg-gradient-to-r from-sand-100 to-forest-50 p-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-earth-gold to-earth-gold-dark rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity" />
-              <div className="relative w-28 h-28 bg-gradient-to-br from-white to-stone-warm rounded-full flex items-center justify-center border-4 border-white shadow-xl">
-                <span className="text-4xl font-serif font-bold text-earth-brown-dark">
+              <div className="absolute inset-0 bg-gradient-to-br from-earth-400 to-earth-500 rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity" />
+              <div className="relative w-28 h-28 bg-gradient-to-br from-white to-sand-100 rounded-full flex items-center justify-center border-4 border-white shadow-xl">
+                <span className="text-4xl font-display font-bold text-forest-700">
                   {formData.firstName.charAt(0).toUpperCase() || '?'}
                   {formData.lastName.charAt(0).toUpperCase() || ''}
                 </span>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-earth-gold rounded-full flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-earth-500 rounded-full flex items-center justify-center shadow-lg">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
             </div>
             <div className="text-center md:text-left">
-              <h3 className="text-xl font-serif font-bold text-earth-brown-dark">
+              <h3 className="text-xl font-display font-bold text-forest-800">
                 {formData.firstName || formData.lastName
                   ? `${formData.firstName} ${formData.lastName}`.trim()
                   : 'Your Name'}
               </h3>
-              <p className="text-earth-brown-light text-sm mt-1">New BRITE POOL Member</p>
-              <p className="text-earth-brown-light/60 text-xs mt-2">
+              <p className="text-forest-500 text-sm mt-1 font-body">New BRITE POOL Member</p>
+              <p className="text-forest-400 text-xs mt-2 font-body">
                 Avatar upload available in dashboard settings
               </p>
             </div>
@@ -244,26 +244,26 @@ export default function ProfilePage() {
       <div className="grid gap-6">
         {/* Personal Information */}
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sage to-sage/50" />
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-forest-500 to-forest-300" />
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-sage/10 flex items-center justify-center group-hover:bg-sage/20 transition-colors">
-                <User className="w-6 h-6 text-sage" />
+              <div className="w-12 h-12 rounded-xl bg-forest-100 flex items-center justify-center group-hover:bg-forest-200 transition-colors">
+                <User className="w-6 h-6 text-forest-600" />
               </div>
               <div>
-                <h3 className="font-serif font-semibold text-earth-brown-dark text-lg">Personal Information</h3>
-                <p className="text-sm text-earth-brown-light">Your name and identity</p>
+                <h3 className="font-display font-semibold text-forest-800 text-lg">Personal Information</h3>
+                <p className="text-sm text-forest-500 font-body">Your name and identity</p>
               </div>
               {formData.firstName && formData.lastName && (
-                <CheckCircle2 className="w-5 h-5 text-sage ml-auto" />
+                <CheckCircle2 className="w-5 h-5 text-forest-500 ml-auto" />
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="firstName" className="text-earth-brown-dark font-medium">
-                  First Name <span className="text-terracotta">*</span>
+                <Label htmlFor="firstName" className="text-forest-700 font-medium font-body">
+                  First Name <span className="text-earth-500">*</span>
                 </Label>
                 <Input
                   id="firstName"
@@ -271,20 +271,20 @@ export default function ProfilePage() {
                   value={formData.firstName}
                   onChange={handleChange}
                   placeholder="Enter your first name"
-                  className={`mt-1.5 border-earth-brown-light/30 focus:border-sage focus:ring-sage bg-white ${
-                    errors.firstName ? 'border-terracotta ring-1 ring-terracotta' : ''
+                  className={`mt-1.5 border-sand-300 focus:border-forest-500 focus:ring-forest-500 bg-white ${
+                    errors.firstName ? 'border-earth-500 ring-1 ring-earth-500' : ''
                   }`}
                 />
                 {errors.firstName && (
-                  <p className="mt-1.5 text-sm text-terracotta flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-terracotta" />
+                  <p className="mt-1.5 text-sm text-earth-600 flex items-center gap-1 font-body">
+                    <span className="w-1 h-1 rounded-full bg-earth-500" />
                     {errors.firstName}
                   </p>
                 )}
               </div>
               <div>
-                <Label htmlFor="lastName" className="text-earth-brown-dark font-medium">
-                  Last Name <span className="text-terracotta">*</span>
+                <Label htmlFor="lastName" className="text-forest-700 font-medium font-body">
+                  Last Name <span className="text-earth-500">*</span>
                 </Label>
                 <Input
                   id="lastName"
@@ -292,13 +292,13 @@ export default function ProfilePage() {
                   value={formData.lastName}
                   onChange={handleChange}
                   placeholder="Enter your last name"
-                  className={`mt-1.5 border-earth-brown-light/30 focus:border-sage focus:ring-sage bg-white ${
-                    errors.lastName ? 'border-terracotta ring-1 ring-terracotta' : ''
+                  className={`mt-1.5 border-sand-300 focus:border-forest-500 focus:ring-forest-500 bg-white ${
+                    errors.lastName ? 'border-earth-500 ring-1 ring-earth-500' : ''
                   }`}
                 />
                 {errors.lastName && (
-                  <p className="mt-1.5 text-sm text-terracotta flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-terracotta" />
+                  <p className="mt-1.5 text-sm text-earth-600 flex items-center gap-1 font-body">
+                    <span className="w-1 h-1 rounded-full bg-earth-500" />
                     {errors.lastName}
                   </p>
                 )}
@@ -306,7 +306,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-earth-brown-dark font-medium">
+              <Label htmlFor="email" className="text-forest-700 font-medium font-body">
                 Email Address
               </Label>
               <div className="relative mt-1.5">
@@ -316,13 +316,13 @@ export default function ProfilePage() {
                   type="email"
                   value={formData.email}
                   disabled
-                  className="border-earth-brown-light/20 bg-stone-warm/30 text-earth-brown-light cursor-not-allowed pr-20"
+                  className="border-sand-200 bg-sand-50 text-forest-400 cursor-not-allowed pr-20"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-earth-brown-light/60 bg-white/50 px-2 py-0.5 rounded">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-forest-400 bg-white/50 px-2 py-0.5 rounded font-body">
                   Verified
                 </span>
               </div>
-              <p className="mt-1.5 text-xs text-earth-brown-light">
+              <p className="mt-1.5 text-xs text-forest-500 font-body">
                 Email can be changed in account settings after onboarding
               </p>
             </div>
@@ -331,25 +331,25 @@ export default function ProfilePage() {
 
         {/* Contact Information */}
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sky-soft to-sky-soft/50" />
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sand-500 to-sand-300" />
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-sky-soft/10 flex items-center justify-center group-hover:bg-sky-soft/20 transition-colors">
-                <Phone className="w-6 h-6 text-sky-soft" />
+              <div className="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center group-hover:bg-sand-200 transition-colors">
+                <Phone className="w-6 h-6 text-sand-600" />
               </div>
               <div>
-                <h3 className="font-serif font-semibold text-earth-brown-dark text-lg">Contact & Location</h3>
-                <p className="text-sm text-earth-brown-light">How to reach you</p>
+                <h3 className="font-display font-semibold text-forest-800 text-lg">Contact & Location</h3>
+                <p className="text-sm text-forest-500 font-body">How to reach you</p>
               </div>
               {(formData.phone || formData.location) && (
-                <CheckCircle2 className="w-5 h-5 text-sky-soft ml-auto" />
+                <CheckCircle2 className="w-5 h-5 text-sand-500 ml-auto" />
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone" className="text-earth-brown-dark font-medium">
+                <Label htmlFor="phone" className="text-forest-700 font-medium font-body">
                   Phone Number
                 </Label>
                 <Input
@@ -359,20 +359,20 @@ export default function ProfilePage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="+1 (555) 000-0000"
-                  className={`mt-1.5 border-earth-brown-light/30 focus:border-sky-soft focus:ring-sky-soft bg-white ${
-                    errors.phone ? 'border-terracotta ring-1 ring-terracotta' : ''
+                  className={`mt-1.5 border-sand-300 focus:border-sand-500 focus:ring-sand-500 bg-white ${
+                    errors.phone ? 'border-earth-500 ring-1 ring-earth-500' : ''
                   }`}
                 />
                 {errors.phone && (
-                  <p className="mt-1.5 text-sm text-terracotta flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-terracotta" />
+                  <p className="mt-1.5 text-sm text-earth-600 flex items-center gap-1 font-body">
+                    <span className="w-1 h-1 rounded-full bg-earth-500" />
                     {errors.phone}
                   </p>
                 )}
               </div>
               <div>
-                <Label htmlFor="location" className="text-earth-brown-dark font-medium flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-earth-brown-light" />
+                <Label htmlFor="location" className="text-forest-700 font-medium flex items-center gap-2 font-body">
+                  <MapPin className="w-4 h-4 text-forest-400" />
                   Location
                 </Label>
                 <Input
@@ -381,14 +381,14 @@ export default function ProfilePage() {
                   value={formData.location}
                   onChange={handleChange}
                   placeholder="City, State/Country"
-                  className="mt-1.5 border-earth-brown-light/30 focus:border-sky-soft focus:ring-sky-soft bg-white"
+                  className="mt-1.5 border-sand-300 focus:border-sand-500 focus:ring-sand-500 bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="timezone" className="text-earth-brown-dark font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4 text-earth-brown-light" />
+              <Label htmlFor="timezone" className="text-forest-700 font-medium flex items-center gap-2 font-body">
+                <Clock className="w-4 h-4 text-forest-400" />
                 Timezone
               </Label>
               <select
@@ -396,7 +396,7 @@ export default function ProfilePage() {
                 name="timezone"
                 value={formData.timezone}
                 onChange={handleChange}
-                className="mt-1.5 w-full rounded-lg border border-earth-brown-light/30 bg-white px-3 py-2.5 text-earth-brown focus:border-sky-soft focus:outline-none focus:ring-2 focus:ring-sky-soft/20"
+                className="mt-1.5 w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-forest-700 focus:border-sand-500 focus:outline-none focus:ring-2 focus:ring-sand-200 font-body"
               >
                 {timezones.map((tz) => (
                   <option key={tz.value} value={tz.value}>
@@ -404,8 +404,8 @@ export default function ProfilePage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1.5 text-xs text-earth-brown-light flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-sage animate-pulse" />
+              <p className="mt-1.5 text-xs text-forest-500 flex items-center gap-1 font-body">
+                <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />
                 Auto-detected from your browser
               </p>
             </div>
@@ -414,24 +414,24 @@ export default function ProfilePage() {
 
         {/* About Section */}
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-gold to-earth-gold/50" />
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-400 to-earth-300" />
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-earth-gold/10 flex items-center justify-center group-hover:bg-earth-gold/20 transition-colors">
-                <FileText className="w-6 h-6 text-earth-gold-dark" />
+              <div className="w-12 h-12 rounded-xl bg-earth-100 flex items-center justify-center group-hover:bg-earth-200 transition-colors">
+                <FileText className="w-6 h-6 text-earth-600" />
               </div>
               <div>
-                <h3 className="font-serif font-semibold text-earth-brown-dark text-lg">About You</h3>
-                <p className="text-sm text-earth-brown-light">Share your story with the community</p>
+                <h3 className="font-display font-semibold text-forest-800 text-lg">About You</h3>
+                <p className="text-sm text-forest-500 font-body">Share your story with the community</p>
               </div>
               {formData.bio && (
-                <CheckCircle2 className="w-5 h-5 text-earth-gold ml-auto" />
+                <CheckCircle2 className="w-5 h-5 text-earth-500 ml-auto" />
               )}
             </div>
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="bio" className="text-earth-brown-dark font-medium">
+              <Label htmlFor="bio" className="text-forest-700 font-medium font-body">
                 Bio
               </Label>
               <textarea
@@ -442,13 +442,13 @@ export default function ProfilePage() {
                 placeholder="Share a bit about yourself, your background, and what brings you to BRITE POOL..."
                 rows={4}
                 maxLength={500}
-                className="mt-1.5 w-full rounded-lg border border-earth-brown-light/30 bg-white px-4 py-3 text-earth-brown placeholder:text-earth-brown-light/50 focus:border-earth-gold focus:outline-none focus:ring-2 focus:ring-earth-gold/20 resize-none"
+                className="mt-1.5 w-full rounded-lg border border-sand-300 bg-white px-4 py-3 text-forest-700 placeholder:text-forest-400 focus:border-earth-400 focus:outline-none focus:ring-2 focus:ring-earth-200 resize-none font-body"
               />
               <div className="mt-2 flex items-center justify-between">
-                <p className="text-xs text-earth-brown-light">
+                <p className="text-xs text-forest-500 font-body">
                   Help others get to know you better
                 </p>
-                <p className={`text-xs font-medium ${formData.bio.length > 450 ? 'text-terracotta' : 'text-earth-brown-light'}`}>
+                <p className={`text-xs font-medium font-body ${formData.bio.length > 450 ? 'text-earth-600' : 'text-forest-500'}`}>
                   {formData.bio.length}/500
                 </p>
               </div>
@@ -462,7 +462,7 @@ export default function ProfilePage() {
         <Button
           variant="outline"
           onClick={handleBack}
-          className="border-2 border-earth-brown-dark text-earth-brown-dark hover:bg-earth-brown-dark hover:text-white font-semibold px-6 transition-all duration-300"
+          className="border-2 border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white font-semibold px-6 transition-all duration-300"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Back
@@ -470,7 +470,7 @@ export default function ProfilePage() {
         <Button
           onClick={handleNext}
           disabled={isLoading}
-          className="bg-gradient-to-r from-earth-brown-dark to-earth-brown hover:from-earth-brown hover:to-earth-brown-dark text-white px-8 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+          className="bg-gradient-to-r from-forest-700 to-forest-600 hover:from-forest-600 hover:to-forest-700 text-white px-8 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
         >
           {isLoading ? (
             <>

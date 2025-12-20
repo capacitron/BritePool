@@ -49,13 +49,13 @@ interface DashboardStats {
 }
 
 const quickLinks = [
-  { href: '/dashboard/committees', label: 'Committees', icon: Users, color: 'text-sage' },
-  { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-sky-soft' },
-  { href: '/dashboard/events', label: 'Events', icon: Calendar, color: 'text-terracotta' },
-  { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, color: 'text-earth-brown' },
-  { href: '/dashboard/documents', label: 'Documents', icon: FileText, color: 'text-purple-500' },
-  { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare, color: 'text-teal-500' },
-  { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench, color: 'text-orange-500' },
+  { href: '/dashboard/committees', label: 'Committees', icon: Users, color: 'text-forest-600' },
+  { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-forest-500' },
+  { href: '/dashboard/events', label: 'Events', icon: Calendar, color: 'text-earth-500' },
+  { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, color: 'text-earth-600' },
+  { href: '/dashboard/documents', label: 'Documents', icon: FileText, color: 'text-forest-700' },
+  { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare, color: 'text-forest-600' },
+  { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench, color: 'text-earth-500' },
 ]
 
 export default function StakeholderDashboardPage() {
@@ -113,20 +113,20 @@ export default function StakeholderDashboardPage() {
   function getActivityIcon(type: string) {
     switch (type) {
       case 'participation':
-        return <Clock className="h-4 w-4 text-sage" />
+        return <Clock className="h-4 w-4 text-forest-600" />
       case 'event':
-        return <Calendar className="h-4 w-4 text-sky-soft" />
+        return <Calendar className="h-4 w-4 text-forest-500" />
       case 'task':
-        return <CheckSquare className="h-4 w-4 text-terracotta" />
+        return <CheckSquare className="h-4 w-4 text-earth-500" />
       default:
-        return <Info className="h-4 w-4 text-gray-500" />
+        return <Info className="h-4 w-4 text-forest-400" />
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-earth-brown" />
+        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
       </div>
     )
   }
@@ -134,8 +134,8 @@ export default function StakeholderDashboardPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-earth-brown-light">{error}</p>
-        <Button onClick={fetchStats} variant="outline" className="mt-4">
+        <p className="text-forest-500 font-body">{error}</p>
+        <Button onClick={fetchStats} variant="outline" className="mt-4 border-forest-600 text-forest-700 hover:bg-forest-50">
           Try Again
         </Button>
       </div>
@@ -145,64 +145,64 @@ export default function StakeholderDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">Stakeholder Dashboard</h1>
-        <p className="text-earth-brown-light mt-1">Community overview and key metrics</p>
+        <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Dashboard</h1>
+        <p className="text-forest-500 mt-1 font-body">Community overview and key metrics</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-sage" />
+            <CardTitle className="text-sm font-medium font-display text-forest-800">Total Members</CardTitle>
+            <Users className="h-4 w-4 text-forest-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats?.metrics.totalMembers || 0}</div>
-            <p className="text-xs text-earth-brown-light mt-1">Active community members</p>
+            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.totalMembers || 0}</div>
+            <p className="text-xs text-forest-500 mt-1 font-body">Active community members</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Committees</CardTitle>
-            <Building2 className="h-4 w-4 text-sky-soft" />
+            <CardTitle className="text-sm font-medium font-display text-forest-800">Active Committees</CardTitle>
+            <Building2 className="h-4 w-4 text-forest-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats?.metrics.activeCommittees || 0}</div>
-            <p className="text-xs text-earth-brown-light mt-1">Working groups</p>
+            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.activeCommittees || 0}</div>
+            <p className="text-xs text-forest-500 mt-1 font-body">Working groups</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Tasks</CardTitle>
-            <CheckSquare className="h-4 w-4 text-terracotta" />
+            <CardTitle className="text-sm font-medium font-display text-forest-800">Open Tasks</CardTitle>
+            <CheckSquare className="h-4 w-4 text-earth-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats?.metrics.openTasks || 0}</div>
-            <p className="text-xs text-earth-brown-light mt-1">Pending completion</p>
+            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.openTasks || 0}</div>
+            <p className="text-xs text-forest-500 mt-1 font-body">Pending completion</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-earth-brown" />
+            <CardTitle className="text-sm font-medium font-display text-forest-800">Upcoming Events</CardTitle>
+            <Calendar className="h-4 w-4 text-earth-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats?.metrics.upcomingEvents || 0}</div>
-            <p className="text-xs text-earth-brown-light mt-1">Scheduled activities</p>
+            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.upcomingEvents || 0}</div>
+            <p className="text-xs text-forest-500 mt-1 font-body">Scheduled activities</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 border-sand-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5 text-terracotta" />
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <Megaphone className="h-5 w-5 text-earth-500" />
               Announcements
             </CardTitle>
-            <CardDescription>Latest community updates and notices</CardDescription>
+            <CardDescription className="text-forest-500 font-body">Latest community updates and notices</CardDescription>
           </CardHeader>
           <CardContent>
             {stats?.announcements && stats.announcements.length > 0 ? (
@@ -219,17 +219,17 @@ export default function StakeholderDashboardPage() {
                       {getPriorityIcon(announcement.priority)}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-earth-dark">{announcement.title}</h4>
+                          <h4 className="font-medium text-forest-800 font-body">{announcement.title}</h4>
                           {announcement.isPinned && (
-                            <span className="px-2 py-0.5 bg-earth-brown text-white text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-forest-600 text-white text-xs rounded-full font-body">
                               Pinned
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-earth-brown-light mt-1 line-clamp-2">
+                        <p className="text-sm text-forest-600 mt-1 line-clamp-2 font-body">
                           {announcement.content}
                         </p>
-                        <p className="text-xs text-earth-brown-light mt-2">
+                        <p className="text-xs text-forest-500 mt-2 font-body">
                           {formatRelativeTime(announcement.publishedAt)}
                         </p>
                       </div>
@@ -238,18 +238,18 @@ export default function StakeholderDashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-earth-brown-light py-8">No announcements at this time</p>
+              <p className="text-center text-forest-500 py-8 font-body">No announcements at this time</p>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-sand-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-sage" />
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <Clock className="h-5 w-5 text-forest-600" />
               Recent Activity
             </CardTitle>
-            <CardDescription>Latest community activities</CardDescription>
+            <CardDescription className="text-forest-500 font-body">Latest community activities</CardDescription>
           </CardHeader>
           <CardContent>
             {stats?.activityFeed && stats.activityFeed.length > 0 ? (
@@ -258,14 +258,14 @@ export default function StakeholderDashboardPage() {
                   <div key={activity.id} className="flex items-start gap-3">
                     <div className="mt-0.5">{getActivityIcon(activity.type)}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-earth-dark line-clamp-1">
+                      <p className="text-sm font-medium text-forest-800 line-clamp-1 font-body">
                         {activity.title}
                       </p>
-                      <p className="text-xs text-earth-brown-light line-clamp-1">
+                      <p className="text-xs text-forest-500 line-clamp-1 font-body">
                         {activity.description}
                       </p>
                       {activity.timestamp && (
-                        <p className="text-xs text-earth-brown-light mt-1">
+                        <p className="text-xs text-forest-400 mt-1 font-body">
                           {formatRelativeTime(activity.timestamp)}
                         </p>
                       )}
@@ -274,16 +274,16 @@ export default function StakeholderDashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-earth-brown-light py-8">No recent activity</p>
+              <p className="text-center text-forest-500 py-8 font-body">No recent activity</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
-          <CardDescription>Navigate to major sections</CardDescription>
+          <CardTitle className="font-display text-forest-800">Quick Links</CardTitle>
+          <CardDescription className="text-forest-500 font-body">Navigate to major sections</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -294,12 +294,12 @@ export default function StakeholderDashboardPage() {
                   key={link.href}
                   asChild
                   variant="outline"
-                  className="h-auto py-4 justify-start"
+                  className="h-auto py-4 justify-start border-sand-300 hover:bg-forest-50 hover:border-forest-300"
                 >
                   <Link href={link.href}>
                     <Icon className={cn('h-5 w-5 mr-3', link.color)} />
-                    <span className="font-medium">{link.label}</span>
-                    <ArrowRight className="h-4 w-4 ml-auto text-earth-brown-light" />
+                    <span className="font-medium font-body text-forest-700">{link.label}</span>
+                    <ArrowRight className="h-4 w-4 ml-auto text-forest-400" />
                   </Link>
                 </Button>
               )

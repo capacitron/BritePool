@@ -22,15 +22,17 @@ export function DashboardHeader({ userName, userRole, userImage }: DashboardHead
     .slice(0, 2)
 
   return (
-    <header className="bg-white border-b border-stone px-6 py-4">
+    <header className="bg-white border-b border-sand-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12">
+          <Avatar className="h-12 w-12 border-2 border-forest-200">
             {userImage && <AvatarImage src={userImage} alt={userName} />}
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback className="bg-forest-100 text-forest-700 font-display font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="text-xl font-serif font-semibold text-earth-brown-dark">
+            <h2 className="text-xl font-display font-semibold text-forest-900">
               {greeting}, {userName.split(' ')[0]}
             </h2>
             <span
@@ -50,7 +52,7 @@ export function DashboardHeader({ userName, userRole, userImage }: DashboardHead
             await signOut({ redirectTo: '/login' })
           }}
         >
-          <Button variant="ghost" size="sm" type="submit">
+          <Button variant="ghost" size="sm" type="submit" className="text-forest-600 hover:text-forest-800 hover:bg-forest-50">
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
           </Button>

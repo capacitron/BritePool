@@ -13,7 +13,7 @@ export default function SubscriptionPage() {
   const searchParams = useSearchParams()
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const success = searchParams.get('success')
   const canceled = searchParams.get('canceled')
 
@@ -52,7 +52,7 @@ export default function SubscriptionPage() {
   const handleManageBilling = async () => {
     setIsLoadingPortal(true)
     setError(null)
-    
+
     try {
       const response = await fetch('/api/payments/portal', {
         method: 'POST',
@@ -76,14 +76,14 @@ export default function SubscriptionPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; label: string }> = {
-      ACTIVE: { color: 'bg-sage text-white', label: 'Active' },
-      INACTIVE: { color: 'bg-stone text-earth-dark', label: 'Inactive' },
-      PAST_DUE: { color: 'bg-terracotta text-white', label: 'Past Due' },
-      CANCELLED: { color: 'bg-stone text-earth-dark', label: 'Cancelled' },
+      ACTIVE: { color: 'bg-forest-600 text-white', label: 'Active' },
+      INACTIVE: { color: 'bg-sand-200 text-forest-700', label: 'Inactive' },
+      PAST_DUE: { color: 'bg-earth-500 text-white', label: 'Past Due' },
+      CANCELLED: { color: 'bg-sand-200 text-forest-700', label: 'Cancelled' },
     }
     const config = statusConfig[status] || statusConfig.INACTIVE
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium font-body ${config.color}`}>
         {config.label}
       </span>
     )
@@ -92,46 +92,46 @@ export default function SubscriptionPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+        <h1 className="text-3xl font-display font-bold text-forest-800">
           Subscription Management
         </h1>
-        <p className="text-earth-brown-light mt-2">
+        <p className="text-forest-500 mt-2 font-body">
           Manage your membership plan and billing
         </p>
       </div>
 
       {success && (
-        <div className="bg-sage/10 border border-sage rounded-lg p-4 flex items-center gap-3">
-          <CheckCircle className="h-5 w-5 text-sage" />
-          <p className="text-sage-dark">
+        <div className="bg-forest-50 border border-forest-300 rounded-lg p-4 flex items-center gap-3">
+          <CheckCircle className="h-5 w-5 text-forest-600" />
+          <p className="text-forest-700 font-body">
             Your subscription has been activated successfully!
           </p>
         </div>
       )}
 
       {canceled && (
-        <div className="bg-terracotta/10 border border-terracotta rounded-lg p-4 flex items-center gap-3">
-          <XCircle className="h-5 w-5 text-terracotta" />
-          <p className="text-terracotta">
+        <div className="bg-earth-50 border border-earth-300 rounded-lg p-4 flex items-center gap-3">
+          <XCircle className="h-5 w-5 text-earth-600" />
+          <p className="text-earth-700 font-body">
             Payment was cancelled. Your subscription has not been changed.
           </p>
         </div>
       )}
 
       {error && (
-        <div className="bg-terracotta/10 border border-terracotta rounded-lg p-4 flex items-center gap-3">
-          <XCircle className="h-5 w-5 text-terracotta" />
-          <p className="text-terracotta">{error}</p>
+        <div className="bg-earth-50 border border-earth-300 rounded-lg p-4 flex items-center gap-3">
+          <XCircle className="h-5 w-5 text-earth-600" />
+          <p className="text-earth-700 font-body">{error}</p>
         </div>
       )}
 
-      <Card>
+      <Card className="border-sand-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <CreditCard className="h-5 w-5 text-forest-600" />
             Current Plan
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-forest-500 font-body">
             Your current subscription details
           </CardDescription>
         </CardHeader>
@@ -139,23 +139,24 @@ export default function SubscriptionPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-earth-brown-dark">
+                <span className="text-2xl font-bold font-display text-forest-800">
                   {currentTier}
                 </span>
                 {getStatusBadge(subscriptionStatus)}
               </div>
-              <p className="text-sm text-earth-brown-light mt-1">
-                {currentTier === 'FREE' 
+              <p className="text-sm text-forest-500 mt-1 font-body">
+                {currentTier === 'FREE'
                   ? 'Upgrade to unlock more features'
                   : 'Thank you for being a valued member!'}
               </p>
             </div>
-            
+
             {currentTier !== 'FREE' && subscriptionStatus === 'ACTIVE' && (
               <Button
                 variant="outline"
                 onClick={handleManageBilling}
                 disabled={isLoadingPortal}
+                className="border-forest-600 text-forest-700 hover:bg-forest-50"
               >
                 {isLoadingPortal ? (
                   <>
@@ -175,12 +176,12 @@ export default function SubscriptionPage() {
       </Card>
 
       <div>
-        <h2 className="text-2xl font-serif font-semibold text-earth-brown-dark mb-6">
+        <h2 className="text-2xl font-display font-semibold text-forest-800 mb-6">
           Available Plans
         </h2>
-        <PricingCards 
-          currentTier={currentTier} 
-          onSelectPlan={handleSelectPlan} 
+        <PricingCards
+          currentTier={currentTier}
+          onSelectPlan={handleSelectPlan}
         />
       </div>
     </div>

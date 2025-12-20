@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { Shield, ScrollText, CheckCircle2, AlertTriangle, ChevronDown, Loader2 } from 'lucide-react'
+import { Shield, ScrollText, CheckCircle2, AlertTriangle, ChevronDown, Loader2, Check } from 'lucide-react'
 
 interface Contract {
   id: string
@@ -137,7 +137,7 @@ export default function ContractReviewPage() {
     return (
       <div className="relative overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Decorative header */}
-        <div className="bg-gradient-to-r from-earth-brown-dark via-earth-brown to-earth-brown-dark p-8 text-white">
+        <div className="bg-gradient-to-r from-forest-800 via-forest-700 to-forest-800 p-8 text-white">
           <div className="animate-pulse flex items-center gap-4">
             <div className="w-16 h-16 bg-white/20 rounded-xl" />
             <div className="space-y-2">
@@ -148,12 +148,12 @@ export default function ContractReviewPage() {
         </div>
         <div className="p-8">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 w-full bg-stone-warm rounded" />
-            <div className="h-4 w-5/6 bg-stone-warm rounded" />
-            <div className="h-4 w-4/5 bg-stone-warm rounded" />
-            <div className="h-32 w-full bg-stone-warm/50 rounded-xl" />
+            <div className="h-4 w-full bg-sand-200 rounded" />
+            <div className="h-4 w-5/6 bg-sand-200 rounded" />
+            <div className="h-4 w-4/5 bg-sand-200 rounded" />
+            <div className="h-32 w-full bg-sand-100 rounded-xl" />
           </div>
-          <p className="mt-6 text-center text-earth-brown-light flex items-center justify-center gap-2">
+          <p className="mt-6 text-center text-forest-600 flex items-center justify-center gap-2 font-body">
             <Loader2 className="w-5 h-5 animate-spin" />
             Loading membership agreement...
           </p>
@@ -165,22 +165,22 @@ export default function ContractReviewPage() {
   if (error && !contract) {
     return (
       <div className="relative overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="bg-gradient-to-r from-terracotta/90 to-terracotta p-8 text-white">
+        <div className="bg-gradient-to-r from-earth-600 to-earth-500 p-8 text-white">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
               <AlertTriangle className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-serif font-bold">Unable to Load Agreement</h2>
-              <p className="text-white/80 mt-1">There was a problem retrieving the document</p>
+              <h2 className="text-2xl font-display font-bold">Unable to Load Agreement</h2>
+              <p className="text-white/80 mt-1 font-body">There was a problem retrieving the document</p>
             </div>
           </div>
         </div>
         <div className="p-8 text-center">
-          <p className="text-earth-brown-light mb-6">{error}</p>
+          <p className="text-forest-600 mb-6 font-body">{error}</p>
           <Button
             onClick={() => window.location.reload()}
-            className="bg-earth-brown-dark hover:bg-earth-brown text-white px-8"
+            className="bg-forest-600 hover:bg-forest-700 text-white px-8"
           >
             Try Again
           </Button>
@@ -192,23 +192,23 @@ export default function ContractReviewPage() {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[85vh]">
       {/* Hero Header */}
-      <div className="relative bg-gradient-to-br from-earth-brown-dark via-earth-brown to-earth-brown-dark p-6 md:p-8 text-white">
+      <div className="relative bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-6 md:p-8 text-white">
         {/* Decorative pattern */}
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20h40M20 0v40' stroke='%23fff' stroke-width='1' fill='none'/%3E%3C/svg%3E")`,
           backgroundSize: '40px 40px'
         }} />
-        <div className="absolute top-0 right-0 w-48 h-48 bg-earth-gold/20 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-earth-400/20 rounded-full blur-3xl" />
 
         <div className="relative flex items-center gap-4">
           <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-            <ScrollText className="w-8 h-8 text-earth-gold" />
+            <ScrollText className="w-8 h-8 text-earth-300" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif font-bold">
+            <h2 className="text-2xl md:text-3xl font-display font-bold">
               Membership Agreement
             </h2>
-            <p className="text-white/70 mt-1 flex items-center gap-2">
+            <p className="text-sand-200 mt-1 flex items-center gap-2 font-body">
               <Shield className="w-4 h-4" />
               Version {contract?.version} - Please read carefully before accepting
             </p>
@@ -217,13 +217,13 @@ export default function ContractReviewPage() {
 
         {/* Progress Bar */}
         <div className="mt-6">
-          <div className="flex items-center justify-between text-xs text-white/60 mb-2">
+          <div className="flex items-center justify-between text-xs text-sand-300 mb-2 font-body">
             <span>Reading progress</span>
             <span>{Math.round(scrollProgress)}%</span>
           </div>
           <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-earth-gold to-earth-gold-dark transition-all duration-300 ease-out rounded-full"
+              className="h-full bg-gradient-to-r from-earth-400 to-earth-500 transition-all duration-300 ease-out rounded-full"
               style={{ width: `${scrollProgress}%` }}
             />
           </div>
@@ -233,10 +233,10 @@ export default function ContractReviewPage() {
       {/* Contract Content */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-6 md:px-8 py-6 bg-gradient-to-b from-stone-warm/30 to-white"
+        className="flex-1 overflow-y-auto px-6 md:px-8 py-6 bg-gradient-to-b from-sand-50 to-white"
       >
         <div className="prose prose-stone max-w-none">
-          <div className="whitespace-pre-wrap text-earth-brown text-sm leading-relaxed font-serif">
+          <div className="whitespace-pre-wrap text-forest-700 text-sm leading-relaxed font-body">
             {contract?.content}
           </div>
         </div>
@@ -244,8 +244,8 @@ export default function ContractReviewPage() {
         {/* Scroll Indicator */}
         {!hasScrolledToBottom && (
           <div className="sticky bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none flex items-end justify-center pb-4">
-            <div className="pointer-events-auto animate-bounce flex flex-col items-center gap-1 text-earth-brown-light">
-              <span className="text-xs font-medium bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm border border-stone">
+            <div className="pointer-events-auto animate-bounce flex flex-col items-center gap-1 text-forest-500">
+              <span className="text-xs font-medium bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm border border-sand-200 font-body">
                 Scroll to continue reading
               </span>
               <ChevronDown className="w-5 h-5" />
@@ -255,47 +255,46 @@ export default function ContractReviewPage() {
       </div>
 
       {/* Footer Actions */}
-      <div className="border-t border-stone bg-gradient-to-r from-stone-warm/50 to-earth-light/50 p-6 md:p-8">
+      <div className="border-t border-sand-200 bg-gradient-to-r from-sand-50 to-cream p-6 md:p-8">
         {error && (
-          <div className="bg-terracotta/10 border border-terracotta/30 text-terracotta px-4 py-3 rounded-xl text-sm mb-4 flex items-center gap-2">
+          <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-xl text-sm mb-4 flex items-center gap-2 font-body">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             {error}
           </div>
         )}
 
-        {/* Agreement Checkbox */}
+        {/* Agreement Checkbox - FIXED */}
         <label
-          className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer mb-6 ${
+          className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 mb-6 ${
             hasScrolledToBottom
               ? isAgreed
-                ? 'border-sage bg-sage/10'
-                : 'border-earth-brown-light/30 hover:border-earth-brown-light/50 bg-white'
-              : 'border-earth-brown-light/20 bg-stone-warm/30 cursor-not-allowed'
+                ? 'border-forest-500 bg-forest-50 cursor-pointer'
+                : 'border-sand-300 hover:border-forest-300 bg-white cursor-pointer'
+              : 'border-sand-200 bg-sand-100 cursor-not-allowed opacity-60'
           }`}
         >
-          <div className="relative mt-0.5">
+          <div className="relative mt-0.5 flex-shrink-0">
             <input
               type="checkbox"
-              id="agree"
               checked={isAgreed}
-              onChange={(e) => setIsAgreed(e.target.checked)}
+              onChange={(e) => hasScrolledToBottom && setIsAgreed(e.target.checked)}
               disabled={!hasScrolledToBottom || isSubmitting}
-              className="sr-only"
+              className="sr-only peer"
             />
             <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
               isAgreed
-                ? 'bg-sage border-sage'
+                ? 'bg-forest-600 border-forest-600'
                 : hasScrolledToBottom
-                  ? 'border-earth-brown-light/50 bg-white'
-                  : 'border-earth-brown-light/30 bg-stone-warm/50'
+                  ? 'border-forest-400 bg-white hover:border-forest-500'
+                  : 'border-sand-300 bg-sand-100'
             }`}>
-              {isAgreed && <CheckCircle2 className="w-4 h-4 text-white" />}
+              {isAgreed && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
             </div>
           </div>
-          <span className={`text-sm leading-relaxed ${
-            !hasScrolledToBottom ? 'text-earth-brown-light/60' : 'text-earth-brown-dark'
+          <span className={`text-sm leading-relaxed font-body ${
+            !hasScrolledToBottom ? 'text-forest-400' : 'text-forest-800'
           }`}>
-            I have read and agree to the <strong>Membership Agreement</strong> and understand my rights and
+            I have read and agree to the <strong className="text-forest-900">Membership Agreement</strong> and understand my rights and
             obligations as a BRITE POOL member. I acknowledge that this constitutes a binding commitment
             to uphold the values and principles of our community.
           </span>
@@ -308,8 +307,8 @@ export default function ContractReviewPage() {
           size="lg"
           className={`w-full text-lg font-semibold transition-all duration-300 ${
             isAgreed
-              ? 'bg-gradient-to-r from-earth-brown-dark to-earth-brown hover:from-earth-brown hover:to-earth-brown-dark shadow-lg hover:shadow-xl'
-              : 'bg-earth-brown-light/30 text-earth-brown-light cursor-not-allowed'
+              ? 'bg-forest-600 hover:bg-forest-700 text-white shadow-lg hover:shadow-xl'
+              : 'bg-sand-200 text-sand-500 cursor-not-allowed'
           }`}
         >
           {isSubmitting ? (
@@ -326,8 +325,8 @@ export default function ContractReviewPage() {
         </Button>
 
         {!hasScrolledToBottom && (
-          <p className="text-xs text-earth-brown-light text-center mt-4 flex items-center justify-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-earth-gold animate-pulse" />
+          <p className="text-xs text-forest-500 text-center mt-4 flex items-center justify-center gap-2 font-body">
+            <span className="w-2 h-2 rounded-full bg-earth-400 animate-pulse" />
             Please scroll to the bottom of the agreement to enable acceptance
           </p>
         )}
