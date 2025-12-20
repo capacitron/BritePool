@@ -24,12 +24,12 @@ export default function OnboardingLayout({
       <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-sand-200 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div>
+            <div className="text-center">
               <h1 className="text-2xl font-display font-bold text-forest-900">
                 BRITE POOL
               </h1>
               <p className="text-sm text-forest-600 font-body">
-                Ministerium of Empowerment
+                Building Sovereign Futures
               </p>
             </div>
             <div className="text-right">
