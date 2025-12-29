@@ -21,7 +21,10 @@
       "Bash(env)",
       "Bash(npm run build:*)",
       "Bash(npx prisma:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(tree:*)",
+      "Bash(head:*)",
+      "Bash(xargs ls:*)"
     ],
     "deny": []
   },

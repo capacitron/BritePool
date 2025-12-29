@@ -54,6 +54,16 @@ model User {
   maintenanceResolved MaintenanceRequest[] @relation("MaintenanceRequestsResolved")
   documentsUploaded Document[] @relation("DocumentsUploaded")
 
+  // Pool System Relations
+  cutOverseer         PoolCut[]          @relation("CutOverseer")
+  invitationsSent     PoolInvitation[]   @relation("InvitationsSent")
+  invitationsAccepted PoolInvitation[]   @relation("InvitationsAccepted")
+  pledges             Pledge[]           @relation("MemberPledges")
+
+  // Committee Chat & Document Relations
+  chatMessages        CommitteeChatMessage[] @relation("ChatMessagesAuthored")
+  committeeDocumentsUploaded CommitteeDocument[] @relation("CommitteeDocumentsUploaded")
+
   @@index([email])
   @@index([role])
 }
@@ -141,6 +151,8 @@ model Committee {
   members     CommitteeMember[]
   tasks       Task[]
   events      Event[]
+  chats       CommitteeChat[]
+  documents   CommitteeDocument[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -675,4 +687,198 @@ enum DocumentCategory {
   LEGAL
   EDUCATIONAL
   OPERATIONAL
+}
+
+// Committee Chat & Collaboration System
+
+model CommitteeChat {
+  id           String              @id @default(cuid())
+  committeeId  String
+  committee    Committee           @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  category     CommitteeChatCategory @default(GENERAL)
+  messages     CommitteeChatMessage[]
+  summaries    CommitteeChatSummary[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([committeeId, category])
+  @@index([committeeId])
+}
+
+model CommitteeChatMessage {
+  id         String        @id @default(cuid())
+  chatId     String
+  chat       CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User          @relation("ChatMessagesAuthored", fields: [authorId], references: [id], onDelete: Cascade)
+  content    String
+  attachmentUrl String?
+  attachmentName String?
+  isDeleted  Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([chatId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model CommitteeChatSummary {
+  id           String        @id @default(cuid())
+  chatId       String
+  chat         CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  weekStarting DateTime
+  weekEnding   DateTime
+  summary      String
+  tasks        CommitteeExtractedTask[]
+  generatedAt  DateTime      @default(now())
+
+  @@unique([chatId, weekStarting])
+  @@index([chatId])
+  @@index([weekStarting])
+}
+
+model CommitteeExtractedTask {
+  id          String               @id @default(cuid())
+  summaryId   String
+  summary     CommitteeChatSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  taskTitle   String
+  taskDescription String?
+  assignedToName String?
+  dueDate     DateTime?
+  status      ExtractedTaskStatus  @default(PENDING)
+  convertedToTaskId String?
+  createdAt   DateTime             @default(now())
+
+  @@index([summaryId])
+}
+
+model CommitteeDocument {
+  id              String         @id @default(cuid())
+  committeeId     String
+  committee       Committee      @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  category        DocumentCategory
+  fileUrl         String
+  fileName        String
+  fileType        String
+  fileSize        Int
+  uploadedById    String
+  uploadedBy      User           @relation("CommitteeDocumentsUploaded", fields: [uploadedById], references: [id])
+  version         String         @default("1.0")
+  isShared        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([committeeId])
+  @@index([uploadedById])
+  @@index([category])
+}
+
+enum CommitteeChatCategory {
+  GENERAL
+  ANNOUNCEMENTS
+  PROJECTS
+  RESOURCES
+  QUESTIONS
+}
+
+enum ExtractedTaskStatus {
+  PENDING
+  CONVERTED
+  DISMISSED
+}
+
+// Stakeholder Pool System
+
+enum PoolColor {
+  PURPLE
+  ORANGE
+  GREEN
+}
+
+enum PoolStatus {
+  OPEN
+  GOAL_REACHED
+  CLOSED
+}
+
+enum PledgeStatus {
+  PENDING
+  COMMITTED
+  PAID
+  CANCELLED
+}
+
+// Stakeholder Pool
+model Pool {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  goalAmount  Float
+  status      PoolStatus @default(OPEN)
+  cuts        PoolCut[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+}
+
+// Color Cut (Purple, Orange, Green)
+model PoolCut {
+  id          String           @id @default(cuid())
+  poolId      String
+  pool        Pool             @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  color       PoolColor
+  password    String
+  overseerId  String
+  overseer    User             @relation("CutOverseer", fields: [overseerId], references: [id])
+  invitations PoolInvitation[]
+  pledges     Pledge[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([poolId, color])
+  @@index([poolId])
+  @@index([overseerId])
+}
+
+// Pool Invitation
+model PoolInvitation {
+  id           String    @id @default(cuid())
+  cutId        String
+  cut          PoolCut   @relation(fields: [cutId], references: [id], onDelete: Cascade)
+  invitedEmail String
+  invitedById  String
+  invitedBy    User      @relation("InvitationsSent", fields: [invitedById], references: [id])
+  acceptedAt   DateTime?
+  acceptedById String?
+  acceptedBy   User?     @relation("InvitationsAccepted", fields: [acceptedById], references: [id])
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@unique([cutId, invitedEmail])
+  @@index([cutId])
+  @@index([invitedEmail])
+}
+
+// Pledge Record
+model Pledge {
+  id         String       @id @default(cuid())
+  cutId      String
+  cut        PoolCut      @relation(fields: [cutId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     User         @relation("MemberPledges", fields: [memberId], references: [id])
+  amount     Float
+  status     PledgeStatus @default(PENDING)
+  paidAt     DateTime?
+  paymentRef String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([cutId, memberId])
+  @@index([cutId])
+  @@index([memberId])
+  @@index([status])
 }

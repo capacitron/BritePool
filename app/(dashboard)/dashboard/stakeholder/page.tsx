@@ -2,125 +2,170 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { cn, formatRelativeTime, formatDateTime } from '@/lib/utils'
-import {
-  Users,
-  Building2,
-  CheckSquare,
-  Calendar,
-  ArrowRight,
-  Megaphone,
-  Clock,
-  BookOpen,
-  FileText,
-  MessageSquare,
-  Wrench,
-  Loader2,
-  AlertTriangle,
-  Info,
-  AlertCircle,
-} from 'lucide-react'
+import { PoolOverview } from '@/components/pool/PoolOverview'
+import { PoolColorCard } from '@/components/pool/PoolColorCard'
+import { ColorEntryModal } from '@/components/pool/ColorEntryModal'
+import { PledgeForm } from '@/components/pool/PledgeForm'
+import { InvitationManager } from '@/components/pool/InvitationManager'
+import { MemberPledgeList } from '@/components/pool/MemberPledgeList'
+import { GoalNotification } from '@/components/pool/GoalNotification'
+import { Loader2, Plus, Lock, Settings } from 'lucide-react'
 
-interface DashboardStats {
-  metrics: {
-    totalMembers: number
-    activeCommittees: number
-    openTasks: number
-    upcomingEvents: number
-  }
-  announcements: {
+interface Pool {
+  id: string
+  name: string
+  description: string | null
+  goalAmount: number
+  status: 'OPEN' | 'GOAL_REACHED' | 'CLOSED'
+  cuts: {
     id: string
-    title: string
-    content: string
-    priority: 'URGENT' | 'IMPORTANT' | 'INFO'
-    isPinned: boolean
-    publishedAt: string
+    color: 'PURPLE' | 'ORANGE' | 'GREEN'
+    total: number
+    pledgeCount: number
+    overseerId: string
+    overseer: {
+      id: string
+      name: string
+      email: string
+    }
   }[]
-  activityFeed: {
-    id: string
-    type: 'participation' | 'event' | 'task'
-    title: string
-    description: string
-    timestamp: string | null
-  }[]
+  blueTotal: number
+  progress: number
 }
 
-const quickLinks = [
-  { href: '/dashboard/committees', label: 'Committees', icon: Users, color: 'text-forest-600' },
-  { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare, color: 'text-forest-500' },
-  { href: '/dashboard/events', label: 'Events', icon: Calendar, color: 'text-earth-500' },
-  { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, color: 'text-earth-600' },
-  { href: '/dashboard/documents', label: 'Documents', icon: FileText, color: 'text-forest-700' },
-  { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare, color: 'text-forest-600' },
-  { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench, color: 'text-earth-500' },
-]
+interface UserAccess {
+  isOverseer: boolean
+  overseerCutId?: string
+  overseerColor?: 'PURPLE' | 'ORANGE' | 'GREEN'
+  hasAccess: boolean
+  accessCutId?: string
+  accessColor?: 'PURPLE' | 'ORANGE' | 'GREEN'
+  existingPledge?: number
+}
 
-export default function StakeholderDashboardPage() {
+export default function StakeholderPoolPage() {
   const router = useRouter()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [pool, setPool] = useState<Pool | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  // Modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [selectedCut, setSelectedCut] = useState<{ id: string; color: 'PURPLE' | 'ORANGE' | 'GREEN' } | null>(null)
+
+  // Access state
+  const [userAccess, setUserAccess] = useState<UserAccess>({
+    isOverseer: false,
+    hasAccess: false
+  })
 
   useEffect(() => {
-    fetchStats()
+    fetchPool()
+    fetchUserInfo()
   }, [])
 
-  async function fetchStats() {
+  async function fetchUserInfo() {
     try {
-      const res = await fetch('/api/dashboard/stats')
+      const res = await fetch('/api/auth/session')
+      if (res.ok) {
+        const data = await res.json()
+        setUserId(data.user?.id)
+        setUserRole(data.user?.role)
+      }
+    } catch (err) {
+      console.error('Error fetching user info:', err)
+    }
+  }
+
+  async function fetchPool() {
+    try {
+      const res = await fetch('/api/pools')
       if (!res.ok) {
         if (res.status === 401) {
           router.push('/login')
           return
         }
-        throw new Error('Failed to fetch dashboard stats')
+        throw new Error('Failed to fetch pools')
       }
-      const data = await res.json()
-      setStats(data)
+
+      const pools = await res.json()
+
+      // Get the first active pool
+      const activePool = pools.find((p: Pool) => p.status === 'OPEN' || p.status === 'GOAL_REACHED')
+
+      if (activePool) {
+        setPool(activePool)
+        updateUserAccess(activePool)
+      }
     } catch (err) {
-      console.error('Error fetching stats:', err)
-      setError('Failed to load dashboard data')
+      console.error('Error fetching pool:', err)
+      setError('Failed to load pool data')
     } finally {
       setLoading(false)
     }
   }
 
-  function getPriorityIcon(priority: string) {
-    switch (priority) {
-      case 'URGENT':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case 'IMPORTANT':
-        return <AlertCircle className="h-4 w-4 text-amber-500" />
-      default:
-        return <Info className="h-4 w-4 text-blue-500" />
-    }
+  function updateUserAccess(poolData: Pool) {
+    if (!userId) return
+
+    // Check if user is an overseer of any cut
+    const overseerCut = poolData.cuts.find(cut => cut.overseerId === userId)
+
+    setUserAccess({
+      isOverseer: !!overseerCut,
+      overseerCutId: overseerCut?.id,
+      overseerColor: overseerCut?.color,
+      hasAccess: !!overseerCut, // Overseers have automatic access
+      accessCutId: overseerCut?.id,
+      accessColor: overseerCut?.color
+    })
   }
 
-  function getPriorityStyles(priority: string) {
-    switch (priority) {
-      case 'URGENT':
-        return 'border-l-red-500 bg-red-50'
-      case 'IMPORTANT':
-        return 'border-l-amber-500 bg-amber-50'
-      default:
-        return 'border-l-blue-500 bg-blue-50'
+  useEffect(() => {
+    if (pool && userId) {
+      updateUserAccess(pool)
     }
+  }, [pool, userId])
+
+  function handleColorSelect(cutId: string, color: 'PURPLE' | 'ORANGE' | 'GREEN') {
+    const cut = pool?.cuts.find(c => c.id === cutId)
+    if (!cut) return
+
+    // If user is the overseer of this cut, go directly to management
+    if (cut.overseerId === userId) {
+      setUserAccess(prev => ({
+        ...prev,
+        accessCutId: cutId,
+        accessColor: color,
+        hasAccess: true
+      }))
+      return
+    }
+
+    // Otherwise, show password modal
+    setSelectedCut({ id: cutId, color })
+    setShowPasswordModal(true)
   }
 
-  function getActivityIcon(type: string) {
-    switch (type) {
-      case 'participation':
-        return <Clock className="h-4 w-4 text-forest-600" />
-      case 'event':
-        return <Calendar className="h-4 w-4 text-forest-500" />
-      case 'task':
-        return <CheckSquare className="h-4 w-4 text-earth-500" />
-      default:
-        return <Info className="h-4 w-4 text-forest-400" />
+  function handlePasswordVerified(verified: boolean) {
+    if (verified && selectedCut) {
+      setUserAccess(prev => ({
+        ...prev,
+        accessCutId: selectedCut.id,
+        accessColor: selectedCut.color,
+        hasAccess: true
+      }))
     }
+    setShowPasswordModal(false)
+    setSelectedCut(null)
+  }
+
+  function handlePledgeSuccess() {
+    fetchPool() // Refresh data after pledge
   }
 
   if (loading) {
@@ -135,178 +180,144 @@ export default function StakeholderDashboardPage() {
     return (
       <div className="text-center py-12">
         <p className="text-forest-500 font-body">{error}</p>
-        <Button onClick={fetchStats} variant="outline" className="mt-4 border-forest-600 text-forest-700 hover:bg-forest-50">
+        <Button
+          onClick={fetchPool}
+          variant="outline"
+          className="mt-4 border-forest-600 text-forest-700 hover:bg-forest-50"
+        >
           Try Again
         </Button>
       </div>
     )
   }
 
+  // No active pool - show create option for admins
+  if (!pool) {
+    const canCreate = userRole === 'BOARD_CHAIR' || userRole === 'WEB_STEWARD'
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Pool</h1>
+          <p className="text-forest-500 mt-1 font-body">Private pledge pool for invited stakeholders</p>
+        </div>
+
+        <Card className="border-sand-200">
+          <CardContent className="py-12 text-center">
+            <Lock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-forest-800 mb-2">
+              No Active Pool
+            </h3>
+            <p className="text-forest-500 font-body mb-6 max-w-md mx-auto">
+              There is no active stakeholder pool at this time.
+              {canCreate && ' As a Board Chair, you can create a new pool.'}
+            </p>
+            {canCreate && (
+              <Button
+                onClick={() => {/* TODO: Implement pool creation modal */}}
+                className="bg-forest-600 text-white hover:bg-forest-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Pool
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Dashboard</h1>
-        <p className="text-forest-500 mt-1 font-body">Community overview and key metrics</p>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Pool</h1>
+          <p className="text-forest-500 mt-1 font-body">Private pledge pool for invited stakeholders</p>
+        </div>
+        {userAccess.isOverseer && (
+          <Button variant="outline" className="border-forest-600 text-forest-700">
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Pool
+          </Button>
+        )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-sand-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-display text-forest-800">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-forest-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.totalMembers || 0}</div>
-            <p className="text-xs text-forest-500 mt-1 font-body">Active community members</p>
+      {/* Goal Reached Notification */}
+      {pool.status === 'GOAL_REACHED' && (
+        <GoalNotification
+          poolName={pool.name}
+          goalAmount={pool.goalAmount}
+          totalPledged={pool.blueTotal}
+        />
+      )}
+
+      {/* Pool Overview */}
+      <PoolOverview
+        poolName={pool.name}
+        goalAmount={pool.goalAmount}
+        status={pool.status}
+        cuts={pool.cuts}
+        blueTotal={pool.blueTotal}
+        progress={pool.progress}
+        userAccess={userAccess}
+        onColorSelect={handleColorSelect}
+      />
+
+      {/* Overseer Management Section */}
+      {userAccess.isOverseer && userAccess.overseerCutId && userAccess.overseerColor && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <InvitationManager
+            cutId={userAccess.overseerCutId}
+            color={userAccess.overseerColor}
+          />
+          <MemberPledgeList
+            cutId={userAccess.overseerCutId}
+            color={userAccess.overseerColor}
+          />
+        </div>
+      )}
+
+      {/* Member Pledge Section */}
+      {userAccess.hasAccess && !userAccess.isOverseer && userAccess.accessCutId && userAccess.accessColor && pool.status === 'OPEN' && (
+        <div className="max-w-md">
+          <PledgeForm
+            cutId={userAccess.accessCutId}
+            color={userAccess.accessColor}
+            existingPledge={userAccess.existingPledge}
+            onPledgeSuccess={handlePledgeSuccess}
+          />
+        </div>
+      )}
+
+      {/* Instructions for non-members */}
+      {!userAccess.hasAccess && !userAccess.isOverseer && (
+        <Card className="border-sand-200 bg-sand-50">
+          <CardContent className="py-8 text-center">
+            <Lock className="h-10 w-10 text-forest-400 mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-forest-800 mb-2">
+              Password Protected
+            </h3>
+            <p className="text-forest-500 font-body max-w-md mx-auto">
+              Select a color above and enter your password to access your assigned pool cut and make a pledge.
+              If you haven't received an invitation, contact your pool overseer.
+            </p>
           </CardContent>
         </Card>
+      )}
 
-        <Card className="border-sand-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-display text-forest-800">Active Committees</CardTitle>
-            <Building2 className="h-4 w-4 text-forest-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.activeCommittees || 0}</div>
-            <p className="text-xs text-forest-500 mt-1 font-body">Working groups</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-sand-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-display text-forest-800">Open Tasks</CardTitle>
-            <CheckSquare className="h-4 w-4 text-earth-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.openTasks || 0}</div>
-            <p className="text-xs text-forest-500 mt-1 font-body">Pending completion</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-sand-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-display text-forest-800">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-earth-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display text-forest-900">{stats?.metrics.upcomingEvents || 0}</div>
-            <p className="text-xs text-forest-500 mt-1 font-body">Scheduled activities</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-sand-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
-              <Megaphone className="h-5 w-5 text-earth-500" />
-              Announcements
-            </CardTitle>
-            <CardDescription className="text-forest-500 font-body">Latest community updates and notices</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {stats?.announcements && stats.announcements.length > 0 ? (
-              <div className="space-y-3">
-                {stats.announcements.map((announcement) => (
-                  <div
-                    key={announcement.id}
-                    className={cn(
-                      'p-4 rounded-lg border-l-4',
-                      getPriorityStyles(announcement.priority)
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      {getPriorityIcon(announcement.priority)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-forest-800 font-body">{announcement.title}</h4>
-                          {announcement.isPinned && (
-                            <span className="px-2 py-0.5 bg-forest-600 text-white text-xs rounded-full font-body">
-                              Pinned
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-forest-600 mt-1 line-clamp-2 font-body">
-                          {announcement.content}
-                        </p>
-                        <p className="text-xs text-forest-500 mt-2 font-body">
-                          {formatRelativeTime(announcement.publishedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-forest-500 py-8 font-body">No announcements at this time</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-sand-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
-              <Clock className="h-5 w-5 text-forest-600" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription className="text-forest-500 font-body">Latest community activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {stats?.activityFeed && stats.activityFeed.length > 0 ? (
-              <div className="space-y-4">
-                {stats.activityFeed.slice(0, 8).map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="mt-0.5">{getActivityIcon(activity.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-forest-800 line-clamp-1 font-body">
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-forest-500 line-clamp-1 font-body">
-                        {activity.description}
-                      </p>
-                      {activity.timestamp && (
-                        <p className="text-xs text-forest-400 mt-1 font-body">
-                          {formatRelativeTime(activity.timestamp)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-forest-500 py-8 font-body">No recent activity</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-sand-200">
-        <CardHeader>
-          <CardTitle className="font-display text-forest-800">Quick Links</CardTitle>
-          <CardDescription className="text-forest-500 font-body">Navigate to major sections</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {quickLinks.map((link) => {
-              const Icon = link.icon
-              return (
-                <Button
-                  key={link.href}
-                  asChild
-                  variant="outline"
-                  className="h-auto py-4 justify-start border-sand-300 hover:bg-forest-50 hover:border-forest-300"
-                >
-                  <Link href={link.href}>
-                    <Icon className={cn('h-5 w-5 mr-3', link.color)} />
-                    <span className="font-medium font-body text-forest-700">{link.label}</span>
-                    <ArrowRight className="h-4 w-4 ml-auto text-forest-400" />
-                  </Link>
-                </Button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Password Entry Modal */}
+      {showPasswordModal && selectedCut && (
+        <ColorEntryModal
+          color={selectedCut.color}
+          cutId={selectedCut.id}
+          onVerify={handlePasswordVerified}
+          onClose={() => {
+            setShowPasswordModal(false)
+            setSelectedCut(null)
+          }}
+        />
+      )}
     </div>
   )
 }
