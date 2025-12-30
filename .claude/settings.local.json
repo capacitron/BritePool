@@ -24,7 +24,8 @@
       "Bash(npm run dev:*)",
       "Bash(tree:*)",
       "Bash(head:*)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   },

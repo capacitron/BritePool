@@ -21,6 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react'
+import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
+import { PageHeader } from '@/components/PageHeader'
 
 interface UserProfile {
   id: string
@@ -207,6 +209,8 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      <PageHeader path="profile" />
+
       <div>
         <h1 className="text-3xl font-display font-bold text-forest-800">Profile Settings</h1>
         <p className="text-forest-500 mt-1 font-body">Manage your account information and preferences</p>
@@ -502,6 +506,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <WGOInvolvementsSection />
     </div>
   )
 }

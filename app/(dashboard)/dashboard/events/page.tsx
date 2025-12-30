@@ -11,19 +11,32 @@ export default async function EventsPage() {
   }
 
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-  const [allEvents, upcomingEvents, userRegistrations] = await Promise.all([
+  const [allEvents, upcomingEvents, userRegistrations, userCommitteeMemberships] = await Promise.all([
+    // Get approved events + user's own pending events
     prisma.event.findMany({
       where: {
         startTime: {
           gte: new Date(now.getFullYear(), now.getMonth() - 1, 1),
           lte: new Date(now.getFullYear(), now.getMonth() + 2, 0)
-        }
+        },
+        OR: [
+          { status: 'APPROVED' },
+          { status: 'PENDING', createdById: session.user.id }
+        ]
       },
       include: {
         committee: {
+          select: { id: true, name: true, type: true }
+        },
+        committees: {
+          include: {
+            committee: {
+              select: { id: true, name: true, slug: true, type: true }
+            }
+          }
+        },
+        createdBy: {
           select: { id: true, name: true }
         },
         _count: {
@@ -32,15 +45,22 @@ export default async function EventsPage() {
       },
       orderBy: { startTime: 'asc' }
     }),
+    // Upcoming approved events only
     prisma.event.findMany({
       where: {
-        startTime: {
-          gte: now
-        }
+        startTime: { gte: now },
+        status: 'APPROVED'
       },
       include: {
         committee: {
-          select: { id: true, name: true }
+          select: { id: true, name: true, type: true }
+        },
+        committees: {
+          include: {
+            committee: {
+              select: { id: true, name: true, slug: true, type: true }
+            }
+          }
         },
         _count: {
           select: { registrations: true }
@@ -54,6 +74,17 @@ export default async function EventsPage() {
         userId: session.user.id
       },
       select: { eventId: true }
+    }),
+    // Get user's committee memberships
+    prisma.committeeMember.findMany({
+      where: {
+        userId: session.user.id
+      },
+      include: {
+        committee: {
+          select: { id: true, name: true, type: true }
+        }
+      }
     })
   ])
 
@@ -64,12 +95,16 @@ export default async function EventsPage() {
     title: event.title,
     description: event.description,
     type: event.type,
+    category: event.category,
+    status: event.status,
     startTime: event.startTime.toISOString(),
     endTime: event.endTime.toISOString(),
     location: event.location,
     virtualLink: event.virtualLink,
     capacity: event.capacity,
     committee: event.committee,
+    committees: event.committees,
+    createdBy: event.createdBy,
     attendeeCount: event._count.registrations,
     isRegistered: registeredEventIds.has(event.id)
   }))
@@ -79,14 +114,25 @@ export default async function EventsPage() {
     title: event.title,
     description: event.description,
     type: event.type,
+    category: event.category,
+    status: event.status,
     startTime: event.startTime.toISOString(),
     endTime: event.endTime.toISOString(),
     location: event.location,
     virtualLink: event.virtualLink,
     capacity: event.capacity,
     committee: event.committee,
+    committees: event.committees,
     attendeeCount: event._count.registrations,
     isRegistered: registeredEventIds.has(event.id)
+  }))
+
+  // Format user committees
+  const userCommittees = userCommitteeMemberships.map(m => ({
+    id: m.committee.id,
+    name: m.committee.name,
+    type: m.committee.type,
+    role: m.role
   }))
 
   return (
@@ -94,6 +140,8 @@ export default async function EventsPage() {
       events={formattedEvents}
       upcomingEvents={formattedUpcoming}
       userRole={session.user.role}
+      userId={session.user.id}
+      userCommittees={userCommittees}
     />
   )
 }

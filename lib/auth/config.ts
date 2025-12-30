@@ -91,6 +91,7 @@ export const authConfig: NextAuthConfig = {
           email: user.email,
           name: user.name,
           role: user.role,
+          membershipLevel: user.membershipLevel,
           covenantAcceptedAt: user.covenantAcceptedAt,
           covenantVersion: user.covenantVersion,
           subscriptionTier: user.subscriptionTier,
@@ -106,6 +107,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.membershipLevel = user.membershipLevel
         token.covenantAcceptedAt = user.covenantAcceptedAt
         token.covenantVersion = user.covenantVersion
         token.subscriptionTier = user.subscriptionTier
@@ -117,8 +119,9 @@ export const authConfig: NextAuthConfig = {
         const { prisma } = await import('@/lib/prisma')
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { 
+          select: {
             onboardingCompleted: true,
+            membershipLevel: true,
             covenantAcceptedAt: true,
             covenantVersion: true,
             subscriptionTier: true,
@@ -127,6 +130,7 @@ export const authConfig: NextAuthConfig = {
         })
         if (freshUser) {
           token.onboardingCompleted = freshUser.onboardingCompleted
+          token.membershipLevel = freshUser.membershipLevel
           token.covenantAcceptedAt = freshUser.covenantAcceptedAt
           token.covenantVersion = freshUser.covenantVersion
           token.subscriptionTier = freshUser.subscriptionTier
@@ -142,6 +146,7 @@ export const authConfig: NextAuthConfig = {
       session.user.id = token.id as string
       console.log('Auth session: user.id set to:', session.user.id)
       session.user.role = token.role as UserRole
+      session.user.membershipLevel = token.membershipLevel as number
       session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
       session.user.covenantVersion = token.covenantVersion as string | null
       session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier

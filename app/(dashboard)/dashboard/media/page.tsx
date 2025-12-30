@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { Image, Video, Upload, Filter, X, Play, Camera, Plane } from 'lucide-react'
 
 interface MediaItem {
@@ -97,11 +98,9 @@ export default function MediaGalleryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">Media Gallery</h1>
-          <p className="text-forest-500 mt-1 font-body">Browse and manage media files</p>
-        </div>
+      <PageHeader path="media" />
+
+      <div className="flex justify-end">
         <Button onClick={() => setShowUploadModal(true)} className="bg-forest-600 hover:bg-forest-700 text-white">
           <Upload className="h-4 w-4 mr-2" />
           Upload Media

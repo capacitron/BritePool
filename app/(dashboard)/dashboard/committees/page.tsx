@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import {
   Users,
@@ -111,14 +112,7 @@ export default function CommitteesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-forest-800">
-          Committees
-        </h1>
-        <p className="text-forest-500 mt-1 font-body">
-          Join committees to participate in community governance and activities
-        </p>
-      </div>
+      <PageHeader path="committees" />
 
       {/* Joined Committees Section */}
       {joinedCommittees.length > 0 && (

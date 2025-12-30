@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { Plus, Wrench, Filter } from 'lucide-react'
 
 type MaintenanceRequest = {
@@ -102,15 +103,9 @@ export default function MaintenancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">
-            Maintenance Requests
-          </h1>
-          <p className="text-forest-500 mt-1 font-body">
-            Submit and track maintenance requests
-          </p>
-        </div>
+      <PageHeader path="maintenance" />
+
+      <div className="flex justify-end">
         <Link href="/dashboard/maintenance/new">
           <Button className="bg-forest-600 hover:bg-forest-700 text-white">
             <Plus className="w-4 h-4 mr-2" />

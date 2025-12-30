@@ -2,32 +2,61 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Calendar as CalendarIcon, List, MapPin, Clock, Users, Video } from 'lucide-react'
+import { Calendar as CalendarIcon, List, MapPin, Clock, Users, Video, Plus, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { Calendar } from '@/components/events/Calendar'
+import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { cn } from '@/lib/utils'
+import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/events/categories'
+
+interface CommitteeInfo {
+  id: string
+  name: string
+  slug?: string
+  type?: string
+}
+
+interface EventCommittee {
+  id: string
+  committeeId: string
+  committee: CommitteeInfo
+}
 
 interface EventData {
   id: string
   title: string
   description: string | null
   type: string
+  category: string | null
+  status: string
   startTime: string
   endTime: string
   location: string | null
   virtualLink: string | null
   capacity: number | null
-  committee: { id: string; name: string } | null
+  committee: CommitteeInfo | null
+  committees?: EventCommittee[]
   attendeeCount: number
   isRegistered: boolean
+  createdBy?: { id: string; name: string }
   [key: string]: unknown
+}
+
+interface UserCommittee {
+  id: string
+  name: string
+  type: string
+  role: string
 }
 
 interface EventsClientProps {
   events: EventData[]
   upcomingEvents: EventData[]
   userRole: string
+  userId: string
+  userCommittees: UserCommittee[]
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -42,6 +71,12 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   WORKSHOP: 'bg-forest-100 text-forest-700',
   SANCTUARY_EVENT: 'bg-earth-100 text-earth-800',
   VIRTUAL_WEBINAR: 'bg-sand-200 text-sand-800',
+}
+
+const STATUS_BADGES: Record<string, { label: string; className: string }> = {
+  PENDING: { label: 'Pending Approval', className: 'bg-amber-100 text-amber-800' },
+  APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800' },
+  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
 }
 
 function formatDate(dateString: string) {
@@ -62,15 +97,26 @@ function formatTime(dateString: string) {
   })
 }
 
-export function EventsClient({ events, upcomingEvents, userRole }: EventsClientProps) {
+export function EventsClient({ events, upcomingEvents, userRole, userId, userCommittees }: EventsClientProps) {
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedDayEvents, setSelectedDayEvents] = useState<EventData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
 
-  const filteredEvents = selectedType
-    ? events.filter(e => e.type === selectedType)
-    : events
+  // Check if user can create events (is a member of at least one committee or is admin)
+  const canCreateEvents = userCommittees.length > 0 || ['WEB_STEWARD', 'BOARD_CHAIR'].includes(userRole)
+
+  // Get unique categories from events
+  const availableCategories = [...new Set(events.filter(e => e.category).map(e => e.category as string))]
+
+  const filteredEvents = events.filter(e => {
+    if (selectedType && e.type !== selectedType) return false
+    if (selectedCategory && e.category !== selectedCategory) return false
+    return true
+  })
 
   const handleDayClick = (date: Date, dayEvents: EventData[]) => {
     setSelectedDate(date)
@@ -81,18 +127,37 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
     window.location.href = `/dashboard/events/${event.id}`
   }
 
+  const handleEventCreated = () => {
+    setShowCreateModal(false)
+    // Refresh the page to show new event
+    window.location.reload()
+  }
+
+  const getEventCommittees = (event: EventData): CommitteeInfo[] => {
+    if (event.committees && event.committees.length > 0) {
+      return event.committees.map(ec => ec.committee)
+    }
+    if (event.committee) {
+      return [event.committee]
+    }
+    return []
+  }
+
   return (
     <div className="space-y-6">
+      <PageHeader path="events" />
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">
-            Events
-          </h1>
-          <p className="text-forest-500 mt-1 font-body">
-            View and register for community events
-          </p>
-        </div>
         <div className="flex items-center gap-2">
+          {canCreateEvents && (
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-forest-600 hover:bg-forest-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          )}
           <div className="flex rounded-lg border border-sand-300 overflow-hidden">
             <button
               onClick={() => setView('calendar')}
@@ -118,6 +183,7 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
         </div>
       </div>
 
+      {/* Type Filters */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedType(null)}
@@ -144,7 +210,55 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
             {label}
           </button>
         ))}
+
+        {/* Category Filter Toggle */}
+        {availableCategories.length > 0 && (
+          <button
+            onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors font-body flex items-center gap-1',
+              showCategoryFilter || selectedCategory
+                ? 'bg-forest-600 text-white'
+                : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
+            )}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Category
+          </button>
+        )}
       </div>
+
+      {/* Category Filter Pills */}
+      {showCategoryFilter && availableCategories.length > 0 && (
+        <div className="flex flex-wrap gap-2 p-3 bg-sand-50 rounded-lg">
+          <span className="text-sm text-forest-600 font-medium mr-2">Filter by category:</span>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors font-body',
+              selectedCategory === null
+                ? 'bg-forest-600 text-white'
+                : 'bg-white text-forest-700 hover:bg-sand-100 border border-sand-300'
+            )}
+          >
+            All Categories
+          </button>
+          {availableCategories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={cn(
+                'px-2 py-1 rounded text-xs font-medium transition-colors font-body',
+                selectedCategory === category
+                  ? 'bg-forest-600 text-white'
+                  : CATEGORY_COLORS[category] || 'bg-gray-100 text-gray-800'
+              )}
+            >
+              {CATEGORY_LABELS[category] || category}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -180,7 +294,14 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <h4 className="font-medium text-forest-800 font-body">{event.title}</h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-forest-800 font-body">{event.title}</h4>
+                                  {event.status === 'PENDING' && event.createdBy?.id === userId && (
+                                    <span className={cn('px-2 py-0.5 rounded text-xs font-medium', STATUS_BADGES.PENDING.className)}>
+                                      {STATUS_BADGES.PENDING.label}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-3 mt-1 text-sm text-forest-500 font-body">
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3.5 w-3.5" />
@@ -193,6 +314,11 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
                                     </span>
                                   )}
                                 </div>
+                                {event.category && (
+                                  <span className={cn('inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
+                                    {CATEGORY_LABELS[event.category] || event.category}
+                                  </span>
+                                )}
                               </div>
                               <span className={cn(
                                 'px-2 py-0.5 rounded text-xs font-medium font-body',
@@ -219,63 +345,87 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
                   <p className="text-forest-500 font-body">No events found</p>
                 ) : (
                   <div className="space-y-4">
-                    {filteredEvents.map(event => (
-                      <Link
-                        key={event.id}
-                        href={`/dashboard/events/${event.id}`}
-                        className="block p-4 rounded-lg border border-sand-200 hover:bg-sand-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-forest-800 font-body">{event.title}</h3>
-                              {event.isRegistered && (
-                                <span className="px-2 py-0.5 rounded text-xs bg-forest-100 text-forest-700 font-medium font-body">
-                                  Registered
+                    {filteredEvents.map(event => {
+                      const committees = getEventCommittees(event)
+                      return (
+                        <Link
+                          key={event.id}
+                          href={`/dashboard/events/${event.id}`}
+                          className="block p-4 rounded-lg border border-sand-200 hover:bg-sand-50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-medium text-forest-800 font-body">{event.title}</h3>
+                                {event.isRegistered && (
+                                  <span className="px-2 py-0.5 rounded text-xs bg-forest-100 text-forest-700 font-medium font-body">
+                                    Registered
+                                  </span>
+                                )}
+                                {event.status === 'PENDING' && event.createdBy?.id === userId && (
+                                  <span className={cn('px-2 py-0.5 rounded text-xs font-medium', STATUS_BADGES.PENDING.className)}>
+                                    {STATUS_BADGES.PENDING.label}
+                                  </span>
+                                )}
+                              </div>
+                              {event.description && (
+                                <p className="text-sm text-forest-500 mt-1 line-clamp-2 font-body">
+                                  {event.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-forest-500 font-body">
+                                <span className="flex items-center gap-1">
+                                  <CalendarIcon className="h-4 w-4" />
+                                  {formatDate(event.startTime)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                                </span>
+                                {event.location && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    {event.location}
+                                  </span>
+                                )}
+                                {event.virtualLink && (
+                                  <span className="flex items-center gap-1">
+                                    <Video className="h-4 w-4" />
+                                    Virtual
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  {event.attendeeCount} {event.capacity ? `/ ${event.capacity}` : ''} attendees
+                                </span>
+                              </div>
+                              {/* Committee badges */}
+                              {committees.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {committees.map(c => (
+                                    <span key={c.id} className="px-2 py-0.5 rounded text-xs bg-sand-100 text-forest-700 font-body">
+                                      {c.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Category badge */}
+                              {event.category && (
+                                <span className={cn('inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
+                                  {CATEGORY_LABELS[event.category] || event.category}
                                 </span>
                               )}
                             </div>
-                            {event.description && (
-                              <p className="text-sm text-forest-500 mt-1 line-clamp-2 font-body">
-                                {event.description}
-                              </p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-forest-500 font-body">
-                              <span className="flex items-center gap-1">
-                                <CalendarIcon className="h-4 w-4" />
-                                {formatDate(event.startTime)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                              </span>
-                              {event.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {event.location}
-                                </span>
-                              )}
-                              {event.virtualLink && (
-                                <span className="flex items-center gap-1">
-                                  <Video className="h-4 w-4" />
-                                  Virtual
-                                </span>
-                              )}
-                              <span className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                {event.attendeeCount} {event.capacity ? `/ ${event.capacity}` : ''} attendees
-                              </span>
-                            </div>
+                            <span className={cn(
+                              'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
+                              EVENT_TYPE_COLORS[event.type]
+                            )}>
+                              {EVENT_TYPE_LABELS[event.type]}
+                            </span>
                           </div>
-                          <span className={cn(
-                            'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
-                            EVENT_TYPE_COLORS[event.type]
-                          )}>
-                            {EVENT_TYPE_LABELS[event.type]}
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -316,6 +466,11 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
                         <span>•</span>
                         <span>{formatTime(event.startTime)}</span>
                       </div>
+                      {event.category && (
+                        <span className={cn('inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
+                          {CATEGORY_LABELS[event.category] || event.category}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>
@@ -324,6 +479,17 @@ export function EventsClient({ events, upcomingEvents, userRole }: EventsClientP
           </Card>
         </div>
       </div>
+
+      {/* Create Event Modal */}
+      {showCreateModal && (
+        <CreateEventModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={handleEventCreated}
+          userCommittees={userCommittees}
+          userRole={userRole}
+        />
+      )}
     </div>
   )
 }

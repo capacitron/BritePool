@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { FileText, Download, Upload, Filter, Folder, Calendar, HardDrive } from 'lucide-react'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
@@ -100,16 +101,10 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">
-            Document Library
-          </h1>
-          <p className="text-forest-500 mt-1 font-body">
-            Access and manage organizational documents
-          </p>
-        </div>
-        {userIsAdmin && (
+      <PageHeader path="documents" />
+
+      {userIsAdmin && (
+        <div className="flex justify-end">
           <Button
             onClick={() => setShowUploadModal(true)}
             className="bg-forest-600 hover:bg-forest-700 text-white"
@@ -117,8 +112,8 @@ export default function DocumentsPage() {
             <Upload className="h-4 w-4 mr-2" />
             Upload Document
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Card className="border-sand-200">
         <CardHeader>

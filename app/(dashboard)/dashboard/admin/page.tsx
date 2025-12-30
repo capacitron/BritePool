@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import {
   Users,
   UserCheck,
@@ -62,14 +63,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-forest-800">
-          Admin Dashboard
-        </h1>
-        <p className="text-forest-500 mt-1 font-body">
-          Manage users, announcements, and platform settings
-        </p>
-      </div>
+      <PageHeader path="admin" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-sand-200">

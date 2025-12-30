@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/PageHeader'
 import { Map, MapPin, Plus, Filter, X, Building, Trees, Landmark, Mountain, Settings } from 'lucide-react'
 
 interface MapLocation {
@@ -105,18 +106,16 @@ export default function MapPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">Interactive Map</h1>
-          <p className="text-forest-500 mt-1 font-body">Explore sanctuary locations and points of interest</p>
-        </div>
-        {isAdmin && (
+      <PageHeader path="map" />
+
+      {isAdmin && (
+        <div className="flex justify-end">
           <Button onClick={() => setShowAddModal(true)} className="bg-forest-600 hover:bg-forest-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
             Add Location
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Card className="overflow-hidden border-sand-200">
         <div className="bg-gradient-to-br from-forest-100 to-sand-100 aspect-video flex items-center justify-center relative">

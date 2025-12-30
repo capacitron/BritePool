@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { PageHeader } from '@/components/PageHeader'
 import { MessageSquare, Users, Briefcase, GraduationCap, Heart, Settings, MessagesSquare } from 'lucide-react'
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -42,14 +43,7 @@ export default async function ForumsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-forest-800">
-          Community Forums
-        </h1>
-        <p className="text-forest-500 mt-1 font-body">
-          Connect with fellow members and discuss topics that matter
-        </p>
-      </div>
+      <PageHeader path="forums" />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {categories.map((category) => {

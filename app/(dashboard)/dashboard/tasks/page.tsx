@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { TaskBoard } from '@/components/tasks/TaskBoard'
+import { PageHeader } from '@/components/PageHeader'
 
 export default async function TasksPage() {
   const session = await auth()
@@ -50,14 +51,7 @@ export default async function TasksPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-forest-800">
-          Tasks
-        </h1>
-        <p className="text-forest-500 mt-1 font-body">
-          Manage and track community tasks
-        </p>
-      </div>
+      <PageHeader path="tasks" />
 
       <TaskBoard
         tasks={formattedTasks}
