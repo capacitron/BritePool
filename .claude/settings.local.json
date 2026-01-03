@@ -25,7 +25,11 @@
       "Bash(tree:*)",
       "Bash(head:*)",
       "Bash(xargs ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git pull:*)",
+      "Bash(npx tsx:*)",
+      "Bash(xargs:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   },
