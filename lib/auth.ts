@@ -3,7 +3,7 @@ import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
 import { comparePassword } from './auth-utils';
-import type { UserRole } from '@prisma/client';
+import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client';
 
 // Extend the built-in session types
 declare module 'next-auth' {
@@ -14,6 +14,11 @@ declare module 'next-auth' {
       name: string;
       role: UserRole;
       status: string;
+      subscriptionTier: SubscriptionTier;
+      subscriptionStatus: SubscriptionStatus;
+      covenantAcceptedAt: Date | null;
+      covenantVersion: string | null;
+      onboardingCompleted: boolean;
     };
   }
 
@@ -23,6 +28,11 @@ declare module 'next-auth' {
     name: string;
     role: UserRole;
     status: string;
+    subscriptionTier: SubscriptionTier;
+    subscriptionStatus: SubscriptionStatus;
+    covenantAcceptedAt: Date | null;
+    covenantVersion: string | null;
+    onboardingCompleted: boolean;
   }
 }
 
@@ -112,6 +122,11 @@ const config: NextAuthConfig = {
           name: user.name,
           role: user.role,
           status: user.status,
+          subscriptionTier: user.subscriptionTier,
+          subscriptionStatus: user.subscriptionStatus,
+          covenantAcceptedAt: user.covenantAcceptedAt,
+          covenantVersion: user.covenantVersion,
+          onboardingCompleted: user.onboardingCompleted,
         };
       },
     }),
@@ -122,6 +137,11 @@ const config: NextAuthConfig = {
         token.id = user.id as string;
         token.role = user.role as UserRole;
         token.status = user.status as string;
+        token.subscriptionTier = user.subscriptionTier as SubscriptionTier;
+        token.subscriptionStatus = user.subscriptionStatus as SubscriptionStatus;
+        token.covenantAcceptedAt = user.covenantAcceptedAt as Date | null;
+        token.covenantVersion = user.covenantVersion as string | null;
+        token.onboardingCompleted = user.onboardingCompleted as boolean;
       }
       return token;
     },
@@ -130,6 +150,11 @@ const config: NextAuthConfig = {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
         session.user.status = token.status as string;
+        session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier;
+        session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus;
+        session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null;
+        session.user.covenantVersion = token.covenantVersion as string | null;
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean;
       }
       return session;
     },

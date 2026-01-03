@@ -44,12 +44,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate || endDate) {
-      where.timestamp = {};
+      where.createdAt = {};
       if (startDate) {
-        (where.timestamp as Record<string, Date>).gte = new Date(startDate);
+        (where.createdAt as Record<string, Date>).gte = new Date(startDate);
       }
       if (endDate) {
-        (where.timestamp as Record<string, Date>).lte = new Date(endDate);
+        (where.createdAt as Record<string, Date>).lte = new Date(endDate);
       }
     }
 
@@ -66,17 +66,11 @@ export async function GET(request: NextRequest) {
           oldValue: true,
           newValue: true,
           ipAddress: true,
-          timestamp: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+          createdAt: true,
+          userId: true,
           userRole: true,
         },
-        orderBy: { timestamp: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),

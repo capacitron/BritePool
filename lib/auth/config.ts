@@ -26,12 +26,46 @@ export const authConfig: NextAuthConfig = {
 
         if (!user) return null
 
-        const passwordMatch = await bcrypt.compare(password, user.passwordHash)
-        if (!passwordMatch) return null
+        // Check if account is locked
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new Error('Account is temporarily locked. Try again later.')
+        }
 
+        // Check if account is suspended
+        if (user.status === 'SUSPENDED') {
+          throw new Error('Account has been suspended')
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.passwordHash)
+
+        if (!passwordMatch) {
+          // Increment login attempts
+          const newAttempts = (user.loginAttempts || 0) + 1
+          const updateData: { loginAttempts: number; lockedUntil?: Date } = {
+            loginAttempts: newAttempts,
+          }
+
+          // Lock account after 5 failed attempts for 15 minutes
+          if (newAttempts >= 5) {
+            updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000)
+          }
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          })
+
+          return null
+        }
+
+        // Reset login attempts on successful login
         await prisma.user.update({
           where: { id: user.id },
-          data: { lastLoginAt: new Date() },
+          data: {
+            lastLoginAt: new Date(),
+            loginAttempts: 0,
+            lockedUntil: null,
+          },
         })
 
         return {
@@ -39,6 +73,7 @@ export const authConfig: NextAuthConfig = {
           email: user.email,
           name: user.name,
           role: user.role,
+          status: user.status,
           covenantAcceptedAt: user.covenantAcceptedAt,
           covenantVersion: user.covenantVersion,
           subscriptionTier: user.subscriptionTier,
@@ -53,6 +88,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.status = user.status
         token.covenantAcceptedAt = user.covenantAcceptedAt
         token.covenantVersion = user.covenantVersion
         token.subscriptionTier = user.subscriptionTier
@@ -85,6 +121,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as UserRole
+        session.user.status = token.status as string
         session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
         session.user.covenantVersion = token.covenantVersion as string | null
         session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier

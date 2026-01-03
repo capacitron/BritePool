@@ -18,6 +18,12 @@ model User {
   passwordHash  String
   name          String
   role          UserRole  @default(STEWARD)
+  status        UserStatus @default(ACTIVE)
+
+  // Security
+  emailVerified   DateTime?
+  loginAttempts   Int       @default(0)
+  lockedUntil     DateTime?
 
   // Covenant & Membership
   covenantAcceptedAt  DateTime?
@@ -316,12 +322,19 @@ model ForumPost {
 
   isPinned    Boolean  @default(false)
 
+  // Moderation
+  status         ContentStatus @default(PENDING)
+  moderatedById  String?
+  moderatedAt    DateTime?
+  moderationNote String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([authorId])
   @@index([categoryId])
   @@index([createdAt])
+  @@index([status])
 }
 
 model ForumCategory {
@@ -380,12 +393,20 @@ model MediaItem {
   albumItems   AlbumItem[]
   mapLocationId String?
   mapLocation  MapLocation? @relation(fields: [mapLocationId], references: [id])
+
+  // Moderation
+  status         ContentStatus @default(PENDING)
+  moderatedById  String?
+  moderatedAt    DateTime?
+  moderationNote String?
+
   createdAt    DateTime @default(now())
 
   @@index([uploadedById])
   @@index([type])
   @@index([category])
   @@index([mapLocationId])
+  @@index([status])
 }
 
 model Album {
@@ -675,4 +696,83 @@ enum DocumentCategory {
   LEGAL
   EDUCATIONAL
   OPERATIONAL
+}
+
+// User Status for account management
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  PENDING_VERIFICATION
+}
+
+// Content Status for moderation
+enum ContentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Audit Logging
+
+model AuditLog {
+  id           String       @id @default(cuid())
+  userId       String
+  userRole     UserRole
+  action       AuditAction
+  resourceType ResourceType
+  resourceId   String?
+  description  String
+  metadata     Json?
+  oldValue     Json?
+  newValue     Json?
+  ipAddress    String
+  userAgent    String?
+  sessionId    String?
+  createdAt    DateTime     @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  USER_SUSPENDED
+  USER_ACTIVATED
+  ROLE_CHANGED
+  STATUS_CHANGED
+  CONTENT_CREATED
+  CONTENT_UPDATED
+  CONTENT_EDITED
+  CONTENT_DELETED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  SETTINGS_CHANGED
+  SETTINGS_UPDATED
+  PASSWORD_CHANGED
+  PASSWORD_RESET
+  FEATURE_FLAG_CHANGED
+}
+
+enum ResourceType {
+  USER
+  CONTENT
+  FORUM_POST
+  MEDIA
+  EVENT
+  TASK
+  COMMITTEE
+  DOCUMENT
+  SETTINGS
+  COURSE
+  ANNOUNCEMENT
+  CONTRACT
+  REPORT
 }
