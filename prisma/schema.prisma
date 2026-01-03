@@ -18,9 +18,12 @@ model User {
   passwordHash  String
   name          String
   role          UserRole  @default(STEWARD)
+  status        UserStatus @default(ACTIVE)
 
-  // Membership Level: 1 = Regular Member, 2 = Admin Access
-  membershipLevel Int     @default(1)
+  // Security
+  emailVerified   DateTime?
+  loginAttempts   Int       @default(0)
+  lockedUntil     DateTime?
 
   // Covenant & Membership
   covenantAcceptedAt  DateTime?
@@ -57,32 +60,8 @@ model User {
   maintenanceResolved MaintenanceRequest[] @relation("MaintenanceRequestsResolved")
   documentsUploaded Document[] @relation("DocumentsUploaded")
 
-  // Pool System Relations
-  cutOverseer         PoolCut[]          @relation("CutOverseer")
-  invitationsSent     PoolInvitation[]   @relation("InvitationsSent")
-  invitationsAccepted PoolInvitation[]   @relation("InvitationsAccepted")
-  pledges             Pledge[]           @relation("MemberPledges")
-
-  // Committee Chat & Document Relations
-  chatMessages        CommitteeChatMessage[] @relation("ChatMessagesAuthored")
-  committeeDocumentsUploaded CommitteeDocument[] @relation("CommitteeDocumentsUploaded")
-
-  // Event relations
-  eventsCreated       Event[] @relation("EventsCreated")
-  eventApprovalsGiven EventApproval[] @relation("EventApprovalsGiven")
-  notifications       Notification[] @relation("NotificationsReceived")
-
-  // Wealth Generation Opportunities
-  wgoCreated          WealthOpportunity[] @relation("WGOCreated")
-  wgoInvolvements     UserWGOInvolvement[] @relation("UserWGOInvolvements")
-
-  // Communal Seat Submissions
-  communalSeatSubmissions CommunalSeatSubmission[] @relation("CommunalSeatSubmissions")
-  communalSeatReviews     CommunalSeatSubmission[] @relation("CommunalSeatReviews")
-
   @@index([email])
   @@index([role])
-  @@index([membershipLevel])
 }
 
 model UserProfile {
@@ -168,9 +147,6 @@ model Committee {
   members     CommitteeMember[]
   tasks       Task[]
   events      Event[]
-  eventCommittees EventCommittee[] @relation("EventCommittees")
-  chats       CommitteeChat[]
-  documents   CommitteeDocument[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -279,8 +255,6 @@ model Event {
   title       String
   description String?
   type        EventType
-  category    String?  // Committee-specific category (stored as string for flexibility)
-  status      EventStatus @default(PENDING)
 
   startTime   DateTime
   endTime     DateTime
@@ -289,65 +263,16 @@ model Event {
 
   capacity    Int?
 
-  // Creator/requester of the event
-  createdById String
-  createdBy   User @relation("EventsCreated", fields: [createdById], references: [id])
-
-  // Multi-committee support (many-to-many)
-  committees  EventCommittee[]
-
-  // Legacy single committee (kept for backwards compatibility)
   committeeId String?
   committee   Committee? @relation(fields: [committeeId], references: [id])
 
-  // Rejection details
-  rejectionReason String?
-  rejectedById    String?
-  rejectedAt      DateTime?
-
   registrations EventRegistration[]
-  approvals     EventApproval[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([startTime])
   @@index([type])
-  @@index([status])
-  @@index([createdById])
-}
-
-// Junction table for Event <-> Committee many-to-many
-model EventCommittee {
-  id          String   @id @default(cuid())
-  eventId     String
-  committeeId String
-
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  committee   Committee @relation("EventCommittees", fields: [committeeId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime @default(now())
-
-  @@unique([eventId, committeeId])
-  @@index([eventId])
-  @@index([committeeId])
-}
-
-// Track approvals for multi-committee events
-model EventApproval {
-  id          String   @id @default(cuid())
-  eventId     String
-  committeeId String
-  approverId  String
-
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  approver    User     @relation("EventApprovalsGiven", fields: [approverId], references: [id])
-
-  approvedAt  DateTime @default(now())
-
-  @@unique([eventId, committeeId])
-  @@index([eventId])
-  @@index([approverId])
 }
 
 model EventRegistration {
@@ -365,81 +290,11 @@ model EventRegistration {
   @@index([eventId])
 }
 
-// Notifications
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation("NotificationsReceived", fields: [userId], references: [id], onDelete: Cascade)
-
-  type        NotificationType
-  title       String
-  message     String
-  link        String?  // Optional link to related resource
-
-  isRead      Boolean  @default(false)
-  readAt      DateTime?
-
-  // Related entity IDs for reference
-  eventId     String?
-  committeeId String?
-
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
-}
-
-enum NotificationType {
-  EVENT_APPROVED
-  EVENT_REJECTED
-  EVENT_PENDING_APPROVAL
-  GENERAL
-}
-
 enum EventType {
   COMMITTEE_MEETING
   WORKSHOP
   SANCTUARY_EVENT
   VIRTUAL_WEBINAR
-}
-
-enum EventStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// Committee-specific event categories
-enum GovernanceEventCategory {
-  AGREEMENTS
-  VOTING
-  MEETINGS
-}
-
-enum WealthEventCategory {
-  STAKEHOLDER
-  INVESTMENT_REVIEW
-  TREASURER
-}
-
-enum EducationEventCategory {
-  WORKSHOP_COORDINATION
-  TEACHER_ORIENTATION
-  LECTURES_TOPIC_REVIEWS
-}
-
-enum HealthEventCategory {
-  WELLNESS_ACTIVITIES
-  WELLNESS_OFFERINGS
-}
-
-enum OperationsEventCategory {
-  FACILITY_MAINTENANCE
-  LOGISTICS_COORDINATION
-  VOLUNTEER_MANAGEMENT
-  SAFETY_COMPLIANCE
-  RESOURCE_ALLOCATION
 }
 
 enum RegistrationStatus {
@@ -467,12 +322,19 @@ model ForumPost {
 
   isPinned    Boolean  @default(false)
 
+  // Moderation
+  status         ContentStatus @default(PENDING)
+  moderatedById  String?
+  moderatedAt    DateTime?
+  moderationNote String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([authorId])
   @@index([categoryId])
   @@index([createdAt])
+  @@index([status])
 }
 
 model ForumCategory {
@@ -482,9 +344,6 @@ model ForumCategory {
   description String?
 
   posts       ForumPost[]
-
-  // Link to WGO if this is a WGO discussion category
-  wgo         WealthOpportunity? @relation("WGOForumCategory")
 
   createdAt   DateTime @default(now())
 }
@@ -534,12 +393,20 @@ model MediaItem {
   albumItems   AlbumItem[]
   mapLocationId String?
   mapLocation  MapLocation? @relation(fields: [mapLocationId], references: [id])
+
+  // Moderation
+  status         ContentStatus @default(PENDING)
+  moderatedById  String?
+  moderatedAt    DateTime?
+  moderationNote String?
+
   createdAt    DateTime @default(now())
 
   @@index([uploadedById])
   @@index([type])
   @@index([category])
   @@index([mapLocationId])
+  @@index([status])
 }
 
 model Album {
@@ -743,122 +610,6 @@ enum PartnerStatus {
   INACTIVE
 }
 
-// Wealth Generation Opportunities (WGO)
-// Affiliate-based wealth compounding opportunities with risk tolerance ratings
-
-model WealthOpportunity {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  logo            String?
-  website         String?
-  affiliateLink   String?  // Direct affiliate/referral link
-  email           String?
-
-  category        WGOCategory
-  status          WGOStatus @default(PENDING)
-
-  // Risk Tolerance Scale: 1-10
-  // Higher value = more organizational credibility/trust
-  // 10 = Highest trust, lowest perceived risk
-  // 1 = Experimental, highest risk
-  riskTolerance   Int      @default(5) // 1-10 scale
-
-  // Additional opportunity details
-  minimumInvestment Float?   // Minimum entry amount if applicable
-  potentialReturns  String?  // Description of potential returns (e.g., "5-15% monthly")
-  compoundingType   String?  // How the compounding works
-  memberBenefits    String?  // Special benefits for community members
-
-  // Trust indicators
-  yearsOperating    Int?     // How long the opportunity has been running
-  verifiedBy        String?  // Who verified/endorsed this opportunity
-  communityRating   Float?   // Average rating from members (0-5)
-  totalMembers      Int      @default(0) // Number of community members participating
-
-  // Important disclosures
-  disclaimer        String?  // Risk disclaimer text
-  termsUrl          String?  // Link to full terms and conditions
-
-  createdById       String
-  createdBy         User @relation("WGOCreated", fields: [createdById], references: [id])
-
-  // User involvements tracking
-  userInvolvements  UserWGOInvolvement[] @relation("WGOInvolvements")
-
-  // Forum category for discussions
-  forumCategoryId   String?  @unique
-  forumCategory     ForumCategory? @relation("WGOForumCategory", fields: [forumCategoryId], references: [id])
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([category])
-  @@index([status])
-  @@index([riskTolerance])
-}
-
-// Track user involvement in WGO opportunities
-model UserWGOInvolvement {
-  id              String   @id @default(cuid())
-  userId          String
-  wgoId           String
-
-  user            User     @relation("UserWGOInvolvements", fields: [userId], references: [id], onDelete: Cascade)
-  wgo             WealthOpportunity @relation("WGOInvolvements", fields: [wgoId], references: [id], onDelete: Cascade)
-
-  // Proof of involvement
-  proofType       WGOProofType  @default(LINK)
-  proofUrl        String?       // URL to proof (image or link)
-  proofImageUrl   String?       // Uploaded image proof
-
-  // Status and notes
-  status          WGOInvolvementStatus @default(ACTIVE)
-  notes           String?       // Personal notes about involvement
-  investedAmount  Float?        // Optional: amount invested
-  joinedDate      DateTime?     // When they joined the opportunity
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([userId, wgoId])
-  @@index([userId])
-  @@index([wgoId])
-  @@index([status])
-}
-
-enum WGOProofType {
-  LINK          // External link proof
-  IMAGE         // Uploaded image proof
-  BOTH          // Both link and image
-}
-
-enum WGOInvolvementStatus {
-  ACTIVE        // Currently involved
-  PAUSED        // Temporarily paused
-  EXITED        // No longer involved
-}
-
-enum WGOCategory {
-  PASSIVE_INCOME        // Passive income streams
-  INVESTMENT_FUND       // Investment funds and pools
-  STAKING_YIELD         // Crypto staking and yield farming
-  REAL_ESTATE           // Real estate investment opportunities
-  BUSINESS_VENTURE      // Business partnerships
-  EDUCATION_PROGRAM     // Wealth education programs
-  TRADING_PLATFORM      // Trading platforms and signals
-  SAVINGS_PROGRAM       // High-yield savings programs
-  OTHER                 // Other opportunities
-}
-
-enum WGOStatus {
-  PENDING     // Under review
-  ACTIVE      // Currently available
-  PAUSED      // Temporarily paused
-  CLOSED      // No longer available
-  SUSPENDED   // Suspended due to concerns
-}
-
 // Maintenance Requests
 
 model MaintenanceRequest {
@@ -947,260 +698,81 @@ enum DocumentCategory {
   OPERATIONAL
 }
 
-// Committee Chat & Collaboration System
-
-model CommitteeChat {
-  id           String              @id @default(cuid())
-  committeeId  String
-  committee    Committee           @relation(fields: [committeeId], references: [id], onDelete: Cascade)
-  category     CommitteeChatCategory @default(GENERAL)
-  messages     CommitteeChatMessage[]
-  summaries    CommitteeChatSummary[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-
-  @@unique([committeeId, category])
-  @@index([committeeId])
+// User Status for account management
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  PENDING_VERIFICATION
 }
 
-model CommitteeChatMessage {
-  id         String        @id @default(cuid())
-  chatId     String
-  chat       CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  authorId   String
-  author     User          @relation("ChatMessagesAuthored", fields: [authorId], references: [id], onDelete: Cascade)
-  content    String
-  attachmentUrl String?
-  attachmentName String?
-  isDeleted  Boolean       @default(false)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+// Content Status for moderation
+enum ContentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
-  @@index([chatId])
-  @@index([authorId])
+// Audit Logging
+
+model AuditLog {
+  id           String       @id @default(cuid())
+  userId       String
+  userRole     UserRole
+  action       AuditAction
+  resourceType ResourceType
+  resourceId   String?
+  description  String
+  metadata     Json?
+  oldValue     Json?
+  newValue     Json?
+  ipAddress    String
+  userAgent    String?
+  sessionId    String?
+  createdAt    DateTime     @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
   @@index([createdAt])
 }
 
-model CommitteeChatSummary {
-  id           String        @id @default(cuid())
-  chatId       String
-  chat         CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  weekStarting DateTime
-  weekEnding   DateTime
-  summary      String
-  tasks        CommitteeExtractedTask[]
-  generatedAt  DateTime      @default(now())
-
-  @@unique([chatId, weekStarting])
-  @@index([chatId])
-  @@index([weekStarting])
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  USER_SUSPENDED
+  USER_ACTIVATED
+  ROLE_CHANGED
+  STATUS_CHANGED
+  CONTENT_CREATED
+  CONTENT_UPDATED
+  CONTENT_EDITED
+  CONTENT_DELETED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  SETTINGS_CHANGED
+  SETTINGS_UPDATED
+  PASSWORD_CHANGED
+  PASSWORD_RESET
+  FEATURE_FLAG_CHANGED
 }
 
-model CommitteeExtractedTask {
-  id          String               @id @default(cuid())
-  summaryId   String
-  summary     CommitteeChatSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
-  taskTitle   String
-  taskDescription String?
-  assignedToName String?
-  dueDate     DateTime?
-  status      ExtractedTaskStatus  @default(PENDING)
-  convertedToTaskId String?
-  createdAt   DateTime             @default(now())
-
-  @@index([summaryId])
-}
-
-model CommitteeDocument {
-  id              String         @id @default(cuid())
-  committeeId     String
-  committee       Committee      @relation(fields: [committeeId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  category        DocumentCategory
-  fileUrl         String
-  fileName        String
-  fileType        String
-  fileSize        Int
-  uploadedById    String
-  uploadedBy      User           @relation("CommitteeDocumentsUploaded", fields: [uploadedById], references: [id])
-  version         String         @default("1.0")
-  isShared        Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  @@index([committeeId])
-  @@index([uploadedById])
-  @@index([category])
-}
-
-enum CommitteeChatCategory {
-  GENERAL
-  ANNOUNCEMENTS
-  PROJECTS
-  RESOURCES
-  QUESTIONS
-}
-
-enum ExtractedTaskStatus {
-  PENDING
-  CONVERTED
-  DISMISSED
-}
-
-// Stakeholder Pool System
-
-enum PoolColor {
-  PURPLE
-  ORANGE
-  GREEN
-}
-
-enum PoolStatus {
-  OPEN
-  GOAL_REACHED
-  CLOSED
-}
-
-enum PledgeStatus {
-  PENDING
-  COMMITTED
-  PAID
-  CANCELLED
-}
-
-// Stakeholder Pool
-model Pool {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  goalAmount  Float
-  status      PoolStatus @default(OPEN)
-  cuts        PoolCut[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  @@index([status])
-}
-
-// Color Cut (Purple, Orange, Green)
-model PoolCut {
-  id          String           @id @default(cuid())
-  poolId      String
-  pool        Pool             @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  color       PoolColor
-  password    String
-  overseerId  String
-  overseer    User             @relation("CutOverseer", fields: [overseerId], references: [id])
-  invitations PoolInvitation[]
-  pledges     Pledge[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@unique([poolId, color])
-  @@index([poolId])
-  @@index([overseerId])
-}
-
-// Pool Invitation
-model PoolInvitation {
-  id           String    @id @default(cuid())
-  cutId        String
-  cut          PoolCut   @relation(fields: [cutId], references: [id], onDelete: Cascade)
-  invitedEmail String
-  invitedById  String
-  invitedBy    User      @relation("InvitationsSent", fields: [invitedById], references: [id])
-  acceptedAt   DateTime?
-  acceptedById String?
-  acceptedBy   User?     @relation("InvitationsAccepted", fields: [acceptedById], references: [id])
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
-
-  @@unique([cutId, invitedEmail])
-  @@index([cutId])
-  @@index([invitedEmail])
-}
-
-// Pledge Record
-model Pledge {
-  id         String       @id @default(cuid())
-  cutId      String
-  cut        PoolCut      @relation(fields: [cutId], references: [id], onDelete: Cascade)
-  memberId   String
-  member     User         @relation("MemberPledges", fields: [memberId], references: [id])
-  amount     Float
-  status     PledgeStatus @default(PENDING)
-  paidAt     DateTime?
-  paymentRef String?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-
-  @@unique([cutId, memberId])
-  @@index([cutId])
-  @@index([memberId])
-  @@index([status])
-}
-
-// Communal Seat Submission System
-// For Communal Seat Organization document submissions
-
-model CommunalSeatSubmission {
-  id                String   @id @default(cuid())
-
-  // Applicant Information
-  fullName          String
-  email             String
-  phone             String
-
-  // Service Details
-  serviceDescription String   // Description of the service they can provide
-  yearsExperience   Int
-  certifications    String?   // Certifications or licenses held
-  websiteLink       String?   // Website or portfolio link
-  motivation        String    // Why they want to participate
-
-  // Document
-  documentUrl       String    // URL to uploaded PDF document
-  documentFileName  String    // Original file name
-
-  // Categories (multiple can be selected)
-  categories        CommunalSeatServiceCategory[]
-
-  // Status
-  status            CommunalSeatStatus @default(PENDING)
-
-  // Submitter
-  submittedById     String
-  submittedBy       User     @relation("CommunalSeatSubmissions", fields: [submittedById], references: [id])
-
-  // Review
-  reviewedById      String?
-  reviewedBy        User?    @relation("CommunalSeatReviews", fields: [reviewedById], references: [id])
-  reviewedAt        DateTime?
-  reviewNotes       String?
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([submittedById])
-  @@index([status])
-  @@index([createdAt])
-}
-
-enum CommunalSeatServiceCategory {
-  HEALING_SERVICE           // Healing Service
-  ORGANIZATIONAL_SERVICE    // Organizational Service
-  CUSTOMER_SERVICE          // Customer Service
-  TECHNOLOGY_PROVISION      // Technology Provision Service
-  CULINARY_SERVICE          // Culinary Service
-  UTILITY_SERVICE           // Utility Service
-  OCCUPATIONAL_SERVICES     // Occupational Services
-  AGRICULTURAL_SERVICES     // Agricultural Services
-  ASSOCIATION_SERVICES      // Association Services
-}
-
-enum CommunalSeatStatus {
-  PENDING     // Awaiting review
-  APPROVED    // Approved for communal seat
-  REJECTED    // Not approved
+enum ResourceType {
+  USER
+  CONTENT
+  FORUM_POST
+  MEDIA
+  EVENT
+  TASK
+  COMMITTEE
+  DOCUMENT
+  SETTINGS
+  COURSE
+  ANNOUNCEMENT
+  CONTRACT
+  REPORT
 }

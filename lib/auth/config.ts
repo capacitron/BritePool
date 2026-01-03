@@ -1,46 +1,11 @@
 import type { NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/prisma'
+import { loginSchema } from '@/lib/validations/auth'
 import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
 
-// Detect if running in production/Replit environment
-const isProduction = process.env.NODE_ENV === 'production'
-const isReplit = !!process.env.REPL_SLUG
-// Use simpler cookie names in Replit to avoid proxy issues with __Secure- prefix
-const useSecureCookies = isProduction && !isReplit
-
 export const authConfig: NextAuthConfig = {
-  trustHost: true,
-  // Cookie configuration for Replit/proxy environments
-  // Using non-prefixed names in Replit to ensure cookies work with their proxy
-  cookies: {
-    sessionToken: {
-      name: useSecureCookies ? '__Secure-authjs.session-token' : 'authjs.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction || isReplit,
-      },
-    },
-    callbackUrl: {
-      name: useSecureCookies ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction || isReplit,
-      },
-    },
-    csrfToken: {
-      name: useSecureCookies ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction || isReplit,
-      },
-    },
-  },
   providers: [
     Credentials({
       name: 'credentials',
@@ -49,17 +14,8 @@ export const authConfig: NextAuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('Auth: authorize called')
-        // Dynamic imports to avoid Edge Runtime issues
-        const { prisma } = await import('@/lib/prisma')
-        const { loginSchema } = await import('@/lib/validations/auth')
-        const bcrypt = await import('bcryptjs')
-
         const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) {
-          console.log('Auth: validation failed')
-          return null
-        }
+        if (!parsed.success) return null
 
         const { email, password } = parsed.data
 
@@ -68,30 +24,56 @@ export const authConfig: NextAuthConfig = {
           include: { profile: true },
         })
 
-        if (!user) {
-          console.log('Auth: user not found')
-          return null
+        if (!user) return null
+
+        // Check if account is locked
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new Error('Account is temporarily locked. Try again later.')
+        }
+
+        // Check if account is suspended
+        if (user.status === 'SUSPENDED') {
+          throw new Error('Account has been suspended')
         }
 
         const passwordMatch = await bcrypt.compare(password, user.passwordHash)
+
         if (!passwordMatch) {
-          console.log('Auth: password mismatch')
+          // Increment login attempts
+          const newAttempts = (user.loginAttempts || 0) + 1
+          const updateData: { loginAttempts: number; lockedUntil?: Date } = {
+            loginAttempts: newAttempts,
+          }
+
+          // Lock account after 5 failed attempts for 15 minutes
+          if (newAttempts >= 5) {
+            updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000)
+          }
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          })
+
           return null
         }
 
+        // Reset login attempts on successful login
         await prisma.user.update({
           where: { id: user.id },
-          data: { lastLoginAt: new Date() },
+          data: {
+            lastLoginAt: new Date(),
+            loginAttempts: 0,
+            lockedUntil: null,
+          },
         })
-
-        console.log('Auth: login successful for user:', user.id)
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-          membershipLevel: user.membershipLevel,
+          status: user.status,
           covenantAcceptedAt: user.covenantAcceptedAt,
           covenantVersion: user.covenantVersion,
           subscriptionTier: user.subscriptionTier,
@@ -103,17 +85,15 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      console.log('Auth JWT callback:', { hasUser: !!user, trigger, tokenId: token.id })
       if (user) {
         token.id = user.id
         token.role = user.role
-        token.membershipLevel = user.membershipLevel
+        token.status = user.status
         token.covenantAcceptedAt = user.covenantAcceptedAt
         token.covenantVersion = user.covenantVersion
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionStatus = user.subscriptionStatus
         token.onboardingCompleted = user.onboardingCompleted
-        console.log('Auth JWT: user data stored in token, id:', token.id)
       }
       if (trigger === 'update') {
         const { prisma } = await import('@/lib/prisma')
@@ -121,7 +101,6 @@ export const authConfig: NextAuthConfig = {
           where: { id: token.id as string },
           select: {
             onboardingCompleted: true,
-            membershipLevel: true,
             covenantAcceptedAt: true,
             covenantVersion: true,
             subscriptionTier: true,
@@ -130,7 +109,6 @@ export const authConfig: NextAuthConfig = {
         })
         if (freshUser) {
           token.onboardingCompleted = freshUser.onboardingCompleted
-          token.membershipLevel = freshUser.membershipLevel
           token.covenantAcceptedAt = freshUser.covenantAcceptedAt
           token.covenantVersion = freshUser.covenantVersion
           token.subscriptionTier = freshUser.subscriptionTier
@@ -140,18 +118,16 @@ export const authConfig: NextAuthConfig = {
       return token
     },
     async session({ session, token }) {
-      console.log('Auth session callback:', { hasToken: !!token, tokenId: token?.id, hasSessionUser: !!session?.user })
-      // Ensure session.user exists (required for auth() to work in API routes)
-      session.user = session.user || {}
-      session.user.id = token.id as string
-      console.log('Auth session: user.id set to:', session.user.id)
-      session.user.role = token.role as UserRole
-      session.user.membershipLevel = token.membershipLevel as number
-      session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
-      session.user.covenantVersion = token.covenantVersion as string | null
-      session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier
-      session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus
-      session.user.onboardingCompleted = token.onboardingCompleted as boolean
+      if (session.user) {
+        session.user.id = token.id as string
+        session.user.role = token.role as UserRole
+        session.user.status = token.status as string
+        session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
+        session.user.covenantVersion = token.covenantVersion as string | null
+        session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier
+        session.user.subscriptionStatus = token.subscriptionStatus as SubscriptionStatus
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
+      }
       return session
     },
   },
