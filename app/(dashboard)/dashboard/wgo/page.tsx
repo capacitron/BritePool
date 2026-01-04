@@ -2,35 +2,34 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { TrendingUp, Plus, Filter, X, Globe, Mail, ExternalLink, DollarSign, Users, Clock, AlertTriangle } from 'lucide-react'
+import { TrendingUp, Plus, Filter, X, DollarSign, Users, Clock, AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
-import { RiskToleranceIndicator, RiskBadge } from '@/components/wgo/RiskToleranceIndicator'
-import { WGO_CATEGORY_LABELS, WGO_CATEGORY_COLORS, WGO_STATUS_LABELS, WGO_STATUS_COLORS, WGO_CATEGORIES, WGO_STATUSES } from '@/lib/wgo/categories'
+import {
+  WGO_CATEGORY_LABELS,
+  WGO_CATEGORY_COLORS,
+  WGO_STATUS_LABELS,
+  WGO_STATUS_COLORS,
+  WGO_CATEGORIES,
+  WGO_STATUSES,
+} from '@/lib/wgo/categories'
 
 interface WGO {
   id: string
-  name: string
-  description: string | null
-  logo: string | null
-  website: string | null
-  affiliateLink: string | null
-  email: string | null
+  title: string
+  description: string
   category: string
   status: string
-  riskTolerance: number
-  minimumInvestment: number | null
-  potentialReturns: string | null
-  compoundingType: string | null
-  memberBenefits: string | null
-  yearsOperating: number | null
-  verifiedBy: string | null
-  totalMembers: number
-  communityRating: number | null
-  disclaimer: string | null
-  createdBy: { id: string; name: string }
+  targetAmount: number | null
+  currentAmount: number
+  startDate: string | null
+  endDate: string | null
+  creatorId: string
+  involvementCount: number
+  forumPostCount: number
+  isInvolved: boolean
   createdAt: string
 }
 
@@ -75,7 +74,7 @@ export default function WGOPage() {
       const res = await fetch(`/api/wgo?${params}`)
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
-      setOpportunities(data)
+      setOpportunities(data.data || [])
     } catch (err) {
       setError('Failed to load opportunities')
     } finally {
@@ -117,7 +116,9 @@ export default function WGOPage() {
           <div>
             <p className="text-sm text-amber-800 font-medium">Investment Risk Disclaimer</p>
             <p className="text-xs text-amber-700 mt-1">
-              All opportunities listed are supported by the good faith of the membership. Higher trust ratings indicate more organizational credibility, but all investments carry risk. Please conduct your own due diligence before participating.
+              All opportunities listed are supported by the good faith of the membership. Higher
+              trust ratings indicate more organizational credibility, but all investments carry
+              risk. Please conduct your own due diligence before participating.
             </p>
           </div>
         </CardContent>
@@ -133,7 +134,9 @@ export default function WGOPage() {
           <Filter className="h-4 w-4 mr-2" />
           Filters
           {hasActiveFilters && (
-            <span className="ml-2 px-1.5 py-0.5 bg-forest-600 text-white text-xs rounded-full">!</span>
+            <span className="ml-2 px-1.5 py-0.5 bg-forest-600 text-white text-xs rounded-full">
+              !
+            </span>
           )}
         </Button>
         {hasActiveFilters && (
@@ -163,15 +166,13 @@ export default function WGOPage() {
                 >
                   All
                 </button>
-                {WGO_CATEGORIES.map(cat => (
+                {WGO_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(cat)}
                     className={cn(
                       'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      categoryFilter === cat
-                        ? 'bg-forest-600 text-white'
-                        : WGO_CATEGORY_COLORS[cat]
+                      categoryFilter === cat ? 'bg-forest-600 text-white' : WGO_CATEGORY_COLORS[cat]
                     )}
                   >
                     {WGO_CATEGORY_LABELS[cat]}
@@ -195,7 +196,7 @@ export default function WGOPage() {
                 >
                   All
                 </button>
-                {WGO_STATUSES.map(status => (
+                {WGO_STATUSES.map((status) => (
                   <button
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -214,9 +215,11 @@ export default function WGOPage() {
 
             {/* Risk Tolerance Filter */}
             <div>
-              <label className="block text-sm font-medium text-forest-700 mb-2">Minimum Trust Level</label>
+              <label className="block text-sm font-medium text-forest-700 mb-2">
+                Minimum Trust Level
+              </label>
               <div className="flex flex-wrap gap-2">
-                {[null, 8, 6, 4, 2].map(level => (
+                {[null, 8, 6, 4, 2].map((level) => (
                   <button
                     key={level ?? 'all'}
                     onClick={() => setMinRiskFilter(level)}
@@ -255,102 +258,97 @@ export default function WGOPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {opportunities.map(wgo => (
+          {opportunities.map((wgo) => (
             <Link key={wgo.id} href={`/dashboard/wgo/${wgo.id}`}>
               <Card className="border-sand-200 hover:border-emerald-300 hover:shadow-lg transition-all h-full cursor-pointer">
                 <CardContent className="p-6">
-                  {/* Header with Logo and Risk */}
+                  {/* Header */}
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
-                      {wgo.logo ? (
-                        <img
-                          src={wgo.logo}
-                          alt={wgo.name}
-                          className="h-12 w-12 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                          <TrendingUp className="h-6 w-6 text-emerald-600" />
-                        </div>
-                      )}
+                      <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <TrendingUp className="h-6 w-6 text-emerald-600" />
+                      </div>
                       <div>
-                        <h3 className="font-medium text-forest-800">{wgo.name}</h3>
-                        <span className={cn('text-xs px-2 py-0.5 rounded-full', WGO_CATEGORY_COLORS[wgo.category])}>
-                          {WGO_CATEGORY_LABELS[wgo.category]}
+                        <h3 className="font-medium text-forest-800">{wgo.title}</h3>
+                        <span
+                          className={cn(
+                            'text-xs px-2 py-0.5 rounded-full',
+                            WGO_CATEGORY_COLORS[wgo.category] || 'bg-gray-100 text-gray-700'
+                          )}
+                        >
+                          {WGO_CATEGORY_LABELS[wgo.category] || wgo.category}
                         </span>
                       </div>
                     </div>
-                    <RiskBadge value={wgo.riskTolerance} />
+                    {wgo.isInvolved && (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                        Joined
+                      </span>
+                    )}
                   </div>
 
                   {/* Description */}
                   {wgo.description && (
-                    <p className="text-sm text-forest-600 line-clamp-2 mb-4">
-                      {wgo.description}
-                    </p>
+                    <p className="text-sm text-forest-600 line-clamp-2 mb-4">{wgo.description}</p>
                   )}
 
-                  {/* Trust Indicator */}
-                  <div className="mb-4">
-                    <RiskToleranceIndicator value={wgo.riskTolerance} size="sm" showLabel />
-                  </div>
-
-                  {/* Quick Stats */}
+                  {/* Stats */}
                   <div className="flex flex-wrap gap-3 text-xs text-forest-500">
-                    {wgo.minimumInvestment && (
+                    {wgo.targetAmount && (
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
-                        Min: ${wgo.minimumInvestment.toLocaleString()}
+                        Target: ${wgo.targetAmount.toLocaleString()}
                       </span>
                     )}
-                    {wgo.totalMembers > 0 && (
+                    {wgo.involvementCount > 0 && (
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {wgo.totalMembers} members
+                        {wgo.involvementCount} members
                       </span>
                     )}
-                    {wgo.yearsOperating && (
+                    {wgo.startDate && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {wgo.yearsOperating} years
+                        Started {new Date(wgo.startDate).toLocaleDateString()}
                       </span>
                     )}
                   </div>
 
-                  {/* Potential Returns */}
-                  {wgo.potentialReturns && (
-                    <div className="mt-3 p-2 bg-emerald-50 rounded-lg">
-                      <p className="text-xs text-emerald-700">
-                        <span className="font-medium">Potential Returns:</span> {wgo.potentialReturns}
-                      </p>
+                  {/* Progress */}
+                  {wgo.targetAmount && wgo.currentAmount > 0 && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-forest-600 mb-1">
+                        <span>${wgo.currentAmount.toLocaleString()} raised</span>
+                        <span>{Math.round((wgo.currentAmount / wgo.targetAmount) * 100)}%</span>
+                      </div>
+                      <div className="h-2 bg-sand-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{
+                            width: `${Math.min(100, (wgo.currentAmount / wgo.targetAmount) * 100)}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
 
                   {/* Status Badge */}
                   {wgo.status !== 'ACTIVE' && (
                     <div className="mt-3">
-                      <span className={cn('text-xs px-2 py-0.5 rounded-full', WGO_STATUS_COLORS[wgo.status])}>
-                        {WGO_STATUS_LABELS[wgo.status]}
+                      <span
+                        className={cn(
+                          'text-xs px-2 py-0.5 rounded-full',
+                          WGO_STATUS_COLORS[wgo.status] || 'bg-gray-100 text-gray-700'
+                        )}
+                      >
+                        {WGO_STATUS_LABELS[wgo.status] || wgo.status}
                       </span>
                     </div>
                   )}
 
-                  {/* Quick Links */}
-                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-sand-100">
-                    {wgo.website && (
-                      <Globe className="h-4 w-4 text-forest-400" />
-                    )}
-                    {wgo.affiliateLink && (
-                      <ExternalLink className="h-4 w-4 text-emerald-500" />
-                    )}
-                    {wgo.email && (
-                      <Mail className="h-4 w-4 text-forest-400" />
-                    )}
-                    {wgo.verifiedBy && (
-                      <span className="text-xs text-forest-500 ml-auto">
-                        Verified by {wgo.verifiedBy}
-                      </span>
-                    )}
+                  {/* Footer */}
+                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-sand-100 text-xs text-forest-500">
+                    <span>{wgo.forumPostCount} discussions</span>
                   </div>
                 </CardContent>
               </Card>
@@ -379,23 +377,13 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
-    logo: '',
-    website: '',
-    affiliateLink: '',
-    email: '',
-    category: 'PASSIVE_INCOME',
-    status: 'PENDING',
-    riskTolerance: 5,
-    minimumInvestment: '',
-    potentialReturns: '',
-    compoundingType: '',
-    memberBenefits: '',
-    yearsOperating: '',
-    verifiedBy: '',
-    disclaimer: '',
-    termsUrl: '',
+    category: 'INVESTMENT',
+    status: 'DRAFT',
+    targetAmount: '',
+    startDate: '',
+    endDate: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -408,10 +396,14 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          minimumInvestment: formData.minimumInvestment ? parseFloat(formData.minimumInvestment) : undefined,
-          yearsOperating: formData.yearsOperating ? parseInt(formData.yearsOperating) : undefined,
-        })
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          status: formData.status,
+          targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : null,
+          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+        }),
       })
 
       if (!res.ok) {
@@ -427,9 +419,12 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     }
   }
 
+  const API_CATEGORIES = ['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']
+  const API_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <CardTitle>Add Wealth Generation Opportunity</CardTitle>
           <button onClick={onClose} className="p-1 hover:bg-sand-100 rounded">
@@ -444,28 +439,31 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               </div>
             )}
 
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">Title *</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">
+                Description *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                  required
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-forest-700 mb-1">Category *</label>
                 <select
@@ -473,130 +471,12 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg"
                 >
-                  {WGO_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{WGO_CATEGORY_LABELS[cat]}</option>
+                  {API_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat.replace(/_/g, ' ')}
+                    </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Trust Rating (1-10) *</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.riskTolerance}
-                  onChange={(e) => setFormData({ ...formData, riskTolerance: parseInt(e.target.value) || 5 })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-                <p className="text-xs text-forest-500 mt-1">Higher = More trusted, lower risk</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Logo URL</label>
-                <input
-                  type="url"
-                  value={formData.logo}
-                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Website</label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Affiliate Link</label>
-                <input
-                  type="url"
-                  value={formData.affiliateLink}
-                  onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Contact Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Minimum Investment ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.minimumInvestment}
-                  onChange={(e) => setFormData({ ...formData, minimumInvestment: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Years Operating</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.yearsOperating}
-                  onChange={(e) => setFormData({ ...formData, yearsOperating: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Potential Returns</label>
-                <input
-                  type="text"
-                  value={formData.potentialReturns}
-                  onChange={(e) => setFormData({ ...formData, potentialReturns: e.target.value })}
-                  placeholder="e.g., 5-15% monthly"
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Compounding Type</label>
-                <input
-                  type="text"
-                  value={formData.compoundingType}
-                  onChange={(e) => setFormData({ ...formData, compoundingType: e.target.value })}
-                  placeholder="e.g., Daily compounding, weekly dividends"
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Member Benefits</label>
-                <textarea
-                  value={formData.memberBenefits}
-                  onChange={(e) => setFormData({ ...formData, memberBenefits: e.target.value })}
-                  rows={2}
-                  placeholder="Special benefits for community members"
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Verified By</label>
-                <input
-                  type="text"
-                  value={formData.verifiedBy}
-                  onChange={(e) => setFormData({ ...formData, verifiedBy: e.target.value })}
-                  placeholder="Who verified this opportunity"
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
               </div>
 
               <div>
@@ -606,28 +486,47 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg"
                 >
-                  {WGO_STATUSES.map(status => (
-                    <option key={status} value={status}>{WGO_STATUS_LABELS[status]}</option>
+                  {API_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Risk Disclaimer</label>
-                <textarea
-                  value={formData.disclaimer}
-                  onChange={(e) => setFormData({ ...formData, disclaimer: e.target.value })}
-                  rows={2}
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">
+                Target Amount ($)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.targetAmount}
+                onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg"
                 />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Terms & Conditions URL</label>
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">End Date</label>
                 <input
-                  type="url"
-                  value={formData.termsUrl}
-                  onChange={(e) => setFormData({ ...formData, termsUrl: e.target.value })}
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg"
                 />
               </div>
@@ -637,7 +536,11 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={loading}>
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={loading}
+              >
                 {loading ? 'Creating...' : 'Create Opportunity'}
               </Button>
             </div>
