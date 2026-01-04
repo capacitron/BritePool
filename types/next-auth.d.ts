@@ -7,7 +7,6 @@ declare module 'next-auth' {
     user: {
       id: string
       role: UserRole
-      membershipLevel: number
       covenantAcceptedAt: Date | null
       covenantVersion: string | null
       subscriptionTier: SubscriptionTier
@@ -19,7 +18,6 @@ declare module 'next-auth' {
   interface User extends DefaultUser {
     id: string
     role: UserRole
-    membershipLevel: number
     covenantAcceptedAt: Date | null
     covenantVersion: string | null
     subscriptionTier: SubscriptionTier
@@ -32,7 +30,6 @@ declare module 'next-auth/jwt' {
   interface JWT extends DefaultJWT {
     id: string
     role: UserRole
-    membershipLevel: number
     covenantAcceptedAt: Date | null
     covenantVersion: string | null
     subscriptionTier: SubscriptionTier

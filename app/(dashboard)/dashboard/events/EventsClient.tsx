@@ -2,14 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Calendar as CalendarIcon, List, MapPin, Clock, Users, Video, Plus, Filter } from 'lucide-react'
+import { Calendar as CalendarIcon, List, MapPin, Clock, Users, Video, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
 import { Calendar } from '@/components/events/Calendar'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { cn } from '@/lib/utils'
-import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/events/categories'
 
 interface CommitteeInfo {
   id: string
@@ -29,8 +28,8 @@ interface EventData {
   title: string
   description: string | null
   type: string
-  category: string | null
-  status: string
+  category?: string | null
+  status?: string
   startTime: string
   endTime: string
   location: string | null
@@ -55,7 +54,6 @@ interface EventsClientProps {
   events: EventData[]
   upcomingEvents: EventData[]
   userRole: string
-  userId: string
   userCommittees: UserCommittee[]
 }
 
@@ -73,18 +71,12 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   VIRTUAL_WEBINAR: 'bg-sand-200 text-sand-800',
 }
 
-const STATUS_BADGES: Record<string, { label: string; className: string }> = {
-  PENDING: { label: 'Pending Approval', className: 'bg-amber-100 text-amber-800' },
-  APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800' },
-  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
-}
-
 function formatDate(dateString: string) {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -93,28 +85,28 @@ function formatTime(dateString: string) {
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
   })
 }
 
-export function EventsClient({ events, upcomingEvents, userRole, userId, userCommittees }: EventsClientProps) {
+export function EventsClient({
+  events,
+  upcomingEvents,
+  userRole,
+  userCommittees,
+}: EventsClientProps) {
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [selectedType, setSelectedType] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedDayEvents, setSelectedDayEvents] = useState<EventData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
 
   // Check if user can create events (is a member of at least one committee or is admin)
-  const canCreateEvents = userCommittees.length > 0 || ['WEB_STEWARD', 'BOARD_CHAIR'].includes(userRole)
+  const canCreateEvents =
+    userCommittees.length > 0 || ['WEB_STEWARD', 'BOARD_CHAIR'].includes(userRole)
 
-  // Get unique categories from events
-  const availableCategories = [...new Set(events.filter(e => e.category).map(e => e.category as string))]
-
-  const filteredEvents = events.filter(e => {
+  const filteredEvents = events.filter((e) => {
     if (selectedType && e.type !== selectedType) return false
-    if (selectedCategory && e.category !== selectedCategory) return false
     return true
   })
 
@@ -135,7 +127,7 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
 
   const getEventCommittees = (event: EventData): CommitteeInfo[] => {
     if (event.committees && event.committees.length > 0) {
-      return event.committees.map(ec => ec.committee)
+      return event.committees.map((ec) => ec.committee)
     }
     if (event.committee) {
       return [event.committee]
@@ -163,7 +155,9 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
               onClick={() => setView('calendar')}
               className={cn(
                 'px-3 py-2 flex items-center gap-2 text-sm font-body',
-                view === 'calendar' ? 'bg-forest-600 text-white' : 'bg-white text-forest-700 hover:bg-sand-100'
+                view === 'calendar'
+                  ? 'bg-forest-600 text-white'
+                  : 'bg-white text-forest-700 hover:bg-sand-100'
               )}
             >
               <CalendarIcon className="h-4 w-4" />
@@ -173,7 +167,9 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
               onClick={() => setView('list')}
               className={cn(
                 'px-3 py-2 flex items-center gap-2 text-sm border-l border-sand-300 font-body',
-                view === 'list' ? 'bg-forest-600 text-white' : 'bg-white text-forest-700 hover:bg-sand-100'
+                view === 'list'
+                  ? 'bg-forest-600 text-white'
+                  : 'bg-white text-forest-700 hover:bg-sand-100'
               )}
             >
               <List className="h-4 w-4" />
@@ -210,55 +206,7 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
             {label}
           </button>
         ))}
-
-        {/* Category Filter Toggle */}
-        {availableCategories.length > 0 && (
-          <button
-            onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors font-body flex items-center gap-1',
-              showCategoryFilter || selectedCategory
-                ? 'bg-forest-600 text-white'
-                : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
-            )}
-          >
-            <Filter className="h-3.5 w-3.5" />
-            Category
-          </button>
-        )}
       </div>
-
-      {/* Category Filter Pills */}
-      {showCategoryFilter && availableCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-3 bg-sand-50 rounded-lg">
-          <span className="text-sm text-forest-600 font-medium mr-2">Filter by category:</span>
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={cn(
-              'px-2 py-1 rounded text-xs font-medium transition-colors font-body',
-              selectedCategory === null
-                ? 'bg-forest-600 text-white'
-                : 'bg-white text-forest-700 hover:bg-sand-100 border border-sand-300'
-            )}
-          >
-            All Categories
-          </button>
-          {availableCategories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={cn(
-                'px-2 py-1 rounded text-xs font-medium transition-colors font-body',
-                selectedCategory === category
-                  ? 'bg-forest-600 text-white'
-                  : CATEGORY_COLORS[category] || 'bg-gray-100 text-gray-800'
-              )}
-            >
-              {CATEGORY_LABELS[category] || category}
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -274,10 +222,11 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                 <Card className="border-sand-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-display text-forest-800">
-                      Events on {selectedDate.toLocaleDateString('en-US', {
+                      Events on{' '}
+                      {selectedDate.toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
-                        day: 'numeric'
+                        day: 'numeric',
                       })}
                     </CardTitle>
                   </CardHeader>
@@ -286,7 +235,7 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                       <p className="text-forest-500 text-sm font-body">No events on this day</p>
                     ) : (
                       <div className="space-y-3">
-                        {selectedDayEvents.map(event => (
+                        {selectedDayEvents.map((event) => (
                           <Link
                             key={event.id}
                             href={`/dashboard/events/${event.id}`}
@@ -294,14 +243,9 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium text-forest-800 font-body">{event.title}</h4>
-                                  {event.status === 'PENDING' && event.createdBy?.id === userId && (
-                                    <span className={cn('px-2 py-0.5 rounded text-xs font-medium', STATUS_BADGES.PENDING.className)}>
-                                      {STATUS_BADGES.PENDING.label}
-                                    </span>
-                                  )}
-                                </div>
+                                <h4 className="font-medium text-forest-800 font-body">
+                                  {event.title}
+                                </h4>
                                 <div className="flex items-center gap-3 mt-1 text-sm text-forest-500 font-body">
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3.5 w-3.5" />
@@ -314,16 +258,13 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                                     </span>
                                   )}
                                 </div>
-                                {event.category && (
-                                  <span className={cn('inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
-                                    {CATEGORY_LABELS[event.category] || event.category}
-                                  </span>
-                                )}
                               </div>
-                              <span className={cn(
-                                'px-2 py-0.5 rounded text-xs font-medium font-body',
-                                EVENT_TYPE_COLORS[event.type]
-                              )}>
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-xs font-medium font-body',
+                                  EVENT_TYPE_COLORS[event.type]
+                                )}
+                              >
                                 {EVENT_TYPE_LABELS[event.type]}
                               </span>
                             </div>
@@ -345,7 +286,7 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                   <p className="text-forest-500 font-body">No events found</p>
                 ) : (
                   <div className="space-y-4">
-                    {filteredEvents.map(event => {
+                    {filteredEvents.map((event) => {
                       const committees = getEventCommittees(event)
                       return (
                         <Link
@@ -356,15 +297,12 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-medium text-forest-800 font-body">{event.title}</h3>
+                                <h3 className="font-medium text-forest-800 font-body">
+                                  {event.title}
+                                </h3>
                                 {event.isRegistered && (
                                   <span className="px-2 py-0.5 rounded text-xs bg-forest-100 text-forest-700 font-medium font-body">
                                     Registered
-                                  </span>
-                                )}
-                                {event.status === 'PENDING' && event.createdBy?.id === userId && (
-                                  <span className={cn('px-2 py-0.5 rounded text-xs font-medium', STATUS_BADGES.PENDING.className)}>
-                                    {STATUS_BADGES.PENDING.label}
                                   </span>
                                 )}
                               </div>
@@ -396,30 +334,30 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
                                 )}
                                 <span className="flex items-center gap-1">
                                   <Users className="h-4 w-4" />
-                                  {event.attendeeCount} {event.capacity ? `/ ${event.capacity}` : ''} attendees
+                                  {event.attendeeCount}{' '}
+                                  {event.capacity ? `/ ${event.capacity}` : ''} attendees
                                 </span>
                               </div>
                               {/* Committee badges */}
                               {committees.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                  {committees.map(c => (
-                                    <span key={c.id} className="px-2 py-0.5 rounded text-xs bg-sand-100 text-forest-700 font-body">
+                                  {committees.map((c) => (
+                                    <span
+                                      key={c.id}
+                                      className="px-2 py-0.5 rounded text-xs bg-sand-100 text-forest-700 font-body"
+                                    >
                                       {c.name}
                                     </span>
                                   ))}
                                 </div>
                               )}
-                              {/* Category badge */}
-                              {event.category && (
-                                <span className={cn('inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
-                                  {CATEGORY_LABELS[event.category] || event.category}
-                                </span>
-                              )}
                             </div>
-                            <span className={cn(
-                              'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
-                              EVENT_TYPE_COLORS[event.type]
-                            )}>
+                            <span
+                              className={cn(
+                                'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
+                                EVENT_TYPE_COLORS[event.type]
+                              )}
+                            >
                               {EVENT_TYPE_LABELS[event.type]}
                             </span>
                           </div>
@@ -436,41 +374,42 @@ export function EventsClient({ events, upcomingEvents, userRole, userId, userCom
         <div className="space-y-6">
           <Card className="border-sand-200">
             <CardHeader>
-              <CardTitle className="text-lg font-display text-forest-800">Upcoming Events</CardTitle>
+              <CardTitle className="text-lg font-display text-forest-800">
+                Upcoming Events
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {upcomingEvents.length === 0 ? (
                 <p className="text-forest-500 text-sm font-body">No upcoming events</p>
               ) : (
                 <div className="space-y-3">
-                  {upcomingEvents.map(event => (
+                  {upcomingEvents.map((event) => (
                     <Link
                       key={event.id}
                       href={`/dashboard/events/${event.id}`}
                       className="block p-3 rounded-lg border border-sand-200 hover:bg-sand-50 transition-colors"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={cn(
-                          'px-1.5 py-0.5 rounded text-xs font-medium font-body',
-                          EVENT_TYPE_COLORS[event.type]
-                        )}>
+                        <span
+                          className={cn(
+                            'px-1.5 py-0.5 rounded text-xs font-medium font-body',
+                            EVENT_TYPE_COLORS[event.type]
+                          )}
+                        >
                           {EVENT_TYPE_LABELS[event.type]}
                         </span>
                         {event.isRegistered && (
                           <span className="text-xs text-forest-600 font-medium font-body">✓</span>
                         )}
                       </div>
-                      <h4 className="font-medium text-forest-800 text-sm font-body">{event.title}</h4>
+                      <h4 className="font-medium text-forest-800 text-sm font-body">
+                        {event.title}
+                      </h4>
                       <div className="flex items-center gap-2 mt-1 text-xs text-forest-500 font-body">
                         <span>{formatDate(event.startTime)}</span>
                         <span>•</span>
                         <span>{formatTime(event.startTime)}</span>
                       </div>
-                      {event.category && (
-                        <span className={cn('inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium', CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800')}>
-                          {CATEGORY_LABELS[event.category] || event.category}
-                        </span>
-                      )}
                     </Link>
                   ))}
                 </div>

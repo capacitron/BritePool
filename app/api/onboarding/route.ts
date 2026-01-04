@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
@@ -36,11 +37,8 @@ export async function GET() {
       profile: user.profile,
     })
   } catch (error) {
-    console.error('Error fetching onboarding status:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch onboarding status' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_onboarding_status' })
+    return NextResponse.json({ error: 'Failed to fetch onboarding status' }, { status: 500 })
   }
 }
 
@@ -129,11 +127,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, step })
   } catch (error) {
-    console.error('Error saving onboarding progress:', error)
-    return NextResponse.json(
-      { error: 'Failed to save onboarding progress' },
-      { status: 500 }
-    )
+    logError(error, { action: 'save_onboarding_progress' })
+    return NextResponse.json({ error: 'Failed to save onboarding progress' }, { status: 500 })
   }
 }
 
@@ -155,10 +150,7 @@ export async function PATCH() {
 
     return NextResponse.json({ success: true, onboardingCompleted: true })
   } catch (error) {
-    console.error('Error completing onboarding:', error)
-    return NextResponse.json(
-      { error: 'Failed to complete onboarding' },
-      { status: 500 }
-    )
+    logError(error, { action: 'complete_onboarding' })
+    return NextResponse.json({ error: 'Failed to complete onboarding' }, { status: 500 })
   }
 }

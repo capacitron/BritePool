@@ -5,15 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
   BookOpen,
   Video,
   FileText,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react'
 
 interface Lesson {
@@ -38,10 +38,10 @@ interface Course {
   } | null
 }
 
-export default function LessonPage({ 
-  params 
-}: { 
-  params: Promise<{ courseId: string; lessonId: string }> 
+export default function LessonPage({
+  params,
+}: {
+  params: Promise<{ courseId: string; lessonId: string }>
 }) {
   const resolvedParams = use(params)
   const router = useRouter()
@@ -62,7 +62,7 @@ export default function LessonPage({
       if (response.ok) {
         const data = await response.json()
         setCourse(data)
-        
+
         const currentLesson = data.lessons.find((l: Lesson) => l.id === resolvedParams.lessonId)
         if (currentLesson) {
           setLesson(currentLesson)
@@ -71,8 +71,8 @@ export default function LessonPage({
           router.push(`/dashboard/courses/${resolvedParams.courseId}`)
         }
       }
-    } catch (error) {
-      console.error('Error fetching lesson:', error)
+    } catch {
+      // Failed to fetch lesson
     } finally {
       setLoading(false)
     }
@@ -80,21 +80,21 @@ export default function LessonPage({
 
   async function handleMarkComplete() {
     if (!course || !lesson) return
-    
+
     setMarking(true)
     try {
       const response = await fetch(`/api/courses/${course.id}/progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId: lesson.id })
+        body: JSON.stringify({ lessonId: lesson.id }),
       })
-      
+
       if (response.ok) {
         setIsCompleted(true)
         fetchData()
       }
-    } catch (error) {
-      console.error('Error marking complete:', error)
+    } catch {
+      // Failed to mark complete
     } finally {
       setMarking(false)
     }
@@ -121,9 +121,10 @@ export default function LessonPage({
     )
   }
 
-  const currentIndex = course.lessons.findIndex(l => l.id === lesson.id)
+  const currentIndex = course.lessons.findIndex((l) => l.id === lesson.id)
   const prevLesson = currentIndex > 0 ? course.lessons[currentIndex - 1] : null
-  const nextLesson = currentIndex < course.lessons.length - 1 ? course.lessons[currentIndex + 1] : null
+  const nextLesson =
+    currentIndex < course.lessons.length - 1 ? course.lessons[currentIndex + 1] : null
 
   function renderLessonContent() {
     if (!lesson) return null
@@ -147,11 +148,7 @@ export default function LessonPage({
                     allowFullScreen
                   />
                 ) : (
-                  <video
-                    src={lesson.videoUrl}
-                    controls
-                    className="w-full h-full"
-                  />
+                  <video src={lesson.videoUrl} controls className="w-full h-full" />
                 )}
               </div>
             ) : (
@@ -169,21 +166,18 @@ export default function LessonPage({
             )}
           </div>
         )
-        
+
       case 'PDF':
         return (
           <div className="space-y-4">
             {lesson.pdfUrl ? (
               <>
                 <div className="aspect-[3/4] bg-stone-warm rounded-lg overflow-hidden">
-                  <iframe
-                    src={lesson.pdfUrl}
-                    className="w-full h-full"
-                  />
+                  <iframe src={lesson.pdfUrl} className="w-full h-full" />
                 </div>
-                <a 
-                  href={lesson.pdfUrl} 
-                  target="_blank" 
+                <a
+                  href={lesson.pdfUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-earth-brown hover:underline"
                 >
@@ -206,7 +200,7 @@ export default function LessonPage({
             )}
           </div>
         )
-        
+
       case 'QUIZ':
         return (
           <div className="space-y-4">
@@ -214,9 +208,7 @@ export default function LessonPage({
               <CardContent className="py-12 text-center">
                 <HelpCircle className="h-16 w-16 mx-auto text-earth-brown-light mb-4" />
                 <h3 className="text-lg font-medium text-earth-brown-dark mb-2">Quiz Content</h3>
-                <p className="text-earth-brown-light">
-                  Quiz functionality coming soon
-                </p>
+                <p className="text-earth-brown-light">Quiz functionality coming soon</p>
               </CardContent>
             </Card>
             {lesson.content && (
@@ -226,7 +218,7 @@ export default function LessonPage({
             )}
           </div>
         )
-        
+
       case 'TEXT':
       default:
         return (
@@ -246,14 +238,14 @@ export default function LessonPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Link 
-          href={`/dashboard/courses/${course.id}`} 
+        <Link
+          href={`/dashboard/courses/${course.id}`}
           className="inline-flex items-center gap-2 text-earth-brown-light hover:text-earth-brown-dark transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to {course.title}
         </Link>
-        
+
         <div className="text-sm text-earth-brown-light">
           Lesson {currentIndex + 1} of {course.lessons.length}
         </div>
@@ -281,9 +273,7 @@ export default function LessonPage({
             <p className="text-earth-brown-light mt-2">{lesson.description}</p>
           )}
         </CardHeader>
-        <CardContent>
-          {renderLessonContent()}
-        </CardContent>
+        <CardContent>{renderLessonContent()}</CardContent>
       </Card>
 
       <div className="flex items-center justify-between gap-4">
@@ -300,16 +290,12 @@ export default function LessonPage({
 
         <div className="flex items-center gap-3">
           {!isCompleted && (
-            <Button 
-              onClick={handleMarkComplete}
-              disabled={marking}
-              variant="outline"
-            >
+            <Button onClick={handleMarkComplete} disabled={marking} variant="outline">
               <CheckCircle className="h-4 w-4 mr-2" />
               {marking ? 'Marking...' : 'Mark Complete'}
             </Button>
           )}
-          
+
           {nextLesson ? (
             <Link href={`/dashboard/courses/${course.id}/lessons/${nextLesson.id}`}>
               <Button>

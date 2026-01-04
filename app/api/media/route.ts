@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createMediaSchema = z.object({
@@ -11,14 +12,21 @@ const createMediaSchema = z.object({
   filesize: z.number().int().positive(),
   mimeType: z.string().min(1),
   type: z.enum(['PHOTO', 'VIDEO', 'DRONE_FOOTAGE', 'TIMELAPSE']),
-  category: z.enum(['PROJECT_PROGRESS', 'EVENTS', 'SANCTUARY_NATURE', 'CONSTRUCTION', 'COMMUNITY', 'AERIAL']),
+  category: z.enum([
+    'PROJECT_PROGRESS',
+    'EVENTS',
+    'SANCTUARY_NATURE',
+    'CONSTRUCTION',
+    'COMMUNITY',
+    'AERIAL',
+  ]),
   tags: z.array(z.string()).default([]),
 })
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -29,11 +37,11 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag')
 
     const where: Record<string, unknown> = {}
-    
+
     if (type) {
       where.type = type
     }
-    
+
     if (category) {
       where.category = category
     }
@@ -46,26 +54,23 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
+          select: { id: true, name: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json(mediaItems)
   } catch (error) {
-    console.error('Error fetching media items:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch media items' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_media_items' })
+    return NextResponse.json({ error: 'Failed to fetch media items' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -80,7 +85,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { url, thumbnailUrl, mediumUrl, filename, filesize, mimeType, type, category, tags } = parsed.data
+    const { url, thumbnailUrl, mediumUrl, filename, filesize, mimeType, type, category, tags } =
+      parsed.data
 
     const mediaItem = await prisma.mediaItem.create({
       data: {
@@ -97,17 +103,14 @@ export async function POST(request: NextRequest) {
       },
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(mediaItem, { status: 201 })
   } catch (error) {
-    console.error('Error creating media item:', error)
-    return NextResponse.json(
-      { error: 'Failed to create media item' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_media_item' })
+    return NextResponse.json({ error: 'Failed to create media item' }, { status: 500 })
   }
 }

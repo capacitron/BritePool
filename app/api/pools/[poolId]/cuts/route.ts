@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createCutSchema } from '@/lib/validations/pool'
-import bcrypt from 'bcryptjs'
+import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { z } from 'zod'
 
-type CutWithPledges = {
-  id: string
-  color: string
-  overseer: { id: string; name: string; email: string }
-  pledges: { amount: number }[]
-  _count: { pledges: number; invitations: number }
-}
+const createCutSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  minAmount: z.number().min(0),
+  maxAmount: z.number().positive().optional(),
+  colorCode: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
+})
 
 // GET /api/pools/[poolId]/cuts - Get all cuts for a pool
 export async function GET(
@@ -18,139 +23,121 @@ export async function GET(
   { params }: { params: Promise<{ poolId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-cuts', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { poolId } = await params
-
-    const cuts = await prisma.poolCut.findMany({
-      where: { poolId },
-      include: {
-        overseer: {
-          select: { id: true, name: true, email: true }
-        },
-        pledges: {
-          where: { status: { not: 'CANCELLED' } },
-          select: { amount: true }
-        },
-        _count: {
-          select: { pledges: true, invitations: true }
-        }
-      }
-    })
-
-    const cutsWithTotals = (cuts as CutWithPledges[]).map((cut) => ({
-      id: cut.id,
-      color: cut.color,
-      overseer: cut.overseer,
-      total: cut.pledges.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0),
-      pledgeCount: cut._count.pledges,
-      invitationCount: cut._count.invitations
-    }))
-
-    return NextResponse.json(cutsWithTotals)
-  } catch (error) {
-    console.error('Error fetching cuts:', error)
-    return NextResponse.json({ error: 'Failed to fetch cuts' }, { status: 500 })
-  }
-}
-
-// POST /api/pools/[poolId]/cuts - Create a new cut
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ poolId: string }> }
-) {
-  try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if user is BOARD_CHAIR or WEB_STEWARD
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-
-    if (!user || !['BOARD_CHAIR', 'WEB_STEWARD'].includes(user.role)) {
-      return NextResponse.json(
-        { error: 'Only Board Chairs and Web Stewards can create cuts' },
-        { status: 403 }
-      )
-    }
-
-    const { poolId } = await params
-    const body = await request.json()
-    const validatedData = createCutSchema.parse(body)
 
     // Verify pool exists
     const pool = await prisma.pool.findUnique({
-      where: { id: poolId }
+      where: { id: poolId },
+      select: { id: true },
     })
 
     if (!pool) {
       return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
     }
 
-    // Verify overseer is a BOARD_CHAIR
-    const overseer = await prisma.user.findUnique({
-      where: { id: validatedData.overseerId },
-      select: { role: true }
+    const cuts = await prisma.poolCut.findMany({
+      where: { poolId },
+      include: {
+        _count: {
+          select: { pledges: true, invitations: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
     })
 
-    if (!overseer || !['BOARD_CHAIR', 'WEB_STEWARD'].includes(overseer.role)) {
+    return NextResponse.json(cuts)
+  } catch (error) {
+    logError(error, { action: 'fetch_cuts' })
+    return NextResponse.json({ error: 'Failed to fetch cuts' }, { status: 500 })
+  }
+}
+
+// POST /api/pools/[poolId]/cuts - Create a new cut (pool creator or admin)
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ poolId: string }> }
+) {
+  try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-cuts', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { poolId } = await params
+
+    // Check if pool exists and get creator
+    const pool = await prisma.pool.findUnique({
+      where: { id: poolId },
+      select: { id: true, creatorId: true, status: true },
+    })
+
+    if (!pool) {
+      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+    }
+
+    // Only pool creator or admin can create cuts
+    const isCreator = pool.creatorId === session.user.id
+    const userIsAdmin = isAdmin(session.user.role)
+
+    if (!isCreator && !userIsAdmin) {
       return NextResponse.json(
-        { error: 'Overseer must be a Board Chair or Web Steward' },
+        { error: 'Forbidden: Only pool creator or admin can create cuts' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const parsed = createCutSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
         { status: 400 }
       )
     }
 
-    // Check if color already exists for this pool
-    const existingCut = await prisma.poolCut.findUnique({
-      where: {
-        poolId_color: {
-          poolId,
-          color: validatedData.color
-        }
-      }
-    })
+    const { name, description, minAmount, maxAmount, colorCode } = parsed.data
 
-    if (existingCut) {
+    // Validate maxAmount >= minAmount if both provided
+    if (maxAmount !== undefined && maxAmount < minAmount) {
       return NextResponse.json(
-        { error: `A ${validatedData.color.toLowerCase()} cut already exists for this pool` },
+        { error: 'maxAmount must be greater than or equal to minAmount' },
         { status: 400 }
       )
     }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10)
 
     const cut = await prisma.poolCut.create({
       data: {
         poolId,
-        color: validatedData.color,
-        password: hashedPassword,
-        overseerId: validatedData.overseerId
+        name,
+        description: description || null,
+        minAmount,
+        maxAmount: maxAmount || null,
+        colorCode: colorCode || null,
       },
       include: {
-        overseer: {
-          select: { id: true, name: true, email: true }
-        }
-      }
+        _count: {
+          select: { pledges: true, invitations: true },
+        },
+      },
     })
 
-    return NextResponse.json({
-      id: cut.id,
-      color: cut.color,
-      overseer: cut.overseer
-    }, { status: 201 })
+    return NextResponse.json(cut, { status: 201 })
   } catch (error) {
-    console.error('Error creating cut:', error)
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    logError(error, { action: 'create_cut' })
     return NextResponse.json({ error: 'Failed to create cut' }, { status: 500 })
   }
 }

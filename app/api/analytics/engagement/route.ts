@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
 
@@ -50,39 +51,35 @@ export async function GET() {
       }),
     ])
 
-    const [
-      coursesByCategory,
-      eventsByType,
-      topForumCategories,
-      recentForumActivity,
-    ] = await Promise.all([
-      prisma.course.groupBy({
-        by: ['category'],
-        where: { isPublished: true },
-        _count: true,
-      }),
-      prisma.event.groupBy({
-        by: ['type'],
-        _count: true,
-      }),
-      prisma.forumPost.groupBy({
-        by: ['categoryId'],
-        _count: true,
-        orderBy: { _count: { categoryId: 'desc' } },
-        take: 5,
-      }),
-      prisma.forumPost.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          title: true,
-          createdAt: true,
-          author: { select: { name: true } },
-          category: { select: { name: true } },
-        },
-      }),
-    ])
+    const [coursesByCategory, eventsByType, topForumCategories, recentForumActivity] =
+      await Promise.all([
+        prisma.course.groupBy({
+          by: ['category'],
+          where: { isPublished: true },
+          _count: true,
+        }),
+        prisma.event.groupBy({
+          by: ['type'],
+          _count: true,
+        }),
+        prisma.forumPost.groupBy({
+          by: ['categoryId'],
+          _count: true,
+          orderBy: { _count: { categoryId: 'desc' } },
+          take: 5,
+        }),
+        prisma.forumPost.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            author: { select: { name: true } },
+            category: { select: { name: true } },
+          },
+        }),
+      ])
 
     const categoryIds = topForumCategories
       .map((c) => c.categoryId)
@@ -112,9 +109,7 @@ export async function GET() {
         totalEnrollments: courseStats,
         enrollmentsThisMonth: courseEnrollmentsThisMonth,
         completedCourses,
-        completionRate: courseStats > 0
-          ? Math.round((completedCourses / courseStats) * 100)
-          : 0,
+        completionRate: courseStats > 0 ? Math.round((completedCourses / courseStats) * 100) : 0,
         byCategory: coursesByCategory.map((c) => ({
           category: c.category,
           count: c._count,
@@ -124,9 +119,7 @@ export async function GET() {
         totalRegistrations: eventStats,
         registrationsThisMonth: eventRegistrationsThisMonth,
         attendedEvents,
-        attendanceRate: eventStats > 0
-          ? Math.round((attendedEvents / eventStats) * 100)
-          : 0,
+        attendanceRate: eventStats > 0 ? Math.round((attendedEvents / eventStats) * 100) : 0,
         byType: eventsByType.map((e) => ({
           type: e.type,
           count: e._count,
@@ -134,10 +127,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Error fetching engagement analytics:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch engagement analytics' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_engagement_analytics' })
+    return NextResponse.json({ error: 'Failed to fetch engagement analytics' }, { status: 500 })
   }
 }

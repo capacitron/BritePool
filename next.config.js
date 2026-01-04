@@ -19,7 +19,11 @@ const nextConfig = {
     },
   },
   // Security headers applied via middleware
-  // ESLint runs during builds to catch issues early
+  // Skip ESLint during builds - run separately via `npm run lint`
+  // This avoids the circular structure JSON error with flat config
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig

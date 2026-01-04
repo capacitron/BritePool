@@ -13,17 +13,30 @@ function getResendClient(): Resend | null {
   return resendClient
 }
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@britepool.org'
-const FROM_NAME = process.env.FROM_NAME || 'BRITE POOL'
+// Email configuration - exported for use in other modules
+export const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@britepool.org'
+export const FROM_NAME = process.env.FROM_NAME || 'BRITE POOL'
 
-interface SendEmailOptions {
+export interface SendEmailOptions {
   to: string | string[]
   subject: string
   html: string
   text?: string
 }
 
-export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+export interface SendEmailResult {
+  success: boolean
+  mock?: boolean
+  data?: unknown
+  error?: unknown
+}
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+}: SendEmailOptions): Promise<SendEmailResult> {
   const resend = getResendClient()
 
   if (!resend) {

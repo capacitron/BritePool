@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const markCompleteSchema = z.object({
-  lessonId: z.string().min(1)
+  lessonId: z.string().min(1),
 })
 
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -24,19 +25,19 @@ export async function GET(
       where: {
         userId_courseId: {
           userId: session.user.id,
-          courseId: courseId
-        }
+          courseId: courseId,
+        },
       },
       include: {
         course: {
           include: {
             lessons: {
               select: { id: true },
-              orderBy: { order: 'asc' }
-            }
-          }
-        }
-      }
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
     })
 
     if (!progress) {
@@ -45,14 +46,11 @@ export async function GET(
 
     return NextResponse.json({
       ...progress,
-      totalLessons: progress.course.lessons.length
+      totalLessons: progress.course.lessons.length,
     })
   } catch (error) {
-    console.error('Error fetching progress:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch progress' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_course_progress' })
+    return NextResponse.json({ error: 'Failed to fetch progress' }, { status: 500 })
   }
 }
 
@@ -62,7 +60,7 @@ export async function POST(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -84,8 +82,8 @@ export async function POST(
     const lesson = await prisma.lesson.findFirst({
       where: {
         id: lessonId,
-        courseId: courseId
-      }
+        courseId: courseId,
+      },
     })
 
     if (!lesson) {
@@ -96,9 +94,9 @@ export async function POST(
       where: {
         userId_courseId: {
           userId: session.user.id,
-          courseId: courseId
-        }
-      }
+          courseId: courseId,
+        },
+      },
     })
 
     if (!existingProgress) {
@@ -106,16 +104,14 @@ export async function POST(
     }
 
     const totalLessons = await prisma.lesson.count({
-      where: { courseId: courseId }
+      where: { courseId: courseId },
     })
 
     const completedLessons = existingProgress.completedLessons.includes(lessonId)
       ? existingProgress.completedLessons
       : [...existingProgress.completedLessons, lessonId]
 
-    const progressPercentage = totalLessons > 0 
-      ? (completedLessons.length / totalLessons) * 100 
-      : 0
+    const progressPercentage = totalLessons > 0 ? (completedLessons.length / totalLessons) * 100 : 0
 
     const isCompleted = completedLessons.length === totalLessons
 
@@ -123,23 +119,20 @@ export async function POST(
       where: {
         userId_courseId: {
           userId: session.user.id,
-          courseId: courseId
-        }
+          courseId: courseId,
+        },
       },
       data: {
         completedLessons,
         progress: progressPercentage,
         isCompleted,
-        completedAt: isCompleted ? new Date() : null
-      }
+        completedAt: isCompleted ? new Date() : null,
+      },
     })
 
     return NextResponse.json(updatedProgress)
   } catch (error) {
-    console.error('Error updating progress:', error)
-    return NextResponse.json(
-      { error: 'Failed to update progress' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_course_progress' })
+    return NextResponse.json({ error: 'Failed to update progress' }, { status: 500 })
   }
 }

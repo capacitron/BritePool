@@ -29,7 +29,10 @@
       "Bash(git pull:*)",
       "Bash(npx tsx:*)",
       "Bash(xargs:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(NEXT_DISABLE_ESLINT=1 npm run build:*)"
     ],
     "deny": []
   },

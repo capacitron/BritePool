@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createCourseSchema = z.object({
@@ -8,7 +9,9 @@ const createCourseSchema = z.object({
   description: z.string().max(5000).optional(),
   slug: z.string().min(1).max(100),
   thumbnail: z.string().url().optional(),
-  category: z.enum(['EMPOWERMENT', 'LEADERSHIP', 'WELLNESS', 'FINANCE', 'STEWARDSHIP', 'OTHER']).optional(),
+  category: z
+    .enum(['EMPOWERMENT', 'LEADERSHIP', 'WELLNESS', 'FINANCE', 'STEWARDSHIP', 'OTHER'])
+    .optional(),
   status: z.enum(['DRAFT', 'REVIEW', 'PUBLISHED', 'ARCHIVED']).optional(),
   isPublished: z.boolean().optional(),
 })
@@ -18,7 +21,7 @@ const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'CONTENT_MODERATOR']
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {
       isPublished: true,
     }
-    
+
     if (category && category !== 'ALL') {
       where.category = category
     }
@@ -38,8 +41,8 @@ export async function GET(request: NextRequest) {
     if (enrolled === 'true') {
       where.progress = {
         some: {
-          userId: session.user.id
-        }
+          userId: session.user.id,
+        },
       }
     }
 
@@ -47,46 +50,43 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         createdBy: {
-          select: { id: true, name: true }
+          select: { id: true, name: true },
         },
         lessons: {
           select: { id: true },
-          orderBy: { order: 'asc' }
+          orderBy: { order: 'asc' },
         },
         progress: {
           where: { userId: session.user.id },
-          select: { 
-            id: true, 
-            progress: true, 
+          select: {
+            id: true,
+            progress: true,
             isCompleted: true,
-            completedLessons: true 
-          }
-        }
+            completedLessons: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
-    const coursesWithProgress = courses.map(course => ({
+    const coursesWithProgress = courses.map((course) => ({
       ...course,
       lessonCount: course.lessons.length,
       userProgress: course.progress[0] || null,
-      isEnrolled: course.progress.length > 0
+      isEnrolled: course.progress.length > 0,
     }))
 
     return NextResponse.json(coursesWithProgress)
   } catch (error) {
-    console.error('Error fetching courses:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch courses' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_courses' })
+    return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -108,14 +108,11 @@ export async function POST(request: NextRequest) {
     const { title, description, slug, thumbnail, category, status, isPublished } = parsed.data
 
     const existingCourse = await prisma.course.findUnique({
-      where: { slug }
+      where: { slug },
     })
 
     if (existingCourse) {
-      return NextResponse.json(
-        { error: 'Course with this slug already exists' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Course with this slug already exists' }, { status: 409 })
     }
 
     const course = await prisma.course.create({
@@ -131,17 +128,14 @@ export async function POST(request: NextRequest) {
       },
       include: {
         createdBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(course, { status: 201 })
   } catch (error) {
-    console.error('Error creating course:', error)
-    return NextResponse.json(
-      { error: 'Failed to create course' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_course' })
+    return NextResponse.json({ error: 'Failed to create course' }, { status: 500 })
   }
 }

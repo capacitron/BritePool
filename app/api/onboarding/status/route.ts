@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
@@ -27,7 +28,7 @@ export async function GET() {
       onboardingCompleted: user.onboardingCompleted,
     })
   } catch (error) {
-    console.error('Error fetching onboarding status:', error)
+    logError(error, { action: 'fetch_onboarding_status' })
     return NextResponse.json({ error: 'Failed to fetch onboarding status' }, { status: 500 })
   }
 }

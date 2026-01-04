@@ -2,8 +2,29 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ApprovalsClient } from './ApprovalsClient'
+import type { EventType } from '@prisma/client'
 
 const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
+
+interface FormattedEvent {
+  id: string
+  title: string
+  description: string | null
+  type: EventType
+  startTime: string
+  endTime: string
+  location: string | null
+  virtualLink: string | null
+  capacity: number | null
+  committee: {
+    id: string
+    name: string
+    slug: string
+    type: string
+  } | null
+  registrationCount: number
+  createdAt: string
+}
 
 export default async function EventApprovalsPage() {
   const session = await auth()
@@ -18,109 +39,55 @@ export default async function EventApprovalsPage() {
   const userLeaderMemberships = await prisma.committeeMember.findMany({
     where: {
       userId: session.user.id,
-      role: 'LEADER'
+      role: 'LEADER',
     },
-    select: { committeeId: true }
+    select: { committeeId: true },
   })
 
-  const leaderCommitteeIds = userLeaderMemberships.map(m => m.committeeId)
+  const leaderCommitteeIds = userLeaderMemberships.map(
+    (m: { committeeId: string }) => m.committeeId
+  )
 
   // If not admin and not a leader of any committee, redirect
   if (!isAdmin && leaderCommitteeIds.length === 0) {
     redirect('/dashboard/events')
   }
 
-  // Find pending events for committees user leads (or all if admin)
-  const pendingEvents = await prisma.event.findMany({
-    where: {
-      status: 'PENDING',
-      ...(isAdmin ? {} : {
-        committees: {
-          some: {
-            committeeId: { in: leaderCommitteeIds }
-          }
-        }
-      })
-    },
+  // Find events for committees user leads (or all if admin)
+  // Note: The Event model doesn't have a status field, so we show all events
+  // that belong to committees the user leads
+  const events = await prisma.event.findMany({
+    where: isAdmin
+      ? {}
+      : {
+          committeeId: { in: leaderCommitteeIds },
+        },
     include: {
-      committees: {
-        include: {
-          committee: {
-            select: { id: true, name: true, slug: true, type: true }
-          }
-        }
-      },
-      createdBy: {
-        select: { id: true, name: true }
-      },
-      approvals: {
-        include: {
-          approver: {
-            select: { id: true, name: true }
-          }
-        }
+      committee: {
+        select: { id: true, name: true, slug: true, type: true },
       },
       _count: {
-        select: { registrations: true }
-      }
+        select: { registrations: true },
+      },
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   })
 
-  // Filter to only include events where user hasn't already approved for their committees
-  const eventsNeedingApproval = pendingEvents.filter(event => {
-    const approvedCommitteeIds = event.approvals.map(a => a.committeeId)
-    const eventCommitteeIds = event.committees.map(ec => ec.committeeId)
+  // Format events for the client component
+  const formattedEvents: FormattedEvent[] = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    type: event.type,
+    startTime: event.startTime.toISOString(),
+    endTime: event.endTime.toISOString(),
+    location: event.location,
+    virtualLink: event.virtualLink,
+    capacity: event.capacity,
+    committee: event.committee,
+    registrationCount: event._count.registrations,
+    createdAt: event.createdAt.toISOString(),
+  }))
 
-    if (isAdmin) {
-      return eventCommitteeIds.some(id => !approvedCommitteeIds.includes(id))
-    }
-
-    return leaderCommitteeIds.some(id =>
-      eventCommitteeIds.includes(id) && !approvedCommitteeIds.includes(id)
-    )
-  })
-
-  // Format events with approval info
-  const formattedEvents = eventsNeedingApproval.map(event => {
-    const approvedCommitteeIds = event.approvals.map(a => a.committeeId)
-    const eventCommitteeIds = event.committees.map(ec => ec.committeeId)
-
-    const committeesNeedingYourApproval = isAdmin
-      ? eventCommitteeIds.filter(id => !approvedCommitteeIds.includes(id))
-      : leaderCommitteeIds.filter(id =>
-          eventCommitteeIds.includes(id) && !approvedCommitteeIds.includes(id)
-        )
-
-    return {
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      type: event.type,
-      category: event.category,
-      startTime: event.startTime.toISOString(),
-      endTime: event.endTime.toISOString(),
-      location: event.location,
-      virtualLink: event.virtualLink,
-      capacity: event.capacity,
-      committees: event.committees.map(ec => ec.committee),
-      createdBy: event.createdBy,
-      approvals: event.approvals.map(a => ({
-        ...a,
-        approvedAt: a.approvedAt.toISOString()
-      })),
-      committeesNeedingYourApproval,
-      totalCommittees: eventCommitteeIds.length,
-      approvedCommittees: approvedCommitteeIds.length,
-      createdAt: event.createdAt.toISOString()
-    }
-  })
-
-  return (
-    <ApprovalsClient
-      events={formattedEvents}
-      userRole={session.user.role}
-      isAdmin={isAdmin}
-    />
-  )
+  return <ApprovalsClient events={formattedEvents} userRole={session.user.role} isAdmin={isAdmin} />
 }

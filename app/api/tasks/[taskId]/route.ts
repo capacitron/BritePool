@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateTaskSchema = z.object({
@@ -19,7 +20,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -30,12 +31,12 @@ export async function GET(
       where: { id: taskId },
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         committee: {
-          select: { id: true, name: true, slug: true }
-        }
-      }
+          select: { id: true, name: true, slug: true },
+        },
+      },
     })
 
     if (!task) {
@@ -44,11 +45,8 @@ export async function GET(
 
     return NextResponse.json(task)
   } catch (error) {
-    console.error('Error fetching task:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch task' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_task' })
+    return NextResponse.json({ error: 'Failed to fetch task' }, { status: 500 })
   }
 }
 
@@ -58,7 +56,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -66,7 +64,7 @@ export async function PATCH(
     const { taskId } = await params
 
     const existingTask = await prisma.task.findUnique({
-      where: { id: taskId }
+      where: { id: taskId },
     })
 
     if (!existingTask) {
@@ -87,30 +85,24 @@ export async function PATCH(
 
     if (assignedToId) {
       const user = await prisma.user.findUnique({
-        where: { id: assignedToId }
+        where: { id: assignedToId },
       })
       if (!user) {
-        return NextResponse.json(
-          { error: 'Assigned user not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Assigned user not found' }, { status: 404 })
       }
     }
 
     if (committeeId) {
       const committee = await prisma.committee.findUnique({
-        where: { id: committeeId }
+        where: { id: committeeId },
       })
       if (!committee) {
-        return NextResponse.json(
-          { error: 'Committee not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
       }
     }
 
     const updateData: Record<string, unknown> = {}
-    
+
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
     if (status !== undefined) {
@@ -131,21 +123,18 @@ export async function PATCH(
       data: updateData,
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         committee: {
-          select: { id: true, name: true, slug: true }
-        }
-      }
+          select: { id: true, name: true, slug: true },
+        },
+      },
     })
 
     return NextResponse.json(task)
   } catch (error) {
-    console.error('Error updating task:', error)
-    return NextResponse.json(
-      { error: 'Failed to update task' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_task' })
+    return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
   }
 }
 
@@ -155,7 +144,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -163,7 +152,7 @@ export async function DELETE(
     const { taskId } = await params
 
     const existingTask = await prisma.task.findUnique({
-      where: { id: taskId }
+      where: { id: taskId },
     })
 
     if (!existingTask) {
@@ -171,15 +160,12 @@ export async function DELETE(
     }
 
     await prisma.task.delete({
-      where: { id: taskId }
+      where: { id: taskId },
     })
 
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error) {
-    console.error('Error deleting task:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete task' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_task' })
+    return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
   }
 }

@@ -11,7 +11,7 @@ import { PledgeForm } from '@/components/pool/PledgeForm'
 import { InvitationManager } from '@/components/pool/InvitationManager'
 import { MemberPledgeList } from '@/components/pool/MemberPledgeList'
 import { GoalNotification } from '@/components/pool/GoalNotification'
-import { Loader2, Plus, Lock, Settings } from 'lucide-react'
+import { Loader2, Plus, Lock, Settings, X } from 'lucide-react'
 
 interface Pool {
   id: string
@@ -55,12 +55,16 @@ export default function StakeholderPoolPage() {
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [selectedCut, setSelectedCut] = useState<{ id: string; color: 'PURPLE' | 'ORANGE' | 'GREEN' } | null>(null)
+  const [selectedCut, setSelectedCut] = useState<{
+    id: string
+    color: 'PURPLE' | 'ORANGE' | 'GREEN'
+  } | null>(null)
+  const [showCreatePoolModal, setShowCreatePoolModal] = useState(false)
 
   // Access state
   const [userAccess, setUserAccess] = useState<UserAccess>({
     isOverseer: false,
-    hasAccess: false
+    hasAccess: false,
   })
 
   useEffect(() => {
@@ -76,8 +80,8 @@ export default function StakeholderPoolPage() {
         setUserId(data.user?.id)
         setUserRole(data.user?.role)
       }
-    } catch (err) {
-      console.error('Error fetching user info:', err)
+    } catch {
+      // Failed to fetch user info
     }
   }
 
@@ -101,8 +105,7 @@ export default function StakeholderPoolPage() {
         setPool(activePool)
         updateUserAccess(activePool)
       }
-    } catch (err) {
-      console.error('Error fetching pool:', err)
+    } catch {
       setError('Failed to load pool data')
     } finally {
       setLoading(false)
@@ -113,7 +116,7 @@ export default function StakeholderPoolPage() {
     if (!userId) return
 
     // Check if user is an overseer of any cut
-    const overseerCut = poolData.cuts.find(cut => cut.overseerId === userId)
+    const overseerCut = poolData.cuts.find((cut) => cut.overseerId === userId)
 
     setUserAccess({
       isOverseer: !!overseerCut,
@@ -121,7 +124,7 @@ export default function StakeholderPoolPage() {
       overseerColor: overseerCut?.color,
       hasAccess: !!overseerCut, // Overseers have automatic access
       accessCutId: overseerCut?.id,
-      accessColor: overseerCut?.color
+      accessColor: overseerCut?.color,
     })
   }
 
@@ -132,16 +135,16 @@ export default function StakeholderPoolPage() {
   }, [pool, userId])
 
   function handleColorSelect(cutId: string, color: 'PURPLE' | 'ORANGE' | 'GREEN') {
-    const cut = pool?.cuts.find(c => c.id === cutId)
+    const cut = pool?.cuts.find((c) => c.id === cutId)
     if (!cut) return
 
     // If user is the overseer of this cut, go directly to management
     if (cut.overseerId === userId) {
-      setUserAccess(prev => ({
+      setUserAccess((prev) => ({
         ...prev,
         accessCutId: cutId,
         accessColor: color,
-        hasAccess: true
+        hasAccess: true,
       }))
       return
     }
@@ -153,11 +156,11 @@ export default function StakeholderPoolPage() {
 
   function handlePasswordVerified(verified: boolean) {
     if (verified && selectedCut) {
-      setUserAccess(prev => ({
+      setUserAccess((prev) => ({
         ...prev,
         accessCutId: selectedCut.id,
         accessColor: selectedCut.color,
-        hasAccess: true
+        hasAccess: true,
       }))
     }
     setShowPasswordModal(false)
@@ -199,7 +202,9 @@ export default function StakeholderPoolPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Pool</h1>
-          <p className="text-forest-500 mt-1 font-body">Private pledge pool for invited stakeholders</p>
+          <p className="text-forest-500 mt-1 font-body">
+            Private pledge pool for invited stakeholders
+          </p>
         </div>
 
         <Card className="border-sand-200">
@@ -214,12 +219,23 @@ export default function StakeholderPoolPage() {
             </p>
             {canCreate && (
               <Button
-                onClick={() => {/* TODO: Implement pool creation modal */}}
+                onClick={() => setShowCreatePoolModal(true)}
                 className="bg-forest-600 text-white hover:bg-forest-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Pool
               </Button>
+            )}
+
+            {/* Create Pool Modal */}
+            {showCreatePoolModal && (
+              <CreatePoolModal
+                onClose={() => setShowCreatePoolModal(false)}
+                onSuccess={() => {
+                  setShowCreatePoolModal(false)
+                  fetchPool()
+                }}
+              />
             )}
           </CardContent>
         </Card>
@@ -233,7 +249,9 @@ export default function StakeholderPoolPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-forest-800">Stakeholder Pool</h1>
-          <p className="text-forest-500 mt-1 font-body">Private pledge pool for invited stakeholders</p>
+          <p className="text-forest-500 mt-1 font-body">
+            Private pledge pool for invited stakeholders
+          </p>
         </div>
         {userAccess.isOverseer && (
           <Button variant="outline" className="border-forest-600 text-forest-700">
@@ -267,28 +285,26 @@ export default function StakeholderPoolPage() {
       {/* Overseer Management Section */}
       {userAccess.isOverseer && userAccess.overseerCutId && userAccess.overseerColor && (
         <div className="grid lg:grid-cols-2 gap-6">
-          <InvitationManager
-            cutId={userAccess.overseerCutId}
-            color={userAccess.overseerColor}
-          />
-          <MemberPledgeList
-            cutId={userAccess.overseerCutId}
-            color={userAccess.overseerColor}
-          />
+          <InvitationManager cutId={userAccess.overseerCutId} color={userAccess.overseerColor} />
+          <MemberPledgeList cutId={userAccess.overseerCutId} color={userAccess.overseerColor} />
         </div>
       )}
 
       {/* Member Pledge Section */}
-      {userAccess.hasAccess && !userAccess.isOverseer && userAccess.accessCutId && userAccess.accessColor && pool.status === 'OPEN' && (
-        <div className="max-w-md">
-          <PledgeForm
-            cutId={userAccess.accessCutId}
-            color={userAccess.accessColor}
-            existingPledge={userAccess.existingPledge}
-            onPledgeSuccess={handlePledgeSuccess}
-          />
-        </div>
-      )}
+      {userAccess.hasAccess &&
+        !userAccess.isOverseer &&
+        userAccess.accessCutId &&
+        userAccess.accessColor &&
+        pool.status === 'OPEN' && (
+          <div className="max-w-md">
+            <PledgeForm
+              cutId={userAccess.accessCutId}
+              color={userAccess.accessColor}
+              existingPledge={userAccess.existingPledge}
+              onPledgeSuccess={handlePledgeSuccess}
+            />
+          </div>
+        )}
 
       {/* Instructions for non-members */}
       {!userAccess.hasAccess && !userAccess.isOverseer && (
@@ -299,8 +315,8 @@ export default function StakeholderPoolPage() {
               Password Protected
             </h3>
             <p className="text-forest-500 font-body max-w-md mx-auto">
-              Select a color above and enter your password to access your assigned pool cut and make a pledge.
-              If you haven't received an invitation, contact your pool overseer.
+              Select a color above and enter your password to access your assigned pool cut and make
+              a pledge. If you haven't received an invitation, contact your pool overseer.
             </p>
           </CardContent>
         </Card>
@@ -318,6 +334,131 @@ export default function StakeholderPoolPage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+// Create Pool Modal Component
+function CreatePoolModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    goalAmount: '',
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/pools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description || undefined,
+          targetAmount: parseFloat(formData.goalAmount),
+          status: 'ACTIVE',
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create pool')
+      }
+
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create pool')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="flex flex-row items-center justify-between border-b">
+          <CardTitle className="font-display">Create Stakeholder Pool</CardTitle>
+          <button onClick={onClose} className="p-1 hover:bg-sand-100 rounded">
+            <X className="h-5 w-5" />
+          </button>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">Pool Name *</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                placeholder="e.g., Q1 2025 Investment Pool"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                placeholder="Describe the purpose and goals of this pool..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">
+                Goal Amount ($) *
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={formData.goalAmount}
+                onChange={(e) => setFormData({ ...formData, goalAmount: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                placeholder="100000"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-forest-600 hover:bg-forest-700 text-white"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Pool
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

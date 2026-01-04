@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
 import { BookOpen, Clock, User, Filter } from 'lucide-react'
+import { CourseCardSkeleton } from '@/components/ui/skeleton'
 
 interface Course {
   id: string
@@ -60,16 +61,14 @@ export default function CoursesPage() {
         const data = await response.json()
         setCourses(data)
       }
-    } catch (error) {
-      console.error('Error fetching courses:', error)
+    } catch {
+      // Failed to fetch courses
     } finally {
       setLoading(false)
     }
   }
 
-  const displayedCourses = activeTab === 'my'
-    ? courses.filter(c => c.isEnrolled)
-    : courses
+  const displayedCourses = activeTab === 'my' ? courses.filter((c) => c.isEnrolled) : courses
 
   return (
     <div className="space-y-6">
@@ -80,7 +79,11 @@ export default function CoursesPage() {
           <Button
             variant={activeTab === 'browse' ? 'default' : 'outline'}
             onClick={() => setActiveTab('browse')}
-            className={activeTab === 'browse' ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
+            className={
+              activeTab === 'browse'
+                ? 'bg-forest-600 hover:bg-forest-700 text-white'
+                : 'border-forest-600 text-forest-700 hover:bg-forest-50'
+            }
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Browse Courses
@@ -88,7 +91,11 @@ export default function CoursesPage() {
           <Button
             variant={activeTab === 'my' ? 'default' : 'outline'}
             onClick={() => setActiveTab('my')}
-            className={activeTab === 'my' ? 'bg-forest-600 hover:bg-forest-700 text-white' : 'border-forest-600 text-forest-700 hover:bg-forest-50'}
+            className={
+              activeTab === 'my'
+                ? 'bg-forest-600 hover:bg-forest-700 text-white'
+                : 'border-forest-600 text-forest-700 hover:bg-forest-50'
+            }
           >
             <User className="h-4 w-4 mr-2" />
             My Courses
@@ -113,15 +120,12 @@ export default function CoursesPage() {
 
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse border-sand-200">
-              <div className="h-40 bg-sand-100 rounded-t-xl" />
-              <CardHeader>
-                <div className="h-6 bg-sand-100 rounded w-3/4" />
-                <div className="h-4 bg-sand-100 rounded w-1/2 mt-2" />
-              </CardHeader>
-            </Card>
-          ))}
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
+          <CourseCardSkeleton />
         </div>
       ) : displayedCourses.length === 0 ? (
         <Card className="p-12 text-center border-sand-200">
@@ -132,11 +136,13 @@ export default function CoursesPage() {
           <p className="text-forest-500 mt-1 font-body">
             {activeTab === 'my'
               ? 'Browse our catalog to find courses that interest you'
-              : 'Check back soon for new courses'
-            }
+              : 'Check back soon for new courses'}
           </p>
           {activeTab === 'my' && (
-            <Button className="mt-4 bg-forest-600 hover:bg-forest-700 text-white" onClick={() => setActiveTab('browse')}>
+            <Button
+              className="mt-4 bg-forest-600 hover:bg-forest-700 text-white"
+              onClick={() => setActiveTab('browse')}
+            >
               Browse Courses
             </Button>
           )}
@@ -148,15 +154,17 @@ export default function CoursesPage() {
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border-sand-200">
                 <div
                   className="h-40 bg-gradient-to-br from-forest-600 to-forest-800 flex items-center justify-center"
-                  style={course.thumbnail ? {
-                    backgroundImage: `url(${course.thumbnail})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  } : undefined}
+                  style={
+                    course.thumbnail
+                      ? {
+                          backgroundImage: `url(${course.thumbnail})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }
+                      : undefined
+                  }
                 >
-                  {!course.thumbnail && (
-                    <BookOpen className="h-16 w-16 text-white/50" />
-                  )}
+                  {!course.thumbnail && <BookOpen className="h-16 w-16 text-white/50" />}
                 </div>
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 mb-2">

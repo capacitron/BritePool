@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const logParticipationSchema = z.object({
@@ -12,7 +13,7 @@ const logParticipationSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,20 +29,20 @@ export async function GET(request: NextRequest) {
     const [logs, profile] = await Promise.all([
       prisma.participationLog.findMany({
         where,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.userProfile.findUnique({
         where: { userId: session.user.id },
-        select: { totalEquityUnits: true, totalHoursLogged: true }
-      })
+        select: { totalEquityUnits: true, totalHoursLogged: true },
+      }),
     ])
 
     const totalHours = logs
-      .filter(log => log.status === 'APPROVED')
+      .filter((log) => log.status === 'APPROVED')
       .reduce((sum, log) => sum + log.hours, 0)
 
     const pendingHours = logs
-      .filter(log => log.status === 'PENDING')
+      .filter((log) => log.status === 'PENDING')
       .reduce((sum, log) => sum + log.hours, 0)
 
     const equityUnits = Math.floor(totalHours / 10)
@@ -52,22 +53,19 @@ export async function GET(request: NextRequest) {
         totalHours: profile?.totalHoursLogged ?? totalHours,
         pendingHours,
         equityUnits: profile?.totalEquityUnits ?? equityUnits,
-        totalLogs: logs.length
-      }
+        totalLogs: logs.length,
+      },
     })
   } catch (error) {
-    console.error('Error fetching participation logs:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch participation logs' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_participation_logs' })
+    return NextResponse.json({ error: 'Failed to fetch participation logs' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -90,16 +88,13 @@ export async function POST(request: NextRequest) {
         hours,
         description,
         category,
-        status: 'PENDING'
-      }
+        status: 'PENDING',
+      },
     })
 
     return NextResponse.json(log, { status: 201 })
   } catch (error) {
-    console.error('Error logging participation:', error)
-    return NextResponse.json(
-      { error: 'Failed to log participation' },
-      { status: 500 }
-    )
+    logError(error, { action: 'log_participation' })
+    return NextResponse.json({ error: 'Failed to log participation' }, { status: 500 })
   }
 }

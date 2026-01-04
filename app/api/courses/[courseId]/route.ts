@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -19,7 +20,7 @@ export async function GET(
       where: { id: courseId },
       include: {
         createdBy: {
-          select: { id: true, name: true }
+          select: { id: true, name: true },
         },
         lessons: {
           orderBy: { order: 'asc' },
@@ -29,8 +30,8 @@ export async function GET(
             description: true,
             order: true,
             type: true,
-            duration: true
-          }
+            duration: true,
+          },
         },
         progress: {
           where: { userId: session.user.id },
@@ -40,10 +41,10 @@ export async function GET(
             isCompleted: true,
             completedLessons: true,
             startedAt: true,
-            completedAt: true
-          }
-        }
-      }
+            completedAt: true,
+          },
+        },
+      },
     })
 
     if (!course) {
@@ -56,13 +57,10 @@ export async function GET(
       ...course,
       lessonCount: course.lessons.length,
       userProgress,
-      isEnrolled: course.progress.length > 0
+      isEnrolled: course.progress.length > 0,
     })
   } catch (error) {
-    console.error('Error fetching course:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch course' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_course' })
+    return NextResponse.json({ error: 'Failed to fetch course' }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 
 export async function POST(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function POST(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -19,9 +20,9 @@ export async function POST(
       where: { id: eventId },
       include: {
         _count: {
-          select: { registrations: true }
-        }
-      }
+          select: { registrations: true },
+        },
+      },
     })
 
     if (!event) {
@@ -29,26 +30,20 @@ export async function POST(
     }
 
     if (event.startTime < new Date()) {
-      return NextResponse.json(
-        { error: 'Cannot register for past events' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Cannot register for past events' }, { status: 400 })
     }
 
     const existingRegistration = await prisma.eventRegistration.findUnique({
       where: {
         userId_eventId: {
           userId: session.user.id,
-          eventId: eventId
-        }
-      }
+          eventId: eventId,
+        },
+      },
     })
 
     if (existingRegistration) {
-      return NextResponse.json(
-        { error: 'Already registered for this event' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Already registered for this event' }, { status: 400 })
     }
 
     let status: 'REGISTERED' | 'WAITLISTED' = 'REGISTERED'
@@ -60,22 +55,19 @@ export async function POST(
       data: {
         userId: session.user.id,
         eventId: eventId,
-        status: status
+        status: status,
       },
       include: {
         event: {
-          select: { id: true, title: true }
-        }
-      }
+          select: { id: true, title: true },
+        },
+      },
     })
 
     return NextResponse.json(registration, { status: 201 })
   } catch (error) {
-    console.error('Error registering for event:', error)
-    return NextResponse.json(
-      { error: 'Failed to register for event' },
-      { status: 500 }
-    )
+    logError(error, { action: 'register_for_event' })
+    return NextResponse.json({ error: 'Failed to register for event' }, { status: 500 })
   }
 }
 
@@ -85,7 +77,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -96,28 +88,22 @@ export async function DELETE(
       where: {
         userId_eventId: {
           userId: session.user.id,
-          eventId: eventId
-        }
-      }
+          eventId: eventId,
+        },
+      },
     })
 
     if (!registration) {
-      return NextResponse.json(
-        { error: 'Registration not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
     }
 
     await prisma.eventRegistration.delete({
-      where: { id: registration.id }
+      where: { id: registration.id },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error cancelling registration:', error)
-    return NextResponse.json(
-      { error: 'Failed to cancel registration' },
-      { status: 500 }
-    )
+    logError(error, { action: 'cancel_registration' })
+    return NextResponse.json({ error: 'Failed to cancel registration' }, { status: 500 })
   }
 }

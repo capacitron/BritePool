@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -34,15 +35,9 @@ export async function GET() {
       }),
       prisma.announcement.findMany({
         where: {
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gte: now } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
         },
-        orderBy: [
-          { isPinned: 'desc' },
-          { publishedAt: 'desc' },
-        ],
+        orderBy: [{ isPinned: 'desc' }, { publishedAt: 'desc' }],
         take: 5,
         select: {
           id: true,
@@ -117,11 +112,13 @@ export async function GET() {
         description: task.assignedTo ? `Completed by ${task.assignedTo.name}` : 'Task completed',
         timestamp: task.completedAt,
       })),
-    ].sort((a, b) => {
-      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0
-      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0
-      return timeB - timeA
-    }).slice(0, 10)
+    ]
+      .sort((a, b) => {
+        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0
+        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0
+        return timeB - timeA
+      })
+      .slice(0, 10)
 
     return NextResponse.json({
       metrics: {
@@ -134,10 +131,7 @@ export async function GET() {
       activityFeed,
     })
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard stats' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_dashboard_stats' })
+    return NextResponse.json({ error: 'Failed to fetch dashboard stats' }, { status: 500 })
   }
 }

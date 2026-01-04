@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole, AnnouncementPriority } from '@prisma/client'
 import { z } from 'zod'
@@ -20,7 +21,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -37,11 +38,8 @@ export async function GET(
 
     return NextResponse.json(announcement)
   } catch (error) {
-    console.error('Error fetching announcement:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch announcement' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_announcement' })
+    return NextResponse.json({ error: 'Failed to fetch announcement' }, { status: 500 })
   }
 }
 
@@ -51,7 +49,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -92,11 +90,8 @@ export async function PATCH(
 
     return NextResponse.json(updatedAnnouncement)
   } catch (error) {
-    console.error('Error updating announcement:', error)
-    return NextResponse.json(
-      { error: 'Failed to update announcement' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_announcement' })
+    return NextResponse.json({ error: 'Failed to update announcement' }, { status: 500 })
   }
 }
 
@@ -106,7 +101,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -132,10 +127,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Announcement deleted successfully' })
   } catch (error) {
-    console.error('Error deleting announcement:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete announcement' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_announcement' })
+    return NextResponse.json({ error: 'Failed to delete announcement' }, { status: 500 })
   }
 }

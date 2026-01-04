@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createPostSchema = z.object({
@@ -13,7 +14,7 @@ const createPostSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,18 +29,18 @@ export async function GET(request: NextRequest) {
         where: { id: postId },
         include: {
           author: {
-            select: { id: true, name: true, role: true }
+            select: { id: true, name: true, role: true },
           },
           category: true,
           replies: {
             include: {
               author: {
-                select: { id: true, name: true, role: true }
-              }
+                select: { id: true, name: true, role: true },
+              },
             },
-            orderBy: { createdAt: 'asc' }
-          }
-        }
+            orderBy: { createdAt: 'asc' },
+          },
+        },
       })
 
       if (!post) {
@@ -50,11 +51,11 @@ export async function GET(request: NextRequest) {
     }
 
     const where: Record<string, unknown> = {}
-    
+
     if (categoryId) {
       where.categoryId = categoryId
     }
-    
+
     if (parentId === 'null' || parentId === null) {
       where.parentId = null
     } else if (parentId) {
@@ -65,20 +66,17 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         author: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         category: true,
         _count: {
-          select: { replies: true }
-        }
+          select: { replies: true },
+        },
       },
-      orderBy: [
-        { isPinned: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
     })
 
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = posts.map((post) => ({
       id: post.id,
       title: post.title,
       content: post.content,
@@ -87,23 +85,20 @@ export async function GET(request: NextRequest) {
       isPinned: post.isPinned,
       replyCount: post._count.replies,
       createdAt: post.createdAt,
-      updatedAt: post.updatedAt
+      updatedAt: post.updatedAt,
     }))
 
     return NextResponse.json(formattedPosts)
   } catch (error) {
-    console.error('Error fetching forum posts:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch posts' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_forum_posts' })
+    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -121,33 +116,24 @@ export async function POST(request: NextRequest) {
     const { title, content, categoryId, parentId } = parsed.data
 
     if (!parentId && !title) {
-      return NextResponse.json(
-        { error: 'Title is required for new topics' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Title is required for new topics' }, { status: 400 })
     }
 
     if (categoryId) {
       const category = await prisma.forumCategory.findUnique({
-        where: { id: categoryId }
+        where: { id: categoryId },
       })
       if (!category) {
-        return NextResponse.json(
-          { error: 'Category not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 })
       }
     }
 
     if (parentId) {
       const parentPost = await prisma.forumPost.findUnique({
-        where: { id: parentId }
+        where: { id: parentId },
       })
       if (!parentPost) {
-        return NextResponse.json(
-          { error: 'Parent post not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Parent post not found' }, { status: 404 })
       }
     }
 
@@ -161,18 +147,15 @@ export async function POST(request: NextRequest) {
       },
       include: {
         author: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
-        category: true
-      }
+        category: true,
+      },
     })
 
     return NextResponse.json(post, { status: 201 })
   } catch (error) {
-    console.error('Error creating forum post:', error)
-    return NextResponse.json(
-      { error: 'Failed to create post' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_forum_post' })
+    return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
   }
 }

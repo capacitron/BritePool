@@ -775,4 +775,329 @@ enum ResourceType {
   ANNOUNCEMENT
   CONTRACT
   REPORT
+  NOTIFICATION
+  POOL
+  WGO
+}
+
+// Notification System
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  link        String?
+  isRead      Boolean          @default(false)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  EVENT_REMINDER
+  TASK_ASSIGNED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  COMMITTEE_INVITE
+  SYSTEM_ANNOUNCEMENT
+  POOL_UPDATE
+  WGO_UPDATE
+}
+
+// Event Approval System
+
+model EventApproval {
+  id          String              @id @default(cuid())
+  eventId     String
+  committeeId String
+  approverId  String?
+  status      EventApprovalStatus @default(PENDING)
+  notes       String?
+  approvedAt  DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@unique([eventId, committeeId])
+  @@index([eventId])
+  @@index([committeeId])
+  @@index([status])
+}
+
+enum EventApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Committee Communication System
+
+model CommitteeChat {
+  id          String                 @id @default(cuid())
+  committeeId String
+  category    String                 @default("general")
+  messages    CommitteeChatMessage[]
+  summaries   CommitteeChatSummary[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@unique([committeeId, category])
+  @@index([committeeId])
+}
+
+model CommitteeChatMessage {
+  id        String        @id @default(cuid())
+  chatId    String
+  chat      CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  authorId  String
+  content   String
+  isPinned  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([chatId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model CommitteeChatSummary {
+  id          String        @id @default(cuid())
+  chatId      String
+  chat        CommitteeChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  generatedBy String
+  summary     String
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime      @default(now())
+
+  @@index([chatId])
+  @@index([createdAt])
+}
+
+model CommitteeDocument {
+  id          String   @id @default(cuid())
+  committeeId String
+  uploaderId  String
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  version     String   @default("1.0")
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([committeeId])
+  @@index([uploaderId])
+  @@index([createdAt])
+}
+
+// Investment Pools System
+
+model Pool {
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  targetAmount  Float
+  currentAmount Float      @default(0)
+  status        PoolStatus @default(ACTIVE)
+  creatorId     String
+  startDate     DateTime   @default(now())
+  endDate       DateTime?
+  cuts          PoolCut[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([status])
+  @@index([creatorId])
+}
+
+model PoolCut {
+  id          String           @id @default(cuid())
+  poolId      String
+  pool        Pool             @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  minAmount   Float
+  maxAmount   Float?
+  colorCode   String?
+  pledges     Pledge[]
+  invitations PoolInvitation[]
+  createdAt   DateTime         @default(now())
+
+  @@index([poolId])
+}
+
+model Pledge {
+  id          String       @id @default(cuid())
+  cutId       String
+  cut         PoolCut      @relation(fields: [cutId], references: [id], onDelete: Cascade)
+  userId      String
+  amount      Float
+  status      PledgeStatus @default(PENDING)
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([cutId, userId])
+  @@index([cutId])
+  @@index([userId])
+  @@index([status])
+}
+
+model PoolInvitation {
+  id        String               @id @default(cuid())
+  cutId     String
+  cut       PoolCut              @relation(fields: [cutId], references: [id], onDelete: Cascade)
+  email     String
+  status    PoolInvitationStatus @default(PENDING)
+  token     String               @unique
+  expiresAt DateTime
+  createdAt DateTime             @default(now())
+
+  @@index([cutId])
+  @@index([email])
+  @@index([token])
+}
+
+enum PoolStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  COMPLETED
+}
+
+enum PledgeStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+enum PoolInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// Wealth Growth Opportunities (WGO) System
+
+model WealthOpportunity {
+  id            String                @id @default(cuid())
+  title         String
+  description   String
+  category      WGOCategory
+  status        WGOStatus             @default(ACTIVE)
+  targetAmount  Float?
+  currentAmount Float                 @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
+  creatorId     String
+  involvements  UserWGOInvolvement[]
+  forumPosts    WGOForumPost[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([creatorId])
+}
+
+model UserWGOInvolvement {
+  id        String            @id @default(cuid())
+  userId    String
+  wgoId     String
+  wgo       WealthOpportunity @relation(fields: [wgoId], references: [id], onDelete: Cascade)
+  role      WGORole           @default(PARTICIPANT)
+  status    InvolvementStatus @default(ACTIVE)
+  joinedAt  DateTime          @default(now())
+
+  @@unique([userId, wgoId])
+  @@index([userId])
+  @@index([wgoId])
+}
+
+model WGOForumPost {
+  id        String            @id @default(cuid())
+  wgoId     String
+  wgo       WealthOpportunity @relation(fields: [wgoId], references: [id], onDelete: Cascade)
+  authorId  String
+  content   String
+  isPinned  Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([wgoId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+enum WGOCategory {
+  REAL_ESTATE
+  BUSINESS
+  INVESTMENT
+  EDUCATION
+  COMMUNITY
+}
+
+enum WGOStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum WGORole {
+  LEADER
+  COORDINATOR
+  PARTICIPANT
+  OBSERVER
+}
+
+enum InvolvementStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+// Communal Seat Application System
+
+model CommunalSeatSubmission {
+  id              String                      @id @default(cuid())
+  userId          String
+  category        CommunalSeatCategory
+  status          CommunalSeatStatus          @default(PENDING)
+  applicationData Json
+  reviewerId      String?
+  reviewNotes     String?
+  reviewedAt      DateTime?
+  submittedAt     DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([status])
+}
+
+enum CommunalSeatCategory {
+  GOVERNANCE
+  WEALTH
+  EDUCATION
+  HEALTH
+  OPERATIONS
+}
+
+enum CommunalSeatStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
 }

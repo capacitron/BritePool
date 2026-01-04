@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateEventSchema = z.object({
@@ -23,7 +24,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -34,38 +35,35 @@ export async function GET(
       where: { id: eventId },
       include: {
         committee: {
-          select: { id: true, name: true, slug: true }
+          select: { id: true, name: true, slug: true },
         },
         registrations: {
           include: {
             user: {
-              select: { id: true, name: true }
-            }
-          }
+              select: { id: true, name: true },
+            },
+          },
         },
         _count: {
-          select: { registrations: true }
-        }
-      }
+          select: { registrations: true },
+        },
+      },
     })
 
     if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    const isRegistered = event.registrations.some(r => r.userId === session.user.id)
+    const isRegistered = event.registrations.some((r) => r.userId === session.user.id)
 
     return NextResponse.json({
       ...event,
       isRegistered,
-      attendeeCount: event._count.registrations
+      attendeeCount: event._count.registrations,
     })
   } catch (error) {
-    console.error('Error fetching event:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch event' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_event' })
+    return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
   }
 }
 
@@ -75,22 +73,19 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     if (!ADMIN_ROLES.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: 'Only administrators can update events' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Only administrators can update events' }, { status: 403 })
     }
 
     const { eventId } = await params
 
     const existingEvent = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
     })
 
     if (!existingEvent) {
@@ -108,7 +103,7 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {}
-    
+
     if (parsed.data.title) updateData.title = parsed.data.title
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description
     if (parsed.data.type) updateData.type = parsed.data.type
@@ -124,21 +119,18 @@ export async function PATCH(
       data: updateData,
       include: {
         committee: {
-          select: { id: true, name: true, slug: true }
+          select: { id: true, name: true, slug: true },
         },
         _count: {
-          select: { registrations: true }
-        }
-      }
+          select: { registrations: true },
+        },
+      },
     })
 
     return NextResponse.json(event)
   } catch (error) {
-    console.error('Error updating event:', error)
-    return NextResponse.json(
-      { error: 'Failed to update event' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_event' })
+    return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
   }
 }
 
@@ -148,22 +140,19 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     if (!ADMIN_ROLES.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: 'Only administrators can delete events' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Only administrators can delete events' }, { status: 403 })
     }
 
     const { eventId } = await params
 
     const existingEvent = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
     })
 
     if (!existingEvent) {
@@ -171,15 +160,12 @@ export async function DELETE(
     }
 
     await prisma.event.delete({
-      where: { id: eventId }
+      where: { id: eventId },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting event:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete event' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_event' })
+    return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
   }
 }

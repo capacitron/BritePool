@@ -4,9 +4,6 @@
 
 @layer base {
   /* Forest Wealth Design System - Base Styles */
-  body {
-    @apply bg-cream text-bark font-body;
-  }
 
   /* All headlines use Playfair Display */
   h1,

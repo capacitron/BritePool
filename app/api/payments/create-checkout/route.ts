@@ -2,35 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getStripe, PRICE_IDS } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { tier } = body
 
     if (!tier || !['BASIC', 'PREMIUM', 'PLATINUM'].includes(tier)) {
-      return NextResponse.json(
-        { error: 'Invalid subscription tier' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid subscription tier' }, { status: 400 })
     }
 
     const priceId = PRICE_IDS[tier as keyof typeof PRICE_IDS]
-    
+
     if (!priceId) {
-      return NextResponse.json(
-        { error: 'Price not configured for this tier' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Price not configured for this tier' }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({
@@ -38,14 +30,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const stripe = getStripe()
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
       `https://${process.env.REPLIT_DEV_DOMAIN}` ||
       'http://localhost:5000'
 
@@ -75,10 +65,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: checkoutSession.url })
   } catch (error) {
-    console.error('Create checkout session error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_checkout_session' })
+    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
   }
 }

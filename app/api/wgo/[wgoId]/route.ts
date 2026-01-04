@@ -1,47 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const updateWGOSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  description: z.string().max(5000).optional(),
-  logo: z.string().url().optional().or(z.literal('')),
-  website: z.string().url().optional().or(z.literal('')),
-  affiliateLink: z.string().url().optional().or(z.literal('')),
-  email: z.string().email().optional().or(z.literal('')),
-  category: z.enum([
-    'PASSIVE_INCOME',
-    'INVESTMENT_FUND',
-    'STAKING_YIELD',
-    'REAL_ESTATE',
-    'BUSINESS_VENTURE',
-    'EDUCATION_PROGRAM',
-    'TRADING_PLATFORM',
-    'SAVINGS_PROGRAM',
-    'OTHER'
-  ]).optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'PAUSED', 'CLOSED', 'SUSPENDED']).optional(),
-  riskTolerance: z.number().int().min(1).max(10).optional(),
-  minimumInvestment: z.number().positive().optional().nullable(),
-  potentialReturns: z.string().max(500).optional(),
-  compoundingType: z.string().max(500).optional(),
-  memberBenefits: z.string().max(1000).optional(),
-  yearsOperating: z.number().int().min(0).optional().nullable(),
-  verifiedBy: z.string().max(200).optional(),
-  disclaimer: z.string().max(2000).optional(),
-  termsUrl: z.string().url().optional().or(z.literal('')),
-  totalMembers: z.number().int().min(0).optional(),
-  communityRating: z.number().min(0).max(5).optional(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).max(5000).optional(),
+  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
+  targetAmount: z.number().positive().optional().nullable(),
+  currentAmount: z.number().min(0).optional(),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
 })
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ wgoId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -50,26 +33,41 @@ export async function GET(
 
     const { wgoId } = await params
 
-    const opportunity = await prisma.wealthOpportunity.findUnique({
+    const wgo = await prisma.wealthOpportunity.findUnique({
       where: { id: wgoId },
       include: {
-        createdBy: {
-          select: { id: true, name: true }
-        }
-      }
+        involvements: {
+          orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+        },
+        forumPosts: {
+          orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+          take: 10,
+        },
+        _count: {
+          select: { involvements: true, forumPosts: true },
+        },
+      },
     })
 
-    if (!opportunity) {
-      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 })
+    if (!wgo) {
+      return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
     }
 
-    return NextResponse.json(opportunity)
+    const userInvolvement = wgo.involvements.find((inv) => inv.userId === session.user.id)
+
+    return NextResponse.json({
+      ...wgo,
+      involvementCount: wgo._count.involvements,
+      forumPostCount: wgo._count.forumPosts,
+      isInvolved: !!userInvolvement,
+      userInvolvement: userInvolvement || null,
+      isCreator: wgo.creatorId === session.user.id,
+      isLeader: userInvolvement?.role === 'LEADER',
+      isCoordinator: userInvolvement?.role === 'COORDINATOR',
+    })
   } catch (error) {
-    console.error('Error fetching WGO:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch opportunity' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_wgo' })
+    return NextResponse.json({ error: 'Failed to fetch wealth opportunity' }, { status: 500 })
   }
 }
 
@@ -78,20 +76,45 @@ export async function PATCH(
   { params }: { params: Promise<{ wgoId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!ADMIN_ROLES.includes(session.user.role)) {
+    const { wgoId } = await params
+
+    // Check if user has permission to update (creator, leader, or coordinator)
+    const existingWGO = await prisma.wealthOpportunity.findUnique({
+      where: { id: wgoId },
+      include: {
+        involvements: {
+          where: { userId: session.user.id },
+        },
+      },
+    })
+
+    if (!existingWGO) {
+      return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
+    }
+
+    const userInvolvement = existingWGO.involvements[0]
+    const isCreator = existingWGO.creatorId === session.user.id
+    const isLeaderOrCoordinator =
+      userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
+    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+
+    if (!isCreator && !isLeaderOrCoordinator && !isAdmin) {
       return NextResponse.json(
-        { error: 'Only administrators can update opportunities' },
+        { error: 'Forbidden: You do not have permission to update this WGO' },
         { status: 403 }
       )
     }
 
-    const { wgoId } = await params
     const body = await request.json()
     const parsed = updateWGOSchema.safeParse(body)
 
@@ -102,55 +125,31 @@ export async function PATCH(
       )
     }
 
-    const existing = await prisma.wealthOpportunity.findUnique({
-      where: { id: wgoId }
-    })
+    const updateData: Record<string, unknown> = { ...parsed.data }
 
-    if (!existing) {
-      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 })
+    // Convert date strings to Date objects
+    if (parsed.data.startDate !== undefined) {
+      updateData.startDate = parsed.data.startDate ? new Date(parsed.data.startDate) : null
+    }
+    if (parsed.data.endDate !== undefined) {
+      updateData.endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : null
     }
 
-    const updateData: Record<string, unknown> = {}
-    const data = parsed.data
-
-    // Only update fields that are provided
-    if (data.name !== undefined) updateData.name = data.name
-    if (data.description !== undefined) updateData.description = data.description || null
-    if (data.logo !== undefined) updateData.logo = data.logo || null
-    if (data.website !== undefined) updateData.website = data.website || null
-    if (data.affiliateLink !== undefined) updateData.affiliateLink = data.affiliateLink || null
-    if (data.email !== undefined) updateData.email = data.email || null
-    if (data.category !== undefined) updateData.category = data.category
-    if (data.status !== undefined) updateData.status = data.status
-    if (data.riskTolerance !== undefined) updateData.riskTolerance = data.riskTolerance
-    if (data.minimumInvestment !== undefined) updateData.minimumInvestment = data.minimumInvestment
-    if (data.potentialReturns !== undefined) updateData.potentialReturns = data.potentialReturns || null
-    if (data.compoundingType !== undefined) updateData.compoundingType = data.compoundingType || null
-    if (data.memberBenefits !== undefined) updateData.memberBenefits = data.memberBenefits || null
-    if (data.yearsOperating !== undefined) updateData.yearsOperating = data.yearsOperating
-    if (data.verifiedBy !== undefined) updateData.verifiedBy = data.verifiedBy || null
-    if (data.disclaimer !== undefined) updateData.disclaimer = data.disclaimer || null
-    if (data.termsUrl !== undefined) updateData.termsUrl = data.termsUrl || null
-    if (data.totalMembers !== undefined) updateData.totalMembers = data.totalMembers
-    if (data.communityRating !== undefined) updateData.communityRating = data.communityRating
-
-    const opportunity = await prisma.wealthOpportunity.update({
+    const wgo = await prisma.wealthOpportunity.update({
       where: { id: wgoId },
       data: updateData,
       include: {
-        createdBy: {
-          select: { id: true, name: true }
-        }
-      }
+        involvements: true,
+        _count: {
+          select: { involvements: true, forumPosts: true },
+        },
+      },
     })
 
-    return NextResponse.json(opportunity)
+    return NextResponse.json(wgo)
   } catch (error) {
-    console.error('Error updating WGO:', error)
-    return NextResponse.json(
-      { error: 'Failed to update opportunity' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_wgo' })
+    return NextResponse.json({ error: 'Failed to update wealth opportunity' }, { status: 500 })
   }
 }
 
@@ -159,39 +158,44 @@ export async function DELETE(
   { params }: { params: Promise<{ wgoId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!ADMIN_ROLES.includes(session.user.role)) {
+    const { wgoId } = await params
+
+    // Check if user has permission to delete (creator or admin)
+    const existingWGO = await prisma.wealthOpportunity.findUnique({
+      where: { id: wgoId },
+    })
+
+    if (!existingWGO) {
+      return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
+    }
+
+    const isCreator = existingWGO.creatorId === session.user.id
+    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+
+    if (!isCreator && !isAdmin) {
       return NextResponse.json(
-        { error: 'Only administrators can delete opportunities' },
+        { error: 'Forbidden: You do not have permission to delete this WGO' },
         { status: 403 }
       )
     }
 
-    const { wgoId } = await params
-
-    const existing = await prisma.wealthOpportunity.findUnique({
-      where: { id: wgoId }
-    })
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 })
-    }
-
     await prisma.wealthOpportunity.delete({
-      where: { id: wgoId }
+      where: { id: wgoId },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'Wealth opportunity deleted successfully' })
   } catch (error) {
-    console.error('Error deleting WGO:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete opportunity' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_wgo' })
+    return NextResponse.json({ error: 'Failed to delete wealth opportunity' }, { status: 500 })
   }
 }

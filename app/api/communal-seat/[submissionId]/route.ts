@@ -1,21 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
-
-const reviewSchema = z.object({
-  status: z.enum(['APPROVED', 'REJECTED']),
-  reviewNotes: z.string().optional(),
+// Schema for admin review updates
+const adminUpdateSchema = z.object({
+  status: z.enum(['UNDER_REVIEW', 'APPROVED', 'REJECTED']),
+  reviewNotes: z.string().max(5000).optional(),
 })
 
-// GET - Get single submission
+// Schema for owner withdrawal
+const ownerUpdateSchema = z.object({
+  status: z.literal('WITHDRAWN'),
+})
+
+// GET - Get submission by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
+    // Rate limit: 10 requests per minute (strict for submissions)
+    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -26,121 +37,178 @@ export async function GET(
 
     const submission = await prisma.communalSeatSubmission.findUnique({
       where: { id: submissionId },
-      include: {
-        submittedBy: {
-          select: { id: true, name: true, email: true }
-        },
-        reviewedBy: {
-          select: { id: true, name: true }
-        }
-      }
     })
 
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    // Check access: own submission or admin
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
-    const hasAdminAccess = session.user.membershipLevel === 2
-    const isOwner = submission.submittedById === session.user.id
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!isAdmin && !hasAdminAccess && !isOwner) {
+    // Non-admin users can only view their own submissions
+    if (!userIsAdmin && submission.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // If admin, include user details
+    if (userIsAdmin) {
+      const user = await prisma.user.findUnique({
+        where: { id: submission.userId },
+        select: { id: true, name: true, email: true },
+      })
+
+      let reviewer = null
+      if (submission.reviewerId) {
+        reviewer = await prisma.user.findUnique({
+          where: { id: submission.reviewerId },
+          select: { id: true, name: true },
+        })
+      }
+
+      return NextResponse.json({
+        ...submission,
+        user,
+        reviewer,
+      })
     }
 
     return NextResponse.json(submission)
   } catch (error) {
-    console.error('Error fetching submission:', error)
+    logError(error, { action: 'fetch_communal_seat_submission' })
     return NextResponse.json({ error: 'Failed to fetch submission' }, { status: 500 })
   }
 }
 
-// PATCH - Review submission (approve/reject)
+// PATCH - Update submission status (admin) or withdraw (owner)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
+    // Rate limit: 10 requests per minute (strict for submissions)
+    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check admin access
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
-    const hasAdminAccess = session.user.membershipLevel === 2
-
-    if (!isAdmin && !hasAdminAccess) {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
-    }
-
     const { submissionId } = await params
-    const body = await request.json()
-    const validatedData = reviewSchema.parse(body)
 
     const submission = await prisma.communalSeatSubmission.findUnique({
-      where: { id: submissionId }
+      where: { id: submissionId },
     })
 
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    if (submission.status !== 'PENDING') {
-      return NextResponse.json({ error: 'Submission has already been reviewed' }, { status: 400 })
+    const userIsAdmin = isAdmin(session.user.role)
+    const isOwner = submission.userId === session.user.id
+
+    // Must be admin or owner
+    if (!userIsAdmin && !isOwner) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const updatedSubmission = await prisma.communalSeatSubmission.update({
-      where: { id: submissionId },
-      data: {
-        status: validatedData.status,
-        reviewNotes: validatedData.reviewNotes || null,
-        reviewedById: session.user.id,
+    const body = await request.json()
+
+    // Handle owner withdrawal
+    if (isOwner && !userIsAdmin) {
+      const parsed = ownerUpdateSchema.safeParse(body)
+
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: 'Invalid input. Owners can only withdraw their submissions.' },
+          { status: 400 }
+        )
+      }
+
+      // Can only withdraw if not already processed
+      if (submission.status === 'APPROVED' || submission.status === 'REJECTED') {
+        return NextResponse.json(
+          { error: 'Cannot withdraw a submission that has already been processed' },
+          { status: 400 }
+        )
+      }
+
+      if (submission.status === 'WITHDRAWN') {
+        return NextResponse.json({ error: 'Submission is already withdrawn' }, { status: 400 })
+      }
+
+      const updated = await prisma.communalSeatSubmission.update({
+        where: { id: submissionId },
+        data: { status: 'WITHDRAWN' },
+      })
+
+      return NextResponse.json(updated)
+    }
+
+    // Handle admin review
+    if (userIsAdmin) {
+      const parsed = adminUpdateSchema.safeParse(body)
+
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: 'Invalid input', details: parsed.error.flatten() },
+          { status: 400 }
+        )
+      }
+
+      const { status, reviewNotes } = parsed.data
+
+      // Cannot update already processed submissions
+      if (submission.status === 'WITHDRAWN') {
+        return NextResponse.json({ error: 'Cannot update a withdrawn submission' }, { status: 400 })
+      }
+
+      const updateData: Record<string, unknown> = {
+        status,
+        reviewerId: session.user.id,
         reviewedAt: new Date(),
-      },
-      include: {
-        submittedBy: {
-          select: { id: true, name: true, email: true }
-        },
-        reviewedBy: {
-          select: { id: true, name: true }
-        }
       }
-    })
 
-    // Create notification for the submitter
-    await prisma.notification.create({
-      data: {
-        userId: submission.submittedById,
-        type: validatedData.status === 'APPROVED' ? 'GENERAL' : 'GENERAL',
-        title: validatedData.status === 'APPROVED'
-          ? 'Communal Seat Submission Approved'
-          : 'Communal Seat Submission Not Approved',
-        message: validatedData.status === 'APPROVED'
-          ? 'Congratulations! Your communal seat submission has been approved. Welcome to the Ministerial Marketplace.'
-          : `Your communal seat submission was not approved.${validatedData.reviewNotes ? ` Reason: ${validatedData.reviewNotes}` : ''}`,
-        link: '/dashboard/communal-seat',
+      if (reviewNotes !== undefined) {
+        updateData.reviewNotes = reviewNotes
       }
-    })
 
-    return NextResponse.json(updatedSubmission)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
+      const updated = await prisma.communalSeatSubmission.update({
+        where: { id: submissionId },
+        data: updateData,
+      })
+
+      // Include user info in response
+      const user = await prisma.user.findUnique({
+        where: { id: updated.userId },
+        select: { id: true, name: true, email: true },
+      })
+
+      return NextResponse.json({
+        ...updated,
+        user,
+      })
     }
-    console.error('Error reviewing submission:', error)
-    return NextResponse.json({ error: 'Failed to review submission' }, { status: 500 })
+
+    // Should not reach here
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  } catch (error) {
+    logError(error, { action: 'update_communal_seat_submission' })
+    return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 })
   }
 }
 
-// DELETE - Delete submission (owner only, if pending)
+// DELETE - Delete submission (owner only if PENDING)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
+    // Rate limit: 10 requests per minute (strict for submissions)
+    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -150,32 +218,36 @@ export async function DELETE(
     const { submissionId } = await params
 
     const submission = await prisma.communalSeatSubmission.findUnique({
-      where: { id: submissionId }
+      where: { id: submissionId },
     })
 
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    // Only owner can delete, and only if pending
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
-    const isOwner = submission.submittedById === session.user.id
-
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only the owner can delete their submission
+    if (submission.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden. Only the submission owner can delete it.' },
+        { status: 403 }
+      )
     }
 
-    if (submission.status !== 'PENDING' && !isAdmin) {
-      return NextResponse.json({ error: 'Cannot delete reviewed submission' }, { status: 400 })
+    // Can only delete PENDING submissions
+    if (submission.status !== 'PENDING') {
+      return NextResponse.json(
+        { error: 'Can only delete submissions with PENDING status' },
+        { status: 400 }
+      )
     }
 
     await prisma.communalSeatSubmission.delete({
-      where: { id: submissionId }
+      where: { id: submissionId },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'Submission deleted successfully' })
   } catch (error) {
-    console.error('Error deleting submission:', error)
+    logError(error, { action: 'delete_communal_seat_submission' })
     return NextResponse.json({ error: 'Failed to delete submission' }, { status: 500 })
   }
 }

@@ -6,7 +6,17 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, ArrowLeft, Edit, Trash2, Calendar, HardDrive, User, Clock } from 'lucide-react'
+import {
+  FileText,
+  Download,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Calendar,
+  HardDrive,
+  User,
+  Clock,
+} from 'lucide-react'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
 
@@ -52,11 +62,15 @@ function formatDate(dateString: string): string {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
-export default function DocumentDetailPage({ params }: { params: Promise<{ documentId: string }> }) {
+export default function DocumentDetailPage({
+  params,
+}: {
+  params: Promise<{ documentId: string }>
+}) {
   const { documentId } = use(params)
   const { data: session } = useSession()
   const router = useRouter()
@@ -81,8 +95,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
       } else if (res.status === 404) {
         router.push('/dashboard/documents')
       }
-    } catch (error) {
-      console.error('Error fetching document:', error)
+    } catch {
+      // Failed to fetch document
     } finally {
       setLoading(false)
     }
@@ -90,7 +104,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
 
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this document?')) return
-    
+
     setDeleting(true)
     try {
       const res = await fetch(`/api/documents/${documentId}`, { method: 'DELETE' })
@@ -100,8 +114,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
         const error = await res.json()
         alert(error.error || 'Failed to delete document')
       }
-    } catch (error) {
-      console.error('Error deleting document:', error)
+    } catch {
       alert('Failed to delete document')
     } finally {
       setDeleting(false)
@@ -120,7 +133,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
     return (
       <div className="text-center py-12">
         <p className="text-earth-brown-light">Document not found</p>
-        <Link href="/dashboard/documents" className="text-earth-brown hover:underline mt-2 inline-block">
+        <Link
+          href="/dashboard/documents"
+          className="text-earth-brown hover:underline mt-2 inline-block"
+        >
           Back to Documents
         </Link>
       </div>
@@ -132,23 +148,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link 
-          href="/dashboard/documents" 
+        <Link
+          href="/dashboard/documents"
           className="p-2 hover:bg-stone-warm rounded-lg transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-earth-brown" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
-            {document.title}
-          </h1>
+          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">{document.title}</h1>
           <div className="flex items-center gap-3 mt-2">
-            <span className={`px-3 py-1 rounded-full text-sm border ${categoryColors[document.category]}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-sm border ${categoryColors[document.category]}`}
+            >
               {document.category}
             </span>
-            <span className="text-sm text-earth-brown-light">
-              Version {document.version}
-            </span>
+            <span className="text-sm text-earth-brown-light">Version {document.version}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -163,15 +177,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
           </a>
           {userIsAdmin && (
             <>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowEditModal(true)}
-              >
+              <Button variant="outline" onClick={() => setShowEditModal(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleDelete}
                 disabled={deleting}
                 className="text-red-600 border-red-200 hover:bg-red-50"
@@ -193,11 +204,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
               </CardHeader>
               <CardContent>
                 <div className="aspect-[4/5] bg-stone-warm rounded-lg overflow-hidden">
-                  <iframe
-                    src={document.fileUrl}
-                    className="w-full h-full"
-                    title={document.title}
-                  />
+                  <iframe src={document.fileUrl} className="w-full h-full" title={document.title} />
                 </div>
               </CardContent>
             </Card>
@@ -253,7 +260,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
                 <HardDrive className="h-5 w-5 text-earth-brown-light" />
                 <div>
                   <p className="text-sm text-earth-brown-light">File Size</p>
-                  <p className="font-medium text-earth-brown-dark">{formatFileSize(document.fileSize)}</p>
+                  <p className="font-medium text-earth-brown-dark">
+                    {formatFileSize(document.fileSize)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -267,14 +276,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
                 <Calendar className="h-5 w-5 text-earth-brown-light" />
                 <div>
                   <p className="text-sm text-earth-brown-light">Created</p>
-                  <p className="font-medium text-earth-brown-dark">{formatDate(document.createdAt)}</p>
+                  <p className="font-medium text-earth-brown-dark">
+                    {formatDate(document.createdAt)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-earth-brown-light" />
                 <div>
                   <p className="text-sm text-earth-brown-light">Last Updated</p>
-                  <p className="font-medium text-earth-brown-dark">{formatDate(document.updatedAt)}</p>
+                  <p className="font-medium text-earth-brown-dark">
+                    {formatDate(document.updatedAt)}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -307,9 +320,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
       </div>
 
       {showEditModal && document && (
-        <EditModal 
+        <EditModal
           document={document}
-          onClose={() => setShowEditModal(false)} 
+          onClose={() => setShowEditModal(false)}
           onSuccess={() => {
             setShowEditModal(false)
             fetchDocument()
@@ -320,14 +333,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   )
 }
 
-function EditModal({ 
-  document, 
-  onClose, 
-  onSuccess 
-}: { 
+function EditModal({
+  document,
+  onClose,
+  onSuccess,
+}: {
   document: Document
   onClose: () => void
-  onSuccess: () => void 
+  onSuccess: () => void
 }) {
   const [formData, setFormData] = useState({
     title: document.title,
@@ -352,8 +365,7 @@ function EditModal({
         const error = await res.json()
         alert(error.error || 'Failed to update document')
       }
-    } catch (error) {
-      console.error('Error updating document:', error)
+    } catch {
       alert('Failed to update document')
     } finally {
       setSubmitting(false)
@@ -384,7 +396,9 @@ function EditModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-earth-brown-dark mb-1">Description</label>
+            <label className="block text-sm font-medium text-earth-brown-dark mb-1">
+              Description
+            </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -400,7 +414,9 @@ function EditModal({
               className="w-full px-3 py-2 border border-stone rounded-lg focus:outline-none focus:ring-2 focus:ring-earth-brown"
             >
               {CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
               ))}
             </select>
           </div>
@@ -418,8 +434,8 @@ function EditModal({
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={submitting}
               className="flex-1 bg-earth-brown hover:bg-earth-brown-dark"
             >

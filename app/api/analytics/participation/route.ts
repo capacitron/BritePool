@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
 
@@ -24,60 +25,55 @@ export async function GET(request: Request) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - daysAgo)
 
-    const [
-      totalHours,
-      hoursByCategory,
-      hoursByStatus,
-      topContributors,
-      recentLogs,
-    ] = await Promise.all([
-      prisma.participationLog.aggregate({
-        where: {
-          createdAt: { gte: startDate },
-          status: 'APPROVED',
-        },
-        _sum: { hours: true },
-        _count: true,
-      }),
-      prisma.participationLog.groupBy({
-        by: ['category'],
-        where: {
-          createdAt: { gte: startDate },
-          status: 'APPROVED',
-        },
-        _sum: { hours: true },
-        _count: true,
-      }),
-      prisma.participationLog.groupBy({
-        by: ['status'],
-        where: { createdAt: { gte: startDate } },
-        _count: true,
-      }),
-      prisma.participationLog.groupBy({
-        by: ['userId'],
-        where: {
-          createdAt: { gte: startDate },
-          status: 'APPROVED',
-        },
-        _sum: { hours: true },
-        orderBy: { _sum: { hours: 'desc' } },
-        take: 10,
-      }),
-      prisma.participationLog.findMany({
-        where: { createdAt: { gte: startDate } },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          hours: true,
-          description: true,
-          category: true,
-          status: true,
-          createdAt: true,
-          user: { select: { id: true, name: true } },
-        },
-      }),
-    ])
+    const [totalHours, hoursByCategory, hoursByStatus, topContributors, recentLogs] =
+      await Promise.all([
+        prisma.participationLog.aggregate({
+          where: {
+            createdAt: { gte: startDate },
+            status: 'APPROVED',
+          },
+          _sum: { hours: true },
+          _count: true,
+        }),
+        prisma.participationLog.groupBy({
+          by: ['category'],
+          where: {
+            createdAt: { gte: startDate },
+            status: 'APPROVED',
+          },
+          _sum: { hours: true },
+          _count: true,
+        }),
+        prisma.participationLog.groupBy({
+          by: ['status'],
+          where: { createdAt: { gte: startDate } },
+          _count: true,
+        }),
+        prisma.participationLog.groupBy({
+          by: ['userId'],
+          where: {
+            createdAt: { gte: startDate },
+            status: 'APPROVED',
+          },
+          _sum: { hours: true },
+          orderBy: { _sum: { hours: 'desc' } },
+          take: 10,
+        }),
+        prisma.participationLog.findMany({
+          where: { createdAt: { gte: startDate } },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            hours: true,
+            description: true,
+            category: true,
+            status: true,
+            createdAt: true,
+            user: { select: { id: true, name: true } },
+          },
+        }),
+      ])
 
     const userIds = topContributors.map((c) => c.userId)
     const users = await prisma.user.findMany({
@@ -114,10 +110,7 @@ export async function GET(request: Request) {
       recentLogs,
     })
   } catch (error) {
-    console.error('Error fetching participation analytics:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch participation analytics' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_participation_analytics' })
+    return NextResponse.json({ error: 'Failed to fetch participation analytics' }, { status: 500 })
   }
 }

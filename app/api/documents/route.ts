@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
@@ -20,7 +21,7 @@ const createDocumentSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
 
     const where: Record<string, unknown> = {}
-    
+
     if (category) {
       where.category = category
     }
@@ -38,26 +39,23 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
+          select: { id: true, name: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json(documents)
   } catch (error) {
-    console.error('Error fetching documents:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch documents' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_documents' })
+    return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -77,7 +75,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, category, fileUrl, fileType, fileSize, mimeType, version, isPublic } = parsed.data
+    const {
+      title,
+      description,
+      category,
+      fileUrl,
+      fileType,
+      fileSize,
+      mimeType,
+      version,
+      isPublic,
+    } = parsed.data
 
     const document = await prisma.document.create({
       data: {
@@ -94,17 +102,14 @@ export async function POST(request: NextRequest) {
       },
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(document, { status: 201 })
   } catch (error) {
-    console.error('Error creating document:', error)
-    return NextResponse.json(
-      { error: 'Failed to create document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_document' })
+    return NextResponse.json({ error: 'Failed to create document' }, { status: 500 })
   }
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { hasPermission, canAssignRole } from '@/lib/auth-utils'
+import { logError } from '@/lib/api-utils'
+import { logUserUpdated, logUserSuspended } from '@/lib/audit'
 import type { UserRole, UserStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ user })
   } catch (error) {
-    console.error('Error fetching user:', error)
+    logError(error, { action: 'admin_fetch_user' })
     return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 })
   }
 }
@@ -125,11 +127,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     })
 
-    // TODO: Create audit log entry
+    // Create audit log entry
+    const changes: Record<string, { old: unknown; new: unknown }> = {}
+    if (updateData.name) {
+      changes.name = { old: existingUser.name, new: updateData.name }
+    }
+    if (updateData.role) {
+      changes.role = { old: existingUser.role, new: updateData.role }
+    }
+    if (updateData.status) {
+      changes.status = { old: existingUser.status, new: updateData.status }
+    }
+
+    await logUserUpdated(currentUserId, userRole, id, existingUser.email, changes, request)
 
     return NextResponse.json({ user })
   } catch (error) {
-    console.error('Error updating user:', error)
+    logError(error, { action: 'admin_update_user' })
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
   }
 }
@@ -174,11 +188,12 @@ export async function DELETE(
       data: { status: 'SUSPENDED' },
     })
 
-    // TODO: Create audit log entry
+    // Create audit log entry
+    await logUserSuspended(currentUserId, userRole, id, existingUser.email, request)
 
     return NextResponse.json({ success: true, message: 'User suspended' })
   } catch (error) {
-    console.error('Error deleting user:', error)
+    logError(error, { action: 'admin_delete_user' })
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
   }
 }

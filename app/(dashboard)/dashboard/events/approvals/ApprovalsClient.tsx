@@ -2,25 +2,26 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Clock, MapPin, Video, Users, Check, X, AlertCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Video,
+  Users,
+  Check,
+  X,
+  AlertCircle,
+} from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/events/categories'
 
 interface Committee {
   id: string
   name: string
-  slug?: string
-  type?: string
-}
-
-interface Approval {
-  id: string
-  committeeId: string
-  approverId: string
-  approver: { id: string; name: string }
-  approvedAt: string
+  slug: string
+  type: string
 }
 
 interface EventData {
@@ -28,18 +29,13 @@ interface EventData {
   title: string
   description: string | null
   type: string
-  category: string | null
   startTime: string
   endTime: string
   location: string | null
   virtualLink: string | null
   capacity: number | null
-  committees: Committee[]
-  createdBy: { id: string; name: string }
-  approvals: Approval[]
-  committeesNeedingYourApproval: string[]
-  totalCommittees: number
-  approvedCommittees: number
+  committee: Committee | null
+  registrationCount: number
   createdAt: string
 }
 
@@ -63,40 +59,40 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   VIRTUAL_WEBINAR: 'bg-sand-200 text-sand-800',
 }
 
-function formatDate(dateString: string) {
+function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
   })
 }
 
-function formatTime(dateString: string) {
+function formatTime(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
   })
 }
 
 export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientProps) {
   const [processingEvents, setProcessingEvents] = useState<Set<string>>(new Set())
-  const [eventList, setEventList] = useState(events)
+  const [eventList, setEventList] = useState<EventData[]>(events)
   const [rejectingEventId, setRejectingEventId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const handleApprove = async (eventId: string) => {
-    setProcessingEvents(prev => new Set([...prev, eventId]))
+  const handleApprove = async (eventId: string): Promise<void> => {
+    setProcessingEvents((prev) => new Set([...prev, eventId]))
     setError(null)
 
     try {
       const response = await fetch(`/api/events/${eventId}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
 
       if (!response.ok) {
@@ -104,26 +100,12 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
         throw new Error(data.error || 'Failed to approve event')
       }
 
-      const result = await response.json()
-
-      if (result.fullyApproved) {
-        // Remove from list if fully approved
-        setEventList(prev => prev.filter(e => e.id !== eventId))
-      } else {
-        // Update the event in the list
-        setEventList(prev => prev.map(e => {
-          if (e.id !== eventId) return e
-          return {
-            ...e,
-            approvedCommittees: e.approvedCommittees + 1,
-            committeesNeedingYourApproval: []
-          }
-        }).filter(e => e.committeesNeedingYourApproval.length > 0))
-      }
+      // Remove from list after approval
+      setEventList((prev) => prev.filter((e) => e.id !== eventId))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve event')
     } finally {
-      setProcessingEvents(prev => {
+      setProcessingEvents((prev) => {
         const next = new Set(prev)
         next.delete(eventId)
         return next
@@ -131,20 +113,20 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
     }
   }
 
-  const handleReject = async (eventId: string) => {
+  const handleReject = async (eventId: string): Promise<void> => {
     if (!rejectReason.trim()) {
       setError('Please provide a reason for rejection')
       return
     }
 
-    setProcessingEvents(prev => new Set([...prev, eventId]))
+    setProcessingEvents((prev) => new Set([...prev, eventId]))
     setError(null)
 
     try {
       const response = await fetch(`/api/events/${eventId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: rejectReason.trim() })
+        body: JSON.stringify({ reason: rejectReason.trim() }),
       })
 
       if (!response.ok) {
@@ -153,13 +135,13 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
       }
 
       // Remove from list
-      setEventList(prev => prev.filter(e => e.id !== eventId))
+      setEventList((prev) => prev.filter((e) => e.id !== eventId))
       setRejectingEventId(null)
       setRejectReason('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reject event')
     } finally {
-      setProcessingEvents(prev => {
+      setProcessingEvents((prev) => {
         const next = new Set(prev)
         next.delete(eventId)
         return next
@@ -177,11 +159,9 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
           <ArrowLeft className="h-5 w-5 text-forest-600" />
         </Link>
         <div>
-          <h1 className="text-3xl font-display font-bold text-forest-800">
-            Event Approvals
-          </h1>
+          <h1 className="text-3xl font-display font-bold text-forest-800">Event Management</h1>
           <p className="text-forest-500 mt-1 font-body">
-            Review and approve pending event requests
+            Review and manage events for your committees
           </p>
         </div>
       </div>
@@ -190,10 +170,7 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
           <p>{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto p-1 hover:bg-red-100 rounded"
-          >
+          <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -205,13 +182,13 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-forest-100 mb-4">
               <Check className="h-6 w-6 text-forest-600" />
             </div>
-            <h3 className="text-lg font-medium text-forest-800 mb-1">All caught up!</h3>
-            <p className="text-forest-500">There are no pending events requiring your approval.</p>
+            <h3 className="text-lg font-medium text-forest-800 mb-1">No events</h3>
+            <p className="text-forest-500">There are no events to manage at this time.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {eventList.map(event => (
+          {eventList.map((event: EventData) => (
             <Card key={event.id} className="border-sand-200">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-4">
@@ -221,24 +198,20 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg font-medium text-forest-800">{event.title}</h3>
-                          <span className={cn(
-                            'px-2 py-0.5 rounded text-xs font-medium',
-                            EVENT_TYPE_COLORS[event.type]
-                          )}>
-                            {EVENT_TYPE_LABELS[event.type]}
-                          </span>
-                          {event.category && (
-                            <span className={cn(
+                          <span
+                            className={cn(
                               'px-2 py-0.5 rounded text-xs font-medium',
-                              CATEGORY_COLORS[event.category] || 'bg-gray-100 text-gray-800'
-                            )}>
-                              {CATEGORY_LABELS[event.category] || event.category}
-                            </span>
-                          )}
+                              EVENT_TYPE_COLORS[event.type] || 'bg-gray-100 text-gray-800'
+                            )}
+                          >
+                            {EVENT_TYPE_LABELS[event.type] || event.type}
+                          </span>
                         </div>
-                        <p className="text-sm text-forest-500 mt-1">
-                          Requested by <span className="font-medium">{event.createdBy.name}</span>
-                        </p>
+                        {event.committee && (
+                          <p className="text-sm text-forest-500 mt-1">
+                            Committee: <span className="font-medium">{event.committee.name}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -275,37 +248,10 @@ export function ApprovalsClient({ events, userRole, isAdmin }: ApprovalsClientPr
                           Capacity: {event.capacity}
                         </span>
                       )}
-                    </div>
-
-                    {/* Committees */}
-                    <div className="mt-3">
-                      <p className="text-xs text-forest-500 mb-1">Committees:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {event.committees.map(c => {
-                          const isApproved = event.approvals.some(a => a.committeeId === c.id)
-                          const needsYourApproval = event.committeesNeedingYourApproval.includes(c.id)
-                          return (
-                            <span
-                              key={c.id}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-xs font-medium',
-                                isApproved ? 'bg-green-100 text-green-700' :
-                                needsYourApproval ? 'bg-amber-100 text-amber-700' :
-                                'bg-sand-100 text-forest-600'
-                              )}
-                            >
-                              {c.name}
-                              {isApproved && ' ✓'}
-                              {needsYourApproval && ' (needs your approval)'}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Approval Progress */}
-                    <div className="mt-3 text-xs text-forest-500">
-                      Approval progress: {event.approvedCommittees} / {event.totalCommittees} committees
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {event.registrationCount} registered
+                      </span>
                     </div>
                   </div>
 

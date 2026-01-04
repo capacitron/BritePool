@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { isAdmin } from '@/lib/auth/roles'
 
@@ -22,7 +23,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -33,9 +34,9 @@ export async function GET(
       where: { id: documentId },
       include: {
         uploadedBy: {
-          select: { id: true, name: true, role: true }
-        }
-      }
+          select: { id: true, name: true, role: true },
+        },
+      },
     })
 
     if (!document) {
@@ -44,11 +45,8 @@ export async function GET(
 
     return NextResponse.json(document)
   } catch (error) {
-    console.error('Error fetching document:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_document' })
+    return NextResponse.json({ error: 'Failed to fetch document' }, { status: 500 })
   }
 }
 
@@ -58,7 +56,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -80,7 +78,7 @@ export async function PATCH(
     }
 
     const existing = await prisma.document.findUnique({
-      where: { id: documentId }
+      where: { id: documentId },
     })
 
     if (!existing) {
@@ -92,18 +90,15 @@ export async function PATCH(
       data: parsed.data,
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(document)
   } catch (error) {
-    console.error('Error updating document:', error)
-    return NextResponse.json(
-      { error: 'Failed to update document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_document' })
+    return NextResponse.json({ error: 'Failed to update document' }, { status: 500 })
   }
 }
 
@@ -113,7 +108,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -126,7 +121,7 @@ export async function DELETE(
     const { documentId } = await params
 
     const existing = await prisma.document.findUnique({
-      where: { id: documentId }
+      where: { id: documentId },
     })
 
     if (!existing) {
@@ -134,15 +129,12 @@ export async function DELETE(
     }
 
     await prisma.document.delete({
-      where: { id: documentId }
+      where: { id: documentId },
     })
 
     return NextResponse.json({ success: true, message: 'Document deleted successfully' })
   } catch (error) {
-    console.error('Error deleting document:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_document' })
+    return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 })
   }
 }

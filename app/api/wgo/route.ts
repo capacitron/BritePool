@@ -1,51 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const createWGOSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(5000).optional(),
-  logo: z.string().url().optional().or(z.literal('')),
-  website: z.string().url().optional().or(z.literal('')),
-  affiliateLink: z.string().url().optional().or(z.literal('')),
-  email: z.string().email().optional().or(z.literal('')),
-  category: z.enum([
-    'PASSIVE_INCOME',
-    'INVESTMENT_FUND',
-    'STAKING_YIELD',
-    'REAL_ESTATE',
-    'BUSINESS_VENTURE',
-    'EDUCATION_PROGRAM',
-    'TRADING_PLATFORM',
-    'SAVINGS_PROGRAM',
-    'OTHER'
-  ]),
-  status: z.enum(['PENDING', 'ACTIVE', 'PAUSED', 'CLOSED', 'SUSPENDED']).optional(),
-  riskTolerance: z.number().int().min(1).max(10),
-  minimumInvestment: z.number().positive().optional(),
-  potentialReturns: z.string().max(500).optional(),
-  compoundingType: z.string().max(500).optional(),
-  memberBenefits: z.string().max(1000).optional(),
-  yearsOperating: z.number().int().min(0).optional(),
-  verifiedBy: z.string().max(200).optional(),
-  disclaimer: z.string().max(2000).optional(),
-  termsUrl: z.string().url().optional().or(z.literal('')),
-  createForumCategory: z.boolean().optional(), // Optionally create a forum category for discussions
+  title: z.string().min(1).max(200),
+  description: z.string().min(1).max(5000),
+  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']),
+  status: z
+    .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
+    .optional()
+    .default('DRAFT'),
+  targetAmount: z.number().positive().optional().nullable(),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
 })
 
-// Helper to generate slug from name
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
+const querySchema = z.object({
+  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(100).optional().default(20),
+  search: z.string().optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -53,65 +39,93 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category')
-    const status = searchParams.get('status') || 'ACTIVE'
-    const minRisk = searchParams.get('minRisk')
-    const maxRisk = searchParams.get('maxRisk')
+    const queryParams = {
+      category: searchParams.get('category') || undefined,
+      status: searchParams.get('status') || undefined,
+      page: searchParams.get('page') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      search: searchParams.get('search') || undefined,
+    }
+
+    const parsed = querySchema.safeParse(queryParams)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { category, status, page, limit, search } = parsed.data
+    const skip = (page - 1) * limit
 
     const where: Record<string, unknown> = {}
-
-    if (status && status !== 'all') {
-      where.status = status
-    }
 
     if (category) {
       where.category = category
     }
 
-    if (minRisk) {
-      where.riskTolerance = { ...((where.riskTolerance as object) || {}), gte: parseInt(minRisk) }
+    if (status) {
+      where.status = status
     }
 
-    if (maxRisk) {
-      where.riskTolerance = { ...((where.riskTolerance as object) || {}), lte: parseInt(maxRisk) }
-    }
-
-    const opportunities = await prisma.wealthOpportunity.findMany({
-      where,
-      include: {
-        createdBy: {
-          select: { id: true, name: true }
-        }
-      },
-      orderBy: [
-        { riskTolerance: 'desc' }, // Higher trust first
-        { createdAt: 'desc' }
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ]
-    })
+    }
 
-    return NextResponse.json(opportunities)
+    const [wgos, total] = await Promise.all([
+      prisma.wealthOpportunity.findMany({
+        where,
+        include: {
+          involvements: {
+            take: 5,
+          },
+          _count: {
+            select: { involvements: true, forumPosts: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.wealthOpportunity.count({ where }),
+    ])
+
+    const formattedWGOs = wgos.map((wgo) => ({
+      ...wgo,
+      involvementCount: wgo._count.involvements,
+      forumPostCount: wgo._count.forumPosts,
+      isInvolved: wgo.involvements.some((inv) => inv.userId === session.user.id),
+      userInvolvement: wgo.involvements.find((inv) => inv.userId === session.user.id) || null,
+    }))
+
+    return NextResponse.json({
+      data: formattedWGOs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
-    console.error('Error fetching WGOs:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch opportunities' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_wgos' })
+    return NextResponse.json({ error: 'Failed to fetch wealth opportunities' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!ADMIN_ROLES.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: 'Only administrators can create opportunities' },
-        { status: 403 }
-      )
     }
 
     const body = await request.json()
@@ -124,88 +138,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const {
-      name,
-      description,
-      logo,
-      website,
-      affiliateLink,
-      email,
-      category,
-      status,
-      riskTolerance,
-      minimumInvestment,
-      potentialReturns,
-      compoundingType,
-      memberBenefits,
-      yearsOperating,
-      verifiedBy,
-      disclaimer,
-      termsUrl,
-      createForumCategory
-    } = parsed.data
+    const { title, description, category, status, targetAmount, startDate, endDate } = parsed.data
 
-    // Create forum category if requested
-    let forumCategoryId: string | null = null
-    if (createForumCategory) {
-      const slug = `wgo-${generateSlug(name)}`
-      // Check if forum category with this slug already exists
-      const existingCategory = await prisma.forumCategory.findUnique({
-        where: { slug }
-      })
-
-      if (!existingCategory) {
-        const forumCategory = await prisma.forumCategory.create({
-          data: {
-            name: `WGO: ${name}`,
-            slug,
-            description: `Discussion forum for ${name} wealth generation opportunity participants`,
-          }
-        })
-        forumCategoryId = forumCategory.id
-      } else {
-        forumCategoryId = existingCategory.id
-      }
-    }
-
-    const opportunity = await prisma.wealthOpportunity.create({
+    // Create WGO with the creator as a LEADER involvement
+    const wgo = await prisma.wealthOpportunity.create({
       data: {
-        name,
-        description: description || null,
-        logo: logo || null,
-        website: website || null,
-        affiliateLink: affiliateLink || null,
-        email: email || null,
+        title,
+        description,
         category,
-        status: status || 'PENDING',
-        riskTolerance,
-        minimumInvestment: minimumInvestment || null,
-        potentialReturns: potentialReturns || null,
-        compoundingType: compoundingType || null,
-        memberBenefits: memberBenefits || null,
-        yearsOperating: yearsOperating || null,
-        verifiedBy: verifiedBy || null,
-        disclaimer: disclaimer || null,
-        termsUrl: termsUrl || null,
-        createdById: session.user.id,
-        forumCategoryId,
+        status,
+        targetAmount: targetAmount ?? null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        creatorId: session.user.id,
+        involvements: {
+          create: {
+            userId: session.user.id,
+            role: 'LEADER',
+            status: 'ACTIVE',
+          },
+        },
       },
       include: {
-        createdBy: {
-          select: { id: true, name: true }
+        involvements: true,
+        _count: {
+          select: { involvements: true, forumPosts: true },
         },
-        forumCategory: {
-          select: { id: true, name: true, slug: true }
-        }
-      }
+      },
     })
 
-    return NextResponse.json(opportunity, { status: 201 })
+    return NextResponse.json(wgo, { status: 201 })
   } catch (error) {
-    console.error('Error creating WGO:', error)
-    return NextResponse.json(
-      { error: 'Failed to create opportunity' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_wgo' })
+    return NextResponse.json({ error: 'Failed to create wealth opportunity' }, { status: 500 })
   }
 }

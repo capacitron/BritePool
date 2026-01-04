@@ -1,267 +1,565 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, TrendingUp, Globe, Mail, ExternalLink, DollarSign,
-  Users, Clock, Shield, Pencil, Trash2, AlertTriangle, CheckCircle, X
+  ArrowLeft,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Clock,
+  Calendar,
+  Pencil,
+  Trash2,
+  MessageSquare,
+  UserPlus,
+  UserMinus,
+  Pin,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { RiskToleranceIndicator, RiskToleranceBar } from '@/components/wgo/RiskToleranceIndicator'
-import { WGO_CATEGORY_LABELS, WGO_CATEGORY_COLORS, WGO_STATUS_LABELS, WGO_STATUS_COLORS, WGO_CATEGORIES, WGO_STATUSES } from '@/lib/wgo/categories'
+
+// WGO Category and Status labels
+const WGO_CATEGORY_LABELS: Record<string, string> = {
+  REAL_ESTATE: 'Real Estate',
+  BUSINESS: 'Business',
+  INVESTMENT: 'Investment',
+  EDUCATION: 'Education',
+  COMMUNITY: 'Community',
+}
+
+const WGO_CATEGORY_COLORS: Record<string, string> = {
+  REAL_ESTATE: 'bg-blue-100 text-blue-800',
+  BUSINESS: 'bg-purple-100 text-purple-800',
+  INVESTMENT: 'bg-green-100 text-green-800',
+  EDUCATION: 'bg-yellow-100 text-yellow-800',
+  COMMUNITY: 'bg-pink-100 text-pink-800',
+}
+
+const WGO_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Draft',
+  ACTIVE: 'Active',
+  PAUSED: 'Paused',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+}
+
+const WGO_STATUS_COLORS: Record<string, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800',
+  ACTIVE: 'bg-emerald-100 text-emerald-800',
+  PAUSED: 'bg-amber-100 text-amber-800',
+  COMPLETED: 'bg-blue-100 text-blue-800',
+  CANCELLED: 'bg-red-100 text-red-800',
+}
+
+const WGO_ROLE_LABELS: Record<string, string> = {
+  LEADER: 'Leader',
+  COORDINATOR: 'Coordinator',
+  PARTICIPANT: 'Participant',
+  OBSERVER: 'Observer',
+}
+
+const WGO_ROLE_COLORS: Record<string, string> = {
+  LEADER: 'bg-purple-100 text-purple-800',
+  COORDINATOR: 'bg-blue-100 text-blue-800',
+  PARTICIPANT: 'bg-green-100 text-green-800',
+  OBSERVER: 'bg-gray-100 text-gray-800',
+}
+
+interface Involvement {
+  id: string
+  userId: string
+  role: string
+  status: string
+  joinedAt: string
+}
+
+interface ForumPost {
+  id: string
+  content: string
+  isPinned: boolean
+  authorId: string
+  createdAt: string
+  author?: {
+    id: string
+    name: string
+    role: string
+  } | null
+  isAuthor?: boolean
+}
 
 interface WGO {
   id: string
-  name: string
-  description: string | null
-  logo: string | null
-  website: string | null
-  affiliateLink: string | null
-  email: string | null
+  title: string
+  description: string
   category: string
   status: string
-  riskTolerance: number
-  minimumInvestment: number | null
-  potentialReturns: string | null
-  compoundingType: string | null
-  memberBenefits: string | null
-  yearsOperating: number | null
-  verifiedBy: string | null
-  totalMembers: number
-  communityRating: number | null
-  disclaimer: string | null
-  termsUrl: string | null
-  createdBy: { id: string; name: string }
+  targetAmount: number | null
+  currentAmount: number
+  startDate: string | null
+  endDate: string | null
+  creatorId: string
   createdAt: string
   updatedAt: string
+  involvements: Involvement[]
+  forumPosts: ForumPost[]
+  involvementCount: number
+  forumPostCount: number
+  isInvolved: boolean
+  userInvolvement: Involvement | null
+  isCreator: boolean
+  isLeader: boolean
+  isCoordinator: boolean
 }
 
 interface WGODetailClientProps {
-  opportunity: WGO
+  wgoId: string
+  userId: string
   userRole: string
 }
 
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
+const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
 
-export function WGODetailClient({ opportunity, userRole }: WGODetailClientProps) {
+export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProps) {
   const router = useRouter()
+  const [wgo, setWgo] = useState<WGO | null>(null)
+  const [forumPosts, setForumPosts] = useState<ForumPost[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [newPostContent, setNewPostContent] = useState('')
+  const [postingLoading, setPostingLoading] = useState(false)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
-  const handleDelete = async () => {
-    setDeleting(true)
+  const fetchWGO = useCallback(async () => {
     try {
-      const res = await fetch(`/api/wgo/${opportunity.id}`, { method: 'DELETE' })
-      if (res.ok) {
-        router.push('/dashboard/wgo')
+      setLoading(true)
+      setError(null)
+
+      const res = await fetch(`/api/wgo/${wgoId}`)
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          setError('Wealth Generation Opportunity not found')
+        } else if (res.status === 401) {
+          setError('You must be logged in to view this page')
+        } else {
+          const data = await res.json()
+          setError(data.error || 'Failed to load WGO details')
+        }
+        return
       }
-    } catch {
-      alert('Failed to delete')
+
+      const data = await res.json()
+      setWgo(data)
+      setForumPosts(data.forumPosts || [])
+    } catch (err) {
+      console.error('Error fetching WGO:', err)
+      setError('Failed to load WGO details. Please try again.')
     } finally {
-      setDeleting(false)
+      setLoading(false)
+    }
+  }, [wgoId])
+
+  const fetchForumPosts = useCallback(async () => {
+    if (!wgo?.isInvolved && !isAdmin) return
+
+    try {
+      const res = await fetch(`/api/wgo/${wgoId}/forum`)
+      if (res.ok) {
+        const data = await res.json()
+        setForumPosts(data.data || [])
+      }
+    } catch (err) {
+      console.error('Error fetching forum posts:', err)
+    }
+  }, [wgoId, wgo?.isInvolved, isAdmin])
+
+  useEffect(() => {
+    fetchWGO()
+  }, [fetchWGO])
+
+  useEffect(() => {
+    if (wgo?.isInvolved || isAdmin) {
+      fetchForumPosts()
+    }
+  }, [wgo?.isInvolved, isAdmin, fetchForumPosts])
+
+  const handleJoin = async () => {
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/wgo/involvement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wgoId, role: 'PARTICIPANT' }),
+      })
+
+      if (res.ok) {
+        await fetchWGO()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to join')
+      }
+    } catch (err) {
+      console.error('Error joining WGO:', err)
+      alert('Failed to join. Please try again.')
+    } finally {
+      setActionLoading(false)
     }
   }
+
+  const handleLeave = async () => {
+    if (!confirm('Are you sure you want to leave this WGO?')) return
+
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/wgo/involvement', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wgoId }),
+      })
+
+      if (res.ok) {
+        await fetchWGO()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to leave')
+      }
+    } catch (err) {
+      console.error('Error leaving WGO:', err)
+      alert('Failed to leave. Please try again.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/wgo/${wgoId}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.push('/dashboard/wgo')
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete')
+      }
+    } catch (err) {
+      console.error('Error deleting WGO:', err)
+      alert('Failed to delete. Please try again.')
+    } finally {
+      setActionLoading(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPostContent.trim()) return
+
+    setPostingLoading(true)
+    try {
+      const res = await fetch(`/api/wgo/${wgoId}/forum`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newPostContent }),
+      })
+
+      if (res.ok) {
+        setNewPostContent('')
+        await fetchForumPosts()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to create post')
+      }
+    } catch (err) {
+      console.error('Error creating post:', err)
+      alert('Failed to create post. Please try again.')
+    } finally {
+      setPostingLoading(false)
+    }
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mx-auto mb-4" />
+          <p className="text-forest-600">Loading WGO details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-red-800 mb-4">Error</h1>
+            <p className="text-red-700 mb-6">{error}</p>
+            <div className="flex gap-4 justify-center">
+              <Button variant="outline" onClick={() => router.back()}>
+                Go Back
+              </Button>
+              <Button onClick={fetchWGO}>Try Again</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Not found state
+  if (!wgo) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
+            <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-yellow-800 mb-4">WGO Not Found</h1>
+            <p className="text-yellow-700 mb-6">
+              The Wealth Generation Opportunity could not be found.
+            </p>
+            <Link
+              href="/dashboard/wgo"
+              className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+            >
+              Return to WGO List
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const canEdit = wgo.isCreator || wgo.isLeader || wgo.isCoordinator || isAdmin
+  const canDelete = wgo.isCreator || isAdmin
+  const canPost = wgo.isInvolved && wgo.userInvolvement?.role !== 'OBSERVER'
+  const progressPercentage = wgo.targetAmount
+    ? Math.min(100, (wgo.currentAmount / wgo.targetAmount) * 100)
+    : 0
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <Link
           href="/dashboard/wgo"
-          className="p-2 hover:bg-sand-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-sand-100 rounded-lg transition-colors mt-1"
         >
           <ArrowLeft className="h-5 w-5 text-forest-600" />
         </Link>
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-display font-bold text-forest-800">
-              {opportunity.name}
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-forest-800">
+              {wgo.title}
             </h1>
-            <span className={cn('px-3 py-1 rounded-full text-sm font-medium', WGO_CATEGORY_COLORS[opportunity.category])}>
-              {WGO_CATEGORY_LABELS[opportunity.category]}
+            <span
+              className={cn(
+                'px-3 py-1 rounded-full text-sm font-medium',
+                WGO_CATEGORY_COLORS[wgo.category] || 'bg-gray-100 text-gray-800'
+              )}
+            >
+              {WGO_CATEGORY_LABELS[wgo.category] || wgo.category}
             </span>
-            <span className={cn('px-3 py-1 rounded-full text-sm font-medium', WGO_STATUS_COLORS[opportunity.status])}>
-              {WGO_STATUS_LABELS[opportunity.status]}
+            <span
+              className={cn(
+                'px-3 py-1 rounded-full text-sm font-medium',
+                WGO_STATUS_COLORS[wgo.status] || 'bg-gray-100 text-gray-800'
+              )}
+            >
+              {WGO_STATUS_LABELS[wgo.status] || wgo.status}
             </span>
           </div>
-          <p className="text-forest-500 mt-1">
-            Added by {opportunity.createdBy.name} on {new Date(opportunity.createdAt).toLocaleDateString()}
+          <p className="text-forest-500">
+            Created on {new Date(wgo.createdAt).toLocaleDateString()}
           </p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowEditModal(true)}>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </Button>
+          )}
+          {canDelete && (
             <Button
               variant="outline"
+              size="sm"
               className="text-red-600 border-red-300 hover:bg-red-50"
               onClick={() => setShowDeleteConfirm(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Logo and Overview */}
-          <Card className="border-sand-200">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-6">
-                {opportunity.logo ? (
-                  <img
-                    src={opportunity.logo}
-                    alt={opportunity.name}
-                    className="h-24 w-24 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="h-24 w-24 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <TrendingUp className="h-12 w-12 text-emerald-600" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h2 className="text-xl font-medium text-forest-800 mb-2">{opportunity.name}</h2>
-                  {opportunity.description && (
-                    <p className="text-forest-600">{opportunity.description}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Trust Rating */}
+          {/* Description */}
           <Card className="border-sand-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-emerald-600" />
-                Organizational Trust Rating
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+                About This Opportunity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
+            </CardContent>
+          </Card>
+
+          {/* Financial Details */}
+          <Card className="border-sand-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+                Financial Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <RiskToleranceIndicator
-                value={opportunity.riskTolerance}
-                size="lg"
-                showLabel
-                showDescription
-              />
-              <RiskToleranceBar value={opportunity.riskTolerance} size="lg" />
+              <div className="grid grid-cols-2 gap-4">
+                {wgo.targetAmount !== null && (
+                  <div className="p-4 bg-sand-50 rounded-lg">
+                    <div className="text-forest-500 text-sm mb-1">Target Amount</div>
+                    <p className="text-xl font-bold text-forest-800">
+                      ${wgo.targetAmount.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+                <div className="p-4 bg-emerald-50 rounded-lg">
+                  <div className="text-emerald-600 text-sm mb-1">Current Amount</div>
+                  <p className="text-xl font-bold text-emerald-700">
+                    ${wgo.currentAmount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
 
-              {opportunity.verifiedBy && (
-                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-green-700">
-                    Verified by <strong>{opportunity.verifiedBy}</strong>
-                  </span>
+              {wgo.targetAmount !== null && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-forest-500">Progress</span>
+                    <span className="font-medium text-forest-700">
+                      {progressPercentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-3 bg-sand-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Investment Details */}
-          <Card className="border-sand-200">
-            <CardHeader>
-              <CardTitle>Investment Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {opportunity.minimumInvestment && (
-                  <div className="p-4 bg-sand-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-forest-500 text-sm mb-1">
-                      <DollarSign className="h-4 w-4" />
-                      Minimum Investment
-                    </div>
-                    <p className="text-xl font-bold text-forest-800">
-                      ${opportunity.minimumInvestment.toLocaleString()}
-                    </p>
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-sand-200">
+                {wgo.startDate && (
+                  <div className="flex items-center gap-2 text-forest-600">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">
+                      Starts: {new Date(wgo.startDate).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
-
-                {opportunity.potentialReturns && (
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-emerald-600 text-sm mb-1">
-                      <TrendingUp className="h-4 w-4" />
-                      Potential Returns
-                    </div>
-                    <p className="text-xl font-bold text-emerald-700">
-                      {opportunity.potentialReturns}
-                    </p>
-                  </div>
-                )}
-
-                {opportunity.yearsOperating && (
-                  <div className="p-4 bg-sand-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-forest-500 text-sm mb-1">
-                      <Clock className="h-4 w-4" />
-                      Years Operating
-                    </div>
-                    <p className="text-xl font-bold text-forest-800">
-                      {opportunity.yearsOperating} {opportunity.yearsOperating === 1 ? 'year' : 'years'}
-                    </p>
-                  </div>
-                )}
-
-                {opportunity.totalMembers > 0 && (
-                  <div className="p-4 bg-sand-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-forest-500 text-sm mb-1">
-                      <Users className="h-4 w-4" />
-                      Community Members
-                    </div>
-                    <p className="text-xl font-bold text-forest-800">
-                      {opportunity.totalMembers}
-                    </p>
+                {wgo.endDate && (
+                  <div className="flex items-center gap-2 text-forest-600">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm">
+                      Ends: {new Date(wgo.endDate).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
               </div>
-
-              {opportunity.compoundingType && (
-                <div className="mt-4 p-4 bg-sand-50 rounded-lg">
-                  <h4 className="font-medium text-forest-700 mb-1">Compounding Type</h4>
-                  <p className="text-forest-600">{opportunity.compoundingType}</p>
-                </div>
-              )}
-
-              {opportunity.memberBenefits && (
-                <div className="mt-4 p-4 bg-emerald-50 rounded-lg">
-                  <h4 className="font-medium text-emerald-700 mb-1">Member Benefits</h4>
-                  <p className="text-emerald-600">{opportunity.memberBenefits}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Disclaimer */}
-          {opportunity.disclaimer && (
-            <Card className="border-amber-200 bg-amber-50">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-amber-800 mb-2">Risk Disclaimer</h3>
-                    <p className="text-amber-700 text-sm">{opportunity.disclaimer}</p>
-                    {opportunity.termsUrl && (
-                      <a
-                        href={opportunity.termsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-amber-800 underline mt-2 text-sm"
+          {/* Forum Posts - Only visible to involved users */}
+          {(wgo.isInvolved || isAdmin) && (
+            <Card className="border-sand-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-emerald-600" />
+                  Forum Posts ({wgo.forumPostCount})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* New Post Form */}
+                {(canPost || isAdmin) && (
+                  <form onSubmit={handleCreatePost} className="space-y-3">
+                    <textarea
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      placeholder="Write a new post..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-sand-300 rounded-lg resize-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="submit"
+                        disabled={postingLoading || !newPostContent.trim()}
+                        className="bg-emerald-600 hover:bg-emerald-700"
                       >
-                        View Full Terms & Conditions
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
+                        {postingLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                        )}
+                        Post
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Posts List */}
+                {forumPosts.length === 0 ? (
+                  <p className="text-center text-forest-500 py-8">
+                    No forum posts yet. Be the first to start a discussion!
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {forumPosts.map((post) => (
+                      <div
+                        key={post.id}
+                        className={cn(
+                          'p-4 rounded-lg border',
+                          post.isPinned
+                            ? 'bg-amber-50 border-amber-200'
+                            : 'bg-white border-sand-200'
+                        )}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-forest-800">
+                              {post.author?.name || 'Unknown User'}
+                            </span>
+                            {post.isPinned && <Pin className="h-4 w-4 text-amber-600" />}
+                          </div>
+                          <span className="text-xs text-forest-500">
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-forest-700 whitespace-pre-wrap">{post.content}</p>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -269,43 +567,60 @@ export function WGODetailClient({ opportunity, userRole }: WGODetailClientProps)
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Action Card */}
+          {/* Join/Leave Card */}
           <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50 to-white">
             <CardContent className="p-6 space-y-4">
-              <h3 className="font-medium text-forest-800">Get Started</h3>
-
-              {opportunity.affiliateLink && (
-                <a
-                  href={opportunity.affiliateLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  <ExternalLink className="h-5 w-5" />
-                  Join Opportunity
-                </a>
-              )}
-
-              {opportunity.website && (
-                <a
-                  href={opportunity.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 border border-forest-300 text-forest-700 hover:bg-sand-50 rounded-lg font-medium transition-colors"
-                >
-                  <Globe className="h-5 w-5" />
-                  Visit Website
-                </a>
-              )}
-
-              {opportunity.email && (
-                <a
-                  href={`mailto:${opportunity.email}`}
-                  className="flex items-center justify-center gap-2 w-full py-3 border border-forest-300 text-forest-700 hover:bg-sand-50 rounded-lg font-medium transition-colors"
-                >
-                  <Mail className="h-5 w-5" />
-                  Contact
-                </a>
+              {wgo.isInvolved ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <span className="font-medium text-emerald-700">
+                      You are a {WGO_ROLE_LABELS[wgo.userInvolvement?.role || 'PARTICIPANT']}
+                    </span>
+                  </div>
+                  <p className="text-sm text-forest-600">
+                    Joined on{' '}
+                    {wgo.userInvolvement?.joinedAt
+                      ? new Date(wgo.userInvolvement.joinedAt).toLocaleDateString()
+                      : 'N/A'}
+                  </p>
+                  {!wgo.isCreator && !wgo.isLeader && (
+                    <Button
+                      variant="outline"
+                      className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={handleLeave}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <UserMinus className="h-4 w-4 mr-2" />
+                      )}
+                      Leave WGO
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h3 className="font-medium text-forest-800">Get Involved</h3>
+                  <p className="text-sm text-forest-600">
+                    Join this Wealth Generation Opportunity to participate and access the forum.
+                  </p>
+                  {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
+                    <Button
+                      className="w-full bg-emerald-600 hover:bg-emerald-700"
+                      onClick={handleJoin}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <UserPlus className="h-4 w-4 mr-2" />
+                      )}
+                      Join as Participant
+                    </Button>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -318,65 +633,120 @@ export function WGODetailClient({ opportunity, userRole }: WGODetailClientProps)
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-forest-500">Category</span>
-                <span className={cn('px-2 py-0.5 rounded text-xs font-medium', WGO_CATEGORY_COLORS[opportunity.category])}>
-                  {WGO_CATEGORY_LABELS[opportunity.category]}
+                <span
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium',
+                    WGO_CATEGORY_COLORS[wgo.category] || 'bg-gray-100 text-gray-800'
+                  )}
+                >
+                  {WGO_CATEGORY_LABELS[wgo.category] || wgo.category}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-forest-500">Status</span>
-                <span className={cn('px-2 py-0.5 rounded text-xs font-medium', WGO_STATUS_COLORS[opportunity.status])}>
-                  {WGO_STATUS_LABELS[opportunity.status]}
+                <span
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium',
+                    WGO_STATUS_COLORS[wgo.status] || 'bg-gray-100 text-gray-800'
+                  )}
+                >
+                  {WGO_STATUS_LABELS[wgo.status] || wgo.status}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-forest-500">Trust Rating</span>
-                <span className="font-bold text-forest-800">{opportunity.riskTolerance}/10</span>
+                <span className="text-forest-500">Members</span>
+                <span className="font-bold text-forest-800 flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {wgo.involvementCount}
+                </span>
               </div>
-              {opportunity.communityRating && (
-                <div className="flex justify-between">
-                  <span className="text-forest-500">Community Rating</span>
-                  <span className="font-bold text-forest-800">{opportunity.communityRating}/5</span>
-                </div>
-              )}
               <div className="flex justify-between">
-                <span className="text-forest-500">Added</span>
-                <span className="text-forest-700">{new Date(opportunity.createdAt).toLocaleDateString()}</span>
+                <span className="text-forest-500">Forum Posts</span>
+                <span className="font-bold text-forest-800 flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4" />
+                  {wgo.forumPostCount}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-forest-500">Created</span>
+                <span className="text-forest-700">
+                  {new Date(wgo.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-forest-500">Last Updated</span>
+                <span className="text-forest-700">
+                  {new Date(wgo.updatedAt).toLocaleDateString()}
+                </span>
               </div>
             </CardContent>
           </Card>
 
-          {/* General Disclaimer */}
-          <Card className="border-sand-200 bg-sand-50">
-            <CardContent className="p-4 text-xs text-forest-500">
-              <p>
-                <strong>Disclaimer:</strong> All wealth generation opportunities are shared in good faith by community members.
-                The organization's trust rating reflects our assessment but does not guarantee returns.
-                Always conduct your own due diligence before investing.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Members Preview */}
+          {wgo.involvements.length > 0 && (
+            <Card className="border-sand-200">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Members
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {wgo.involvements.slice(0, 5).map((inv) => (
+                  <div key={inv.id} className="flex items-center justify-between py-1">
+                    <span className="text-sm text-forest-700">
+                      {inv.userId === userId ? 'You' : `Member ${inv.id.slice(0, 6)}`}
+                    </span>
+                    <span
+                      className={cn(
+                        'px-2 py-0.5 rounded text-xs font-medium',
+                        WGO_ROLE_COLORS[inv.role] || 'bg-gray-100 text-gray-800'
+                      )}
+                    >
+                      {WGO_ROLE_LABELS[inv.role] || inv.role}
+                    </span>
+                  </div>
+                ))}
+                {wgo.involvements.length > 5 && (
+                  <p className="text-xs text-forest-500 pt-2 border-t">
+                    +{wgo.involvements.length - 5} more members
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <Card className="w-full max-w-md mx-4">
             <CardContent className="p-6">
               <h3 className="text-lg font-medium text-forest-800 mb-2">Delete Opportunity?</h3>
               <p className="text-forest-600 mb-4">
-                This action cannot be undone. Are you sure you want to delete "{opportunity.name}"?
+                This action cannot be undone. All forum posts and member involvements will also be
+                deleted.
               </p>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={actionLoading}
+                >
                   Cancel
                 </Button>
                 <Button
                   className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={handleDelete}
-                  disabled={deleting}
+                  disabled={actionLoading}
                 >
-                  {deleting ? 'Deleting...' : 'Delete'}
+                  {actionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Delete
                 </Button>
               </div>
             </CardContent>
@@ -387,11 +757,11 @@ export function WGODetailClient({ opportunity, userRole }: WGODetailClientProps)
       {/* Edit Modal */}
       {showEditModal && (
         <EditWGOModal
-          opportunity={opportunity}
+          wgo={wgo}
           onClose={() => setShowEditModal(false)}
           onSuccess={() => {
             setShowEditModal(false)
-            router.refresh()
+            fetchWGO()
           }}
         />
       )}
@@ -400,29 +770,27 @@ export function WGODetailClient({ opportunity, userRole }: WGODetailClientProps)
 }
 
 // Edit Modal Component
-function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; onClose: () => void; onSuccess: () => void }) {
+function EditWGOModal({
+  wgo,
+  onClose,
+  onSuccess,
+}: {
+  wgo: WGO
+  onClose: () => void
+  onSuccess: () => void
+}) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    name: opportunity.name,
-    description: opportunity.description || '',
-    logo: opportunity.logo || '',
-    website: opportunity.website || '',
-    affiliateLink: opportunity.affiliateLink || '',
-    email: opportunity.email || '',
-    category: opportunity.category,
-    status: opportunity.status,
-    riskTolerance: opportunity.riskTolerance,
-    minimumInvestment: opportunity.minimumInvestment?.toString() || '',
-    potentialReturns: opportunity.potentialReturns || '',
-    compoundingType: opportunity.compoundingType || '',
-    memberBenefits: opportunity.memberBenefits || '',
-    yearsOperating: opportunity.yearsOperating?.toString() || '',
-    verifiedBy: opportunity.verifiedBy || '',
-    disclaimer: opportunity.disclaimer || '',
-    termsUrl: opportunity.termsUrl || '',
-    totalMembers: opportunity.totalMembers.toString(),
+    title: wgo.title,
+    description: wgo.description,
+    category: wgo.category,
+    status: wgo.status,
+    targetAmount: wgo.targetAmount?.toString() || '',
+    currentAmount: wgo.currentAmount.toString(),
+    startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
+    endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -431,15 +799,36 @@ function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; o
     setError(null)
 
     try {
-      const res = await fetch(`/api/wgo/${opportunity.id}`, {
+      const payload: Record<string, unknown> = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        status: formData.status,
+        currentAmount: parseFloat(formData.currentAmount) || 0,
+      }
+
+      if (formData.targetAmount) {
+        payload.targetAmount = parseFloat(formData.targetAmount)
+      } else {
+        payload.targetAmount = null
+      }
+
+      if (formData.startDate) {
+        payload.startDate = new Date(formData.startDate).toISOString()
+      } else {
+        payload.startDate = null
+      }
+
+      if (formData.endDate) {
+        payload.endDate = new Date(formData.endDate).toISOString()
+      } else {
+        payload.endDate = null
+      }
+
+      const res = await fetch(`/api/wgo/${wgo.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          minimumInvestment: formData.minimumInvestment ? parseFloat(formData.minimumInvestment) : null,
-          yearsOperating: formData.yearsOperating ? parseInt(formData.yearsOperating) : null,
-          totalMembers: parseInt(formData.totalMembers) || 0,
-        })
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
@@ -474,23 +863,26 @@ function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; o
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">Title</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Description
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  required
                 />
               </div>
 
@@ -499,10 +891,12 @@ function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; o
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 >
-                  {WGO_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{WGO_CATEGORY_LABELS[cat]}</option>
+                  {Object.entries(WGO_CATEGORY_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -512,157 +906,62 @@ function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; o
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 >
-                  {WGO_STATUSES.map(status => (
-                    <option key={status} value={status}>{WGO_STATUS_LABELS[status]}</option>
+                  {Object.entries(WGO_STATUS_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Trust Rating (1-10)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.riskTolerance}
-                  onChange={(e) => setFormData({ ...formData, riskTolerance: parseInt(e.target.value) || 5 })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Community Members</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.totalMembers}
-                  onChange={(e) => setFormData({ ...formData, totalMembers: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Logo URL</label>
-                <input
-                  type="url"
-                  value={formData.logo}
-                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Website</label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Affiliate Link</label>
-                <input
-                  type="url"
-                  value={formData.affiliateLink}
-                  onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Minimum Investment</label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Target Amount ($)
+                </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.minimumInvestment}
-                  onChange={(e) => setFormData({ ...formData, minimumInvestment: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  value={formData.targetAmount}
+                  onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Optional"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">Years Operating</label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Current Amount ($)
+                </label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.yearsOperating}
-                  onChange={(e) => setFormData({ ...formData, yearsOperating: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  step="0.01"
+                  value={formData.currentAmount}
+                  onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Potential Returns</label>
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">Start Date</label>
                 <input
-                  type="text"
-                  value={formData.potentialReturns}
-                  onChange={(e) => setFormData({ ...formData, potentialReturns: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Compounding Type</label>
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">End Date</label>
                 <input
-                  type="text"
-                  value={formData.compoundingType}
-                  onChange={(e) => setFormData({ ...formData, compoundingType: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Member Benefits</label>
-                <textarea
-                  value={formData.memberBenefits}
-                  onChange={(e) => setFormData({ ...formData, memberBenefits: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Verified By</label>
-                <input
-                  type="text"
-                  value={formData.verifiedBy}
-                  onChange={(e) => setFormData({ ...formData, verifiedBy: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Disclaimer</label>
-                <textarea
-                  value={formData.disclaimer}
-                  onChange={(e) => setFormData({ ...formData, disclaimer: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">Terms URL</label>
-                <input
-                  type="url"
-                  value={formData.termsUrl}
-                  onChange={(e) => setFormData({ ...formData, termsUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -671,8 +970,13 @@ function EditWGOModal({ opportunity, onClose, onSuccess }: { opportunity: WGO; o
               <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={loading}>
-                {loading ? 'Saving...' : 'Save Changes'}
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
               </Button>
             </div>
           </form>

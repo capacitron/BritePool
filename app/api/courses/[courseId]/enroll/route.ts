@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 
 export async function POST(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function POST(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -16,7 +17,7 @@ export async function POST(
     const { courseId } = await params
 
     const course = await prisma.course.findUnique({
-      where: { id: courseId }
+      where: { id: courseId },
     })
 
     if (!course) {
@@ -31,9 +32,9 @@ export async function POST(
       where: {
         userId_courseId: {
           userId: session.user.id,
-          courseId: courseId
-        }
-      }
+          courseId: courseId,
+        },
+      },
     })
 
     if (existingProgress) {
@@ -46,16 +47,13 @@ export async function POST(
         courseId: courseId,
         completedLessons: [],
         progress: 0,
-        isCompleted: false
-      }
+        isCompleted: false,
+      },
     })
 
     return NextResponse.json(progress, { status: 201 })
   } catch (error) {
-    console.error('Error enrolling in course:', error)
-    return NextResponse.json(
-      { error: 'Failed to enroll in course' },
-      { status: 500 }
-    )
+    logError(error, { action: 'enroll_in_course' })
+    return NextResponse.json({ error: 'Failed to enroll in course' }, { status: 500 })
   }
 }

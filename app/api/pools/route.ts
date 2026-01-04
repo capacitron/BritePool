@@ -1,120 +1,108 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createPoolSchema } from '@/lib/validations/pool'
-import { Pool, PoolCut, Pledge } from '@prisma/client'
+import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { z } from 'zod'
 
-type CutWithPledges = PoolCut & {
-  overseer: { id: string; name: string; email: string }
-  pledges: { amount: number }[]
-  _count: { pledges: number; invitations: number }
-}
-
-type PoolWithCuts = Pool & {
-  cuts: CutWithPledges[]
-}
+const createPoolSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  targetAmount: z.number().positive(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'CLOSED', 'COMPLETED']).optional(),
+})
 
 // GET /api/pools - List all pools
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+
+    const where: Record<string, unknown> = {}
+
+    if (status) {
+      where.status = status
+    }
+
     const pools = await prisma.pool.findMany({
+      where,
       include: {
-        cuts: {
-          include: {
-            overseer: {
-              select: { id: true, name: true, email: true }
-            },
-            pledges: {
-              where: { status: { not: 'CANCELLED' } },
-              select: { amount: true }
-            },
-            _count: {
-              select: { pledges: true, invitations: true }
-            }
-          }
-        }
+        _count: {
+          select: { cuts: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
-    // Calculate totals for each pool
-    const poolsWithTotals = (pools as PoolWithCuts[]).map((pool) => {
-      const cutTotals = pool.cuts.map((cut: CutWithPledges) => ({
-        color: cut.color,
-        total: cut.pledges.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0),
-        pledgeCount: cut._count.pledges,
-        invitationCount: cut._count.invitations,
-        overseer: cut.overseer
-      }))
-
-      const blueTotal = cutTotals.reduce((sum: number, cut: { total: number }) => sum + cut.total, 0)
-
-      return {
-        ...pool,
-        cuts: pool.cuts.map((cut: CutWithPledges) => ({
-          id: cut.id,
-          color: cut.color,
-          overseerId: cut.overseerId,
-          overseer: cut.overseer,
-          total: cut.pledges.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0),
-          pledgeCount: cut._count.pledges,
-          invitationCount: cut._count.invitations
-        })),
-        blueTotal,
-        progress: pool.goalAmount > 0 ? (blueTotal / pool.goalAmount) * 100 : 0
-      }
-    })
-
-    return NextResponse.json(poolsWithTotals)
+    return NextResponse.json(pools)
   } catch (error) {
-    console.error('Error fetching pools:', error)
+    logError(error, { action: 'fetch_pools' })
     return NextResponse.json({ error: 'Failed to fetch pools' }, { status: 500 })
   }
 }
 
-// POST /api/pools - Create a new pool
+// POST /api/pools - Create a new pool (admin only)
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is BOARD_CHAIR or WEB_STEWARD
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-
-    if (!user || !['BOARD_CHAIR', 'WEB_STEWARD'].includes(user.role)) {
-      return NextResponse.json(
-        { error: 'Only Board Chairs and Web Stewards can create pools' },
-        { status: 403 }
-      )
+    // Only admins can create pools
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
     }
 
     const body = await request.json()
-    const validatedData = createPoolSchema.parse(body)
+    const parsed = createPoolSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { name, description, targetAmount, startDate, endDate, status } = parsed.data
 
     const pool = await prisma.pool.create({
       data: {
-        name: validatedData.name,
-        description: validatedData.description,
-        goalAmount: validatedData.goalAmount,
-      }
+        name,
+        description: description || null,
+        targetAmount,
+        currentAmount: 0,
+        status: status || 'DRAFT',
+        creatorId: session.user.id,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+      },
+      include: {
+        _count: {
+          select: { cuts: true },
+        },
+      },
     })
 
     return NextResponse.json(pool, { status: 201 })
   } catch (error) {
-    console.error('Error creating pool:', error)
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    logError(error, { action: 'create_pool' })
     return NextResponse.json({ error: 'Failed to create pool' }, { status: 500 })
   }
 }

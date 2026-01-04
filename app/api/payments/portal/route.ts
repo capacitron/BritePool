@@ -2,16 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getStripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -19,10 +17,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const stripe = getStripe()
@@ -40,7 +35,8 @@ export async function POST(request: NextRequest) {
 
     const customerId = customers.data[0].id
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
       `https://${process.env.REPLIT_DEV_DOMAIN}` ||
       'http://localhost:5000'
 
@@ -51,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: portalSession.url })
   } catch (error) {
-    console.error('Create portal session error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create portal session' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_portal_session' })
+    return NextResponse.json({ error: 'Failed to create portal session' }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateRoleSchema = z.object({
@@ -14,7 +15,7 @@ export async function POST(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -22,7 +23,7 @@ export async function POST(
     const { committeeId } = await params
 
     const committee = await prisma.committee.findUnique({
-      where: { id: committeeId }
+      where: { id: committeeId },
     })
 
     if (!committee) {
@@ -33,41 +34,35 @@ export async function POST(
       where: {
         userId_committeeId: {
           userId: session.user.id,
-          committeeId
-        }
-      }
+          committeeId,
+        },
+      },
     })
 
     if (existingMembership) {
-      return NextResponse.json(
-        { error: 'Already a member of this committee' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Already a member of this committee' }, { status: 409 })
     }
 
     const membership = await prisma.committeeMember.create({
       data: {
         userId: session.user.id,
         committeeId,
-        role: 'MEMBER'
+        role: 'MEMBER',
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true, role: true }
+          select: { id: true, name: true, email: true, role: true },
         },
         committee: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(membership, { status: 201 })
   } catch (error) {
-    console.error('Error joining committee:', error)
-    return NextResponse.json(
-      { error: 'Failed to join committee' },
-      { status: 500 }
-    )
+    logError(error, { action: 'join_committee' })
+    return NextResponse.json({ error: 'Failed to join committee' }, { status: 500 })
   }
 }
 
@@ -77,7 +72,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -88,29 +83,23 @@ export async function DELETE(
       where: {
         userId_committeeId: {
           userId: session.user.id,
-          committeeId
-        }
-      }
+          committeeId,
+        },
+      },
     })
 
     if (!membership) {
-      return NextResponse.json(
-        { error: 'Not a member of this committee' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Not a member of this committee' }, { status: 404 })
     }
 
     await prisma.committeeMember.delete({
-      where: { id: membership.id }
+      where: { id: membership.id },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error leaving committee:', error)
-    return NextResponse.json(
-      { error: 'Failed to leave committee' },
-      { status: 500 }
-    )
+    logError(error, { action: 'leave_committee' })
+    return NextResponse.json({ error: 'Failed to leave committee' }, { status: 500 })
   }
 }
 
@@ -120,7 +109,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -146,21 +135,18 @@ export async function PATCH(
 
     const membership = await prisma.committeeMember.findUnique({
       where: {
-        userId_committeeId: { userId, committeeId }
-      }
+        userId_committeeId: { userId, committeeId },
+      },
     })
 
     if (!membership) {
-      return NextResponse.json(
-        { error: 'Member not found in this committee' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Member not found in this committee' }, { status: 404 })
     }
 
     if (role === 'LEADER') {
       await prisma.committeeMember.updateMany({
         where: { committeeId, role: 'LEADER' },
-        data: { role: 'MEMBER' }
+        data: { role: 'MEMBER' },
       })
     }
 
@@ -169,17 +155,14 @@ export async function PATCH(
       data: { role },
       include: {
         user: {
-          select: { id: true, name: true, email: true, role: true }
-        }
-      }
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
     })
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Error updating member role:', error)
-    return NextResponse.json(
-      { error: 'Failed to update member role' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_member_role' })
+    return NextResponse.json({ error: 'Failed to update member role' }, { status: 500 })
   }
 }

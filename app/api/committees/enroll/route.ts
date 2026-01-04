@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { enrollCommitteesSchema } from '@/lib/validations/committee'
 
 // Batch enroll user into multiple committees
@@ -28,39 +29,36 @@ export async function POST(request: NextRequest) {
     // Verify all committee IDs are valid
     const committees = await prisma.committee.findMany({
       where: {
-        id: { in: committeeIds }
+        id: { in: committeeIds },
       },
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     })
 
     if (committees.length !== committeeIds.length) {
-      return NextResponse.json(
-        { error: 'One or more committee IDs are invalid' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'One or more committee IDs are invalid' }, { status: 400 })
     }
 
     // Get existing memberships
     const existingMemberships = await prisma.committeeMember.findMany({
       where: {
         userId: session.user.id,
-        committeeId: { in: committeeIds }
+        committeeId: { in: committeeIds },
       },
-      select: { committeeId: true }
+      select: { committeeId: true },
     })
 
-    const existingIds = new Set(existingMemberships.map(m => m.committeeId))
-    const newCommitteeIds = committeeIds.filter(id => !existingIds.has(id))
+    const existingIds = new Set(existingMemberships.map((m) => m.committeeId))
+    const newCommitteeIds = committeeIds.filter((id) => !existingIds.has(id))
 
     // Create new memberships
     if (newCommitteeIds.length > 0) {
       await prisma.committeeMember.createMany({
-        data: newCommitteeIds.map(committeeId => ({
+        data: newCommitteeIds.map((committeeId) => ({
           userId: session.user.id,
           committeeId,
-          role: 'MEMBER'
+          role: 'MEMBER',
         })),
-        skipDuplicates: true
+        skipDuplicates: true,
       })
     }
 
@@ -69,15 +67,15 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         onboardingCompleted: true,
-        onboardingStep: 5 // Final step
-      }
+        onboardingStep: 5, // Final step
+      },
     })
 
     // Get updated memberships with committee details
     const memberships = await prisma.committeeMember.findMany({
       where: {
         userId: session.user.id,
-        committeeId: { in: committeeIds }
+        committeeId: { in: committeeIds },
       },
       include: {
         committee: {
@@ -85,24 +83,24 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             slug: true,
-            type: true
-          }
-        }
-      }
+            type: true,
+          },
+        },
+      },
     })
 
-    return NextResponse.json({
-      message: 'Successfully enrolled in committees',
-      enrolled: memberships.length,
-      alreadyMember: existingMemberships.length,
-      committees: memberships.map(m => m.committee)
-    }, { status: 201 })
-  } catch (error) {
-    console.error('Error enrolling in committees:', error)
     return NextResponse.json(
-      { error: 'Failed to enroll in committees' },
-      { status: 500 }
+      {
+        message: 'Successfully enrolled in committees',
+        enrolled: memberships.length,
+        alreadyMember: existingMemberships.length,
+        committees: memberships.map((m) => m.committee),
+      },
+      { status: 201 }
     )
+  } catch (error) {
+    logError(error, { action: 'enroll_committees' })
+    return NextResponse.json({ error: 'Failed to enroll in committees' }, { status: 500 })
   }
 }
 
@@ -124,25 +122,22 @@ export async function GET() {
             name: true,
             slug: true,
             type: true,
-            description: true
-          }
-        }
+            description: true,
+          },
+        },
       },
-      orderBy: { joinedAt: 'asc' }
+      orderBy: { joinedAt: 'asc' },
     })
 
     return NextResponse.json({
-      committees: memberships.map(m => ({
+      committees: memberships.map((m) => ({
         ...m.committee,
         role: m.role,
-        joinedAt: m.joinedAt
-      }))
+        joinedAt: m.joinedAt,
+      })),
     })
   } catch (error) {
-    console.error('Error fetching enrollments:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch enrollments' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_enrollments' })
+    return NextResponse.json({ error: 'Failed to fetch enrollments' }, { status: 500 })
   }
 }

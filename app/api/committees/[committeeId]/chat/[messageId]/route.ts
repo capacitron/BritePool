@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { updateChatMessageSchema } from '@/lib/validations/committee'
+import { logError } from '@/lib/api-utils'
+import { z } from 'zod'
 
-// Update a chat message
+const updateMessageSchema = z.object({
+  content: z.string().min(1).max(5000),
+})
+
+// Admin roles that can delete any message
+const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
+
+// Update a chat message (author only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string; messageId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -17,31 +25,53 @@ export async function PATCH(
 
     const { committeeId, messageId } = await params
 
-    // Get the message
+    // Verify committee exists
+    const committee = await prisma.committee.findUnique({
+      where: { id: committeeId },
+    })
+
+    if (!committee) {
+      return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
+    }
+
+    // Check if user is a member of the committee
+    const membership = await prisma.committeeMember.findUnique({
+      where: {
+        userId_committeeId: {
+          userId: session.user.id,
+          committeeId,
+        },
+      },
+    })
+
+    if (!membership) {
+      return NextResponse.json({ error: 'You must be a member of this committee' }, { status: 403 })
+    }
+
+    // Find the message
     const message = await prisma.committeeChatMessage.findUnique({
       where: { id: messageId },
       include: {
-        chat: {
-          select: { committeeId: true }
-        }
-      }
+        chat: true,
+      },
     })
 
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
+    // Verify message belongs to this committee's chat
     if (message.chat.committeeId !== committeeId) {
-      return NextResponse.json({ error: 'Message does not belong to this committee' }, { status: 400 })
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
-    // Only author can edit
+    // Only the author can update their own message
     if (message.authorId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You can only edit your own messages' }, { status: 403 })
     }
 
     const body = await request.json()
-    const parsed = updateChatMessageSchema.safeParse(body)
+    const parsed = updateMessageSchema.safeParse(body)
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -50,35 +80,35 @@ export async function PATCH(
       )
     }
 
-    const updated = await prisma.committeeChatMessage.update({
+    const { content } = parsed.data
+
+    // Update the message
+    const updatedMessage = await prisma.committeeChatMessage.update({
       where: { id: messageId },
-      data: { content: parsed.data.content },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            role: true
-          }
-        }
-      }
+      data: { content },
     })
 
-    return NextResponse.json(updated)
+    // Fetch author info
+    const author = await prisma.user.findUnique({
+      where: { id: updatedMessage.authorId },
+      select: { id: true, name: true, email: true },
+    })
+
+    return NextResponse.json({
+      ...updatedMessage,
+      author,
+    })
   } catch (error) {
-    console.error('Error updating chat message:', error)
-    return NextResponse.json(
-      { error: 'Failed to update chat message' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_chat_message' })
+    return NextResponse.json({ error: 'Failed to update message' }, { status: 500 })
   }
 }
 
-// Delete a chat message (soft delete)
+// Delete a chat message (author or admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string; messageId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -88,43 +118,63 @@ export async function DELETE(
 
     const { committeeId, messageId } = await params
 
-    // Get the message
+    // Verify committee exists
+    const committee = await prisma.committee.findUnique({
+      where: { id: committeeId },
+    })
+
+    if (!committee) {
+      return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
+    }
+
+    // Check if user is a member of the committee
+    const membership = await prisma.committeeMember.findUnique({
+      where: {
+        userId_committeeId: {
+          userId: session.user.id,
+          committeeId,
+        },
+      },
+    })
+
+    if (!membership) {
+      return NextResponse.json({ error: 'You must be a member of this committee' }, { status: 403 })
+    }
+
+    // Find the message
     const message = await prisma.committeeChatMessage.findUnique({
       where: { id: messageId },
       include: {
-        chat: {
-          select: { committeeId: true }
-        }
-      }
+        chat: true,
+      },
     })
 
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
+    // Verify message belongs to this committee's chat
     if (message.chat.committeeId !== committeeId) {
-      return NextResponse.json({ error: 'Message does not belong to this committee' }, { status: 400 })
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
-    // Only author or admin can delete
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER', 'CONTENT_MODERATOR']
-    const isAdmin = adminRoles.includes(session.user.role)
+    // Check if user can delete the message
+    const isAuthor = message.authorId === session.user.id
+    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const isCommitteeLeader = membership.role === 'LEADER'
 
-    if (message.authorId !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!isAuthor && !isAdmin && !isCommitteeLeader) {
+      return NextResponse.json({ error: 'You can only delete your own messages' }, { status: 403 })
     }
 
-    await prisma.committeeChatMessage.update({
+    // Delete the message
+    await prisma.committeeChatMessage.delete({
       where: { id: messageId },
-      data: { isDeleted: true }
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting chat message:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete chat message' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_chat_message' })
+    return NextResponse.json({ error: 'Failed to delete message' }, { status: 500 })
   }
 }

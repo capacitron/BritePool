@@ -9,6 +9,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Forest Wealth Design System
+        cream: '#FFFBF5',
+        bark: '#3D3225',
+        forest: {
+          50: '#F0F5F1',
+          100: '#DCE8DE',
+          500: '#2D5A3D',
+          600: '#264D34',
+          700: '#1F402B',
+          800: '#183322',
+          900: '#112619',
+          950: '#0A1910',
+        },
+        sand: {
+          50: '#FDFBF7',
+          100: '#F7F3EB',
+          200: '#EDE6D9',
+          300: '#DDD3C0',
+          400: '#C9BBAA',
+        },
+        earth: {
+          500: '#8B6F47',
+          600: '#725A3A',
+        },
+        // Legacy colors
         'earth-brown': {
           DEFAULT: '#8B6F47',
           dark: '#6B5638',
@@ -68,6 +93,8 @@ module.exports = {
       fontFamily: {
         serif: ['Spectral', 'Georgia', 'serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

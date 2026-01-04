@@ -40,9 +40,9 @@ export default function ModerationPage() {
       const response = await fetch(`/api/admin/moderation?type=${type}&status=PENDING`)
       const data = await response.json()
 
-      if (response.ok) {
-        setItems(data.items)
-        setCounts(data.counts)
+      if (response.ok && data.success) {
+        setItems(data.data?.items || [])
+        setCounts(data.data?.counts || { forum: 0, media: 0, total: 0 })
       }
     } catch (error) {
       console.error('Error fetching moderation queue:', error)
@@ -66,25 +66,25 @@ export default function ModerationPage() {
         <TabsList>
           <TabsTrigger value="all" className="flex items-center space-x-2">
             <span>All</span>
-            {counts.total > 0 && (
+            {counts?.total > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {counts.total}
+                {counts?.total}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="forum" className="flex items-center space-x-2">
             <span>Forum Posts</span>
-            {counts.forum > 0 && (
+            {counts?.forum > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {counts.forum}
+                {counts?.forum}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="media" className="flex items-center space-x-2">
             <span>Media</span>
-            {counts.media > 0 && (
+            {counts?.media > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {counts.media}
+                {counts?.media}
               </Badge>
             )}
           </TabsTrigger>

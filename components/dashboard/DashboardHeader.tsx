@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
 import { signOut } from '@/lib/auth'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 interface DashboardHeaderProps {
   userName: string
@@ -46,17 +47,26 @@ export function DashboardHeader({ userName, userRole, userImage }: DashboardHead
           </div>
         </div>
 
-        <form
-          action={async () => {
-            'use server'
-            await signOut({ redirectTo: '/login' })
-          }}
-        >
-          <Button variant="ghost" size="sm" type="submit" className="text-forest-600 hover:text-forest-800 hover:bg-forest-50">
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+
+          <form
+            action={async () => {
+              'use server'
+              await signOut({ redirectTo: '/login' })
+            }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              type="submit"
+              className="text-forest-600 hover:text-forest-800 hover:bg-forest-50"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </form>
+        </div>
       </div>
     </header>
   )

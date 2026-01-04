@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateMediaSchema = z.object({
   filename: z.string().min(1).max(255).optional(),
-  category: z.enum(['PROJECT_PROGRESS', 'EVENTS', 'SANCTUARY_NATURE', 'CONSTRUCTION', 'COMMUNITY', 'AERIAL']).optional(),
+  category: z
+    .enum(['PROJECT_PROGRESS', 'EVENTS', 'SANCTUARY_NATURE', 'CONSTRUCTION', 'COMMUNITY', 'AERIAL'])
+    .optional(),
   tags: z.array(z.string()).optional(),
 })
 
@@ -17,7 +20,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,9 +31,9 @@ export async function GET(
       where: { id: itemId },
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     if (!mediaItem) {
@@ -39,11 +42,8 @@ export async function GET(
 
     return NextResponse.json(mediaItem)
   } catch (error) {
-    console.error('Error fetching media item:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch media item' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_media_item' })
+    return NextResponse.json({ error: 'Failed to fetch media item' }, { status: 500 })
   }
 }
 
@@ -53,7 +53,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -61,7 +61,7 @@ export async function PATCH(
     const { itemId } = await params
 
     const existingItem = await prisma.mediaItem.findUnique({
-      where: { id: itemId }
+      where: { id: itemId },
     })
 
     if (!existingItem) {
@@ -89,7 +89,7 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {}
-    
+
     if (parsed.data.filename) updateData.filename = parsed.data.filename
     if (parsed.data.category) updateData.category = parsed.data.category
     if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags
@@ -99,18 +99,15 @@ export async function PATCH(
       data: updateData,
       include: {
         uploadedBy: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json(mediaItem)
   } catch (error) {
-    console.error('Error updating media item:', error)
-    return NextResponse.json(
-      { error: 'Failed to update media item' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_media_item' })
+    return NextResponse.json({ error: 'Failed to update media item' }, { status: 500 })
   }
 }
 
@@ -120,7 +117,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -128,7 +125,7 @@ export async function DELETE(
     const { itemId } = await params
 
     const existingItem = await prisma.mediaItem.findUnique({
-      where: { id: itemId }
+      where: { id: itemId },
     })
 
     if (!existingItem) {
@@ -146,15 +143,12 @@ export async function DELETE(
     }
 
     await prisma.mediaItem.delete({
-      where: { id: itemId }
+      where: { id: itemId },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting media item:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete media item' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_media_item' })
+    return NextResponse.json({ error: 'Failed to delete media item' }, { status: 500 })
   }
 }

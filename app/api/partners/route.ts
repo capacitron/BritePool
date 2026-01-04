@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createPartnerSchema = z.object({
@@ -18,7 +19,7 @@ const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER', 'CONTENT_
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,11 +29,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
 
     const where: Record<string, unknown> = {}
-    
+
     if (category) {
       where.category = category
     }
-    
+
     if (status) {
       where.status = status
     } else {
@@ -41,23 +42,20 @@ export async function GET(request: NextRequest) {
 
     const partners = await prisma.partner.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json(partners)
   } catch (error) {
-    console.error('Error fetching partners:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch partners' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_partners' })
+    return NextResponse.json({ error: 'Failed to fetch partners' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -89,15 +87,12 @@ export async function POST(request: NextRequest) {
         email: parsed.data.email || null,
         category: parsed.data.category,
         status: parsed.data.status || 'PENDING',
-      }
+      },
     })
 
     return NextResponse.json(partner, { status: 201 })
   } catch (error) {
-    console.error('Error creating partner:', error)
-    return NextResponse.json(
-      { error: 'Failed to create partner' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_partner' })
+    return NextResponse.json({ error: 'Failed to create partner' }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createTaskSchema = z.object({
@@ -16,7 +17,7 @@ const createTaskSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,19 +29,19 @@ export async function GET(request: NextRequest) {
     const committeeId = searchParams.get('committeeId')
 
     const where: Record<string, unknown> = {}
-    
+
     if (status) {
       where.status = status
     }
-    
+
     if (priority) {
       where.priority = priority
     }
-    
+
     if (assignedToId) {
       where.assignedToId = assignedToId
     }
-    
+
     if (committeeId) {
       where.committeeId = committeeId
     }
@@ -49,33 +50,26 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         committee: {
-          select: { id: true, name: true, slug: true }
-        }
+          select: { id: true, name: true, slug: true },
+        },
       },
-      orderBy: [
-        { priority: 'desc' },
-        { dueDate: 'asc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
     })
 
     return NextResponse.json(tasks)
   } catch (error) {
-    console.error('Error fetching tasks:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_tasks' })
+    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -94,25 +88,19 @@ export async function POST(request: NextRequest) {
 
     if (assignedToId) {
       const user = await prisma.user.findUnique({
-        where: { id: assignedToId }
+        where: { id: assignedToId },
       })
       if (!user) {
-        return NextResponse.json(
-          { error: 'Assigned user not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Assigned user not found' }, { status: 404 })
       }
     }
 
     if (committeeId) {
       const committee = await prisma.committee.findUnique({
-        where: { id: committeeId }
+        where: { id: committeeId },
       })
       if (!committee) {
-        return NextResponse.json(
-          { error: 'Committee not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
       }
     }
 
@@ -128,20 +116,17 @@ export async function POST(request: NextRequest) {
       },
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         committee: {
-          select: { id: true, name: true, slug: true }
-        }
-      }
+          select: { id: true, name: true, slug: true },
+        },
+      },
     })
 
     return NextResponse.json(task, { status: 201 })
   } catch (error) {
-    console.error('Error creating task:', error)
-    return NextResponse.json(
-      { error: 'Failed to create task' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_task' })
+    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
   }
 }

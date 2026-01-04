@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateProfileSchema = z.object({
@@ -15,7 +16,7 @@ const updateProfileSchema = z.object({
 export async function GET() {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -54,18 +55,15 @@ export async function GET() {
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error('Error fetching profile:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_profile' })
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -122,10 +120,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error('Error updating profile:', error)
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_profile' })
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
   }
 }

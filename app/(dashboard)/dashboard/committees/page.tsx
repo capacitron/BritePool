@@ -15,6 +15,7 @@ import {
   FolderOpen,
   CheckCircle2,
 } from 'lucide-react'
+import { CommitteeCardSkeleton } from '@/components/ui/skeleton'
 
 interface Committee {
   id: string
@@ -60,8 +61,8 @@ export default function CommitteesPage() {
         const data = await res.json()
         setCommittees(data)
       }
-    } catch (error) {
-      console.error('Failed to fetch committees:', error)
+    } catch {
+      // Failed to fetch committees
     } finally {
       setLoading(false)
     }
@@ -76,8 +77,8 @@ export default function CommitteesPage() {
       if (res.ok) {
         await fetchCommittees()
       }
-    } catch (error) {
-      console.error('Failed to join committee:', error)
+    } catch {
+      // Failed to join committee
     } finally {
       setActionLoading(null)
     }
@@ -92,8 +93,8 @@ export default function CommitteesPage() {
       if (res.ok) {
         await fetchCommittees()
       }
-    } catch (error) {
-      console.error('Failed to leave committee:', error)
+    } catch {
+      // Failed to leave committee
     } finally {
       setActionLoading(null)
     }
@@ -101,8 +102,16 @@ export default function CommitteesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
+      <div className="space-y-8">
+        <div className="h-8 w-48 bg-sand-100 rounded animate-pulse" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CommitteeCardSkeleton />
+          <CommitteeCardSkeleton />
+          <CommitteeCardSkeleton />
+          <CommitteeCardSkeleton />
+          <CommitteeCardSkeleton />
+          <CommitteeCardSkeleton />
+        </div>
       </div>
     )
   }
@@ -134,10 +143,12 @@ export default function CommitteesPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={cn(
-                          'inline-block px-2 py-1 text-xs font-medium rounded-full font-body',
-                          committeeTypeColors[committee.type] || 'bg-sand-100 text-sand-800'
-                        )}>
+                        <span
+                          className={cn(
+                            'inline-block px-2 py-1 text-xs font-medium rounded-full font-body',
+                            committeeTypeColors[committee.type] || 'bg-sand-100 text-sand-800'
+                          )}
+                        >
                           {committee.type}
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-forest-100 text-forest-700 rounded-full font-body">
@@ -195,7 +206,10 @@ export default function CommitteesPage() {
                       )}
                     </Button>
                     <Link href={`/dashboard/committees/${committee.id}`} className="flex-1">
-                      <Button size="sm" className="w-full bg-forest-600 hover:bg-forest-700 text-white">
+                      <Button
+                        size="sm"
+                        className="w-full bg-forest-600 hover:bg-forest-700 text-white"
+                      >
                         Enter Committee
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
@@ -225,9 +239,7 @@ export default function CommitteesPage() {
           <Card className="border-sand-200">
             <CardContent className="py-8 text-center">
               <CheckCircle2 className="h-10 w-10 mx-auto text-forest-400 mb-3" />
-              <p className="text-forest-500 font-body">
-                You've joined all available committees!
-              </p>
+              <p className="text-forest-500 font-body">You've joined all available committees!</p>
             </CardContent>
           </Card>
         ) : (
@@ -240,10 +252,12 @@ export default function CommitteesPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className={cn(
-                        'inline-block px-2 py-1 text-xs font-medium rounded-full mb-2 font-body',
-                        committeeTypeColors[committee.type] || 'bg-sand-100 text-sand-800'
-                      )}>
+                      <span
+                        className={cn(
+                          'inline-block px-2 py-1 text-xs font-medium rounded-full mb-2 font-body',
+                          committeeTypeColors[committee.type] || 'bg-sand-100 text-sand-800'
+                        )}
+                      >
                         {committee.type}
                       </span>
                       <CardTitle className="text-xl font-display text-forest-800">

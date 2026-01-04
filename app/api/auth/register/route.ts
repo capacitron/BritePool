@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
 
 export async function POST(request: NextRequest) {
@@ -49,18 +50,15 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         message: 'Account created successfully. Please log in.',
-        userId: user.id 
+        userId: user.id,
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Registration error:', error)
-    return NextResponse.json(
-      { error: 'An error occurred during registration' },
-      { status: 500 }
-    )
+    logError(error, { action: 'user_registration' })
+    return NextResponse.json({ error: 'An error occurred during registration' }, { status: 500 })
   }
 }

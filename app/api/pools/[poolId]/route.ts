@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { updatePoolSchema } from '@/lib/validations/pool'
+import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { z } from 'zod'
 
-type CutWithPledges = {
-  id: string
-  color: string
-  overseerId: string
-  overseer: { id: string; name: string; email: string }
-  pledges: { id: string; amount: number; status: string; memberId: string }[]
-  _count: { pledges: number; invitations: number }
-}
+const updatePoolSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional().nullable(),
+  targetAmount: z.number().positive().optional(),
+  currentAmount: z.number().min(0).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'CLOSED', 'COMPLETED']).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional().nullable(),
+})
 
-// GET /api/pools/[poolId] - Get pool details
+// GET /api/pools/[poolId] - Get pool details with cuts
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ poolId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -30,86 +38,111 @@ export async function GET(
       include: {
         cuts: {
           include: {
-            overseer: {
-              select: { id: true, name: true, email: true }
-            },
-            pledges: {
-              where: { status: { not: 'CANCELLED' } },
-              select: { id: true, amount: true, status: true, memberId: true }
-            },
             _count: {
-              select: { pledges: true, invitations: true }
-            }
-          }
-        }
-      }
+              select: { pledges: true, invitations: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        _count: {
+          select: { cuts: true },
+        },
+      },
     })
 
     if (!pool) {
       return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
     }
 
-    // Calculate totals
-    const cutTotals = (pool.cuts as CutWithPledges[]).map((cut) => ({
-      ...cut,
-      total: cut.pledges.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0),
-      pledgeCount: cut._count.pledges,
-      invitationCount: cut._count.invitations
-    }))
-
-    const blueTotal = cutTotals.reduce((sum: number, cut: { total: number }) => sum + cut.total, 0)
-
-    return NextResponse.json({
-      ...pool,
-      cuts: cutTotals,
-      blueTotal,
-      progress: pool.goalAmount > 0 ? (blueTotal / pool.goalAmount) * 100 : 0
-    })
+    return NextResponse.json(pool)
   } catch (error) {
-    console.error('Error fetching pool:', error)
+    logError(error, { action: 'fetch_pool' })
     return NextResponse.json({ error: 'Failed to fetch pool' }, { status: 500 })
   }
 }
 
-// PATCH /api/pools/[poolId] - Update pool
+// PATCH /api/pools/[poolId] - Update pool (creator or admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ poolId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is BOARD_CHAIR or WEB_STEWARD
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
+    const { poolId } = await params
+
+    // Check if pool exists and get creator
+    const existingPool = await prisma.pool.findUnique({
+      where: { id: poolId },
+      select: { id: true, creatorId: true },
     })
 
-    if (!user || !['BOARD_CHAIR', 'WEB_STEWARD'].includes(user.role)) {
+    if (!existingPool) {
+      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+    }
+
+    // Only creator or admin can update
+    const isCreator = existingPool.creatorId === session.user.id
+    const userIsAdmin = isAdmin(session.user.role)
+
+    if (!isCreator && !userIsAdmin) {
       return NextResponse.json(
-        { error: 'Only Board Chairs and Web Stewards can update pools' },
+        { error: 'Forbidden: Only pool creator or admin can update' },
         { status: 403 }
       )
     }
 
-    const { poolId } = await params
     const body = await request.json()
-    const validatedData = updatePoolSchema.parse(body)
+    const parsed = updatePoolSchema.safeParse(body)
 
-    const pool = await prisma.pool.update({
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { name, description, targetAmount, currentAmount, status, startDate, endDate } =
+      parsed.data
+
+    const updateData: Record<string, unknown> = {}
+
+    if (name !== undefined) updateData.name = name
+    if (description !== undefined) updateData.description = description
+    if (targetAmount !== undefined) updateData.targetAmount = targetAmount
+    if (currentAmount !== undefined) updateData.currentAmount = currentAmount
+    if (status !== undefined) updateData.status = status
+    if (startDate !== undefined) updateData.startDate = new Date(startDate)
+    if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
+
+    const updatedPool = await prisma.pool.update({
       where: { id: poolId },
-      data: validatedData
+      data: updateData,
+      include: {
+        cuts: {
+          include: {
+            _count: {
+              select: { pledges: true, invitations: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        _count: {
+          select: { cuts: true },
+        },
+      },
     })
 
-    return NextResponse.json(pool)
+    return NextResponse.json(updatedPool)
   } catch (error) {
-    console.error('Error updating pool:', error)
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    logError(error, { action: 'update_pool' })
     return NextResponse.json({ error: 'Failed to update pool' }, { status: 500 })
   }
 }

@@ -1,13 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { updateDocumentSchema } from '@/lib/validations/committee'
+import { logError } from '@/lib/api-utils'
+import { z } from 'zod'
 
-// Get a specific document
+const updateDocumentSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  isPublic: z.boolean().optional(),
+  version: z.string().max(20).optional(),
+})
+
+// Helper to check if user is a committee member
+async function isCommitteeMember(userId: string, committeeId: string): Promise<boolean> {
+  const membership = await prisma.committeeMember.findUnique({
+    where: {
+      userId_committeeId: { userId, committeeId },
+    },
+  })
+  return !!membership
+}
+
+// Helper to check if user is admin
+function isAdmin(role: string): boolean {
+  const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
+  return adminRoles.includes(role)
+}
+
+// GET: Get a specific document
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string; documentId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -17,51 +41,41 @@ export async function GET(
 
     const { committeeId, documentId } = await params
 
-    // Check if user is a member
-    const membership = await prisma.committeeMember.findUnique({
+    // Fetch the document
+    const document = await prisma.committeeDocument.findFirst({
       where: {
-        userId_committeeId: {
-          userId: session.user.id,
-          committeeId
-        }
-      }
+        id: documentId,
+        committeeId,
+      },
     })
 
-    if (!membership) {
-      return NextResponse.json({ error: 'Not a member of this committee' }, { status: 403 })
+    if (!document) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    const document = await prisma.committeeDocument.findUnique({
-      where: { id: documentId },
-      include: {
-        uploadedBy: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    })
+    // Check access: member/admin can view all, non-members only public
+    const isMember = await isCommitteeMember(session.user.id, committeeId)
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!document || document.committeeId !== committeeId) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    if (!isMember && !userIsAdmin && !document.isPublic) {
+      return NextResponse.json(
+        { error: 'You do not have access to this document' },
+        { status: 403 }
+      )
     }
 
     return NextResponse.json(document)
   } catch (error) {
-    console.error('Error fetching document:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_committee_document' })
+    return NextResponse.json({ error: 'Failed to fetch document' }, { status: 500 })
   }
 }
 
-// Update a document
+// PATCH: Update a document (uploader or admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string; documentId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -71,20 +85,27 @@ export async function PATCH(
 
     const { committeeId, documentId } = await params
 
-    const document = await prisma.committeeDocument.findUnique({
-      where: { id: documentId }
+    // Fetch the document
+    const document = await prisma.committeeDocument.findFirst({
+      where: {
+        id: documentId,
+        committeeId,
+      },
     })
 
-    if (!document || document.committeeId !== committeeId) {
+    if (!document) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Only uploader or admin can update
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
-    const isAdmin = adminRoles.includes(session.user.role)
+    // Check permission: only uploader or admin can update
+    const userIsAdmin = isAdmin(session.user.role)
+    const isUploader = document.uploaderId === session.user.id
 
-    if (document.uploadedById !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!isUploader && !userIsAdmin) {
+      return NextResponse.json(
+        { error: 'Only the uploader or an admin can update this document' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -97,34 +118,44 @@ export async function PATCH(
       )
     }
 
-    const updated = await prisma.committeeDocument.update({
+    // Build update data
+    const updateData: {
+      title?: string
+      description?: string | null
+      isPublic?: boolean
+      version?: string
+    } = {}
+
+    if (parsed.data.title !== undefined) {
+      updateData.title = parsed.data.title
+    }
+    if (parsed.data.description !== undefined) {
+      updateData.description = parsed.data.description
+    }
+    if (parsed.data.isPublic !== undefined) {
+      updateData.isPublic = parsed.data.isPublic
+    }
+    if (parsed.data.version !== undefined) {
+      updateData.version = parsed.data.version
+    }
+
+    const updatedDocument = await prisma.committeeDocument.update({
       where: { id: documentId },
-      data: parsed.data,
-      include: {
-        uploadedBy: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
+      data: updateData,
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json(updatedDocument)
   } catch (error) {
-    console.error('Error updating document:', error)
-    return NextResponse.json(
-      { error: 'Failed to update document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_committee_document' })
+    return NextResponse.json({ error: 'Failed to update document' }, { status: 500 })
   }
 }
 
-// Delete a document
+// DELETE: Delete a document (uploader or admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string; documentId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -134,32 +165,36 @@ export async function DELETE(
 
     const { committeeId, documentId } = await params
 
-    const document = await prisma.committeeDocument.findUnique({
-      where: { id: documentId }
+    // Fetch the document
+    const document = await prisma.committeeDocument.findFirst({
+      where: {
+        id: documentId,
+        committeeId,
+      },
     })
 
-    if (!document || document.committeeId !== committeeId) {
+    if (!document) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Only uploader or admin can delete
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
-    const isAdmin = adminRoles.includes(session.user.role)
+    // Check permission: only uploader or admin can delete
+    const userIsAdmin = isAdmin(session.user.role)
+    const isUploader = document.uploaderId === session.user.id
 
-    if (document.uploadedById !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!isUploader && !userIsAdmin) {
+      return NextResponse.json(
+        { error: 'Only the uploader or an admin can delete this document' },
+        { status: 403 }
+      )
     }
 
     await prisma.committeeDocument.delete({
-      where: { id: documentId }
+      where: { id: documentId },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting document:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete document' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_committee_document' })
+    return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 })
   }
 }

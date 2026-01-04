@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 
 const defaultContractContent = `# BRITE POOL MINISTERIUM OF EMPOWERMENT
 ## MEMBERSHIP & PARTICIPATION AGREEMENT
@@ -150,7 +151,7 @@ export async function GET() {
           version: '1.0.0',
           content: defaultContractContent,
           isActive: true,
-        }
+        },
       })
     }
 
@@ -161,10 +162,7 @@ export async function GET() {
       publishedAt: contract.publishedAt,
     })
   } catch (error) {
-    console.error('Error fetching active contract:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch contract' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_active_contract' })
+    return NextResponse.json({ error: 'Failed to fetch contract' }, { status: 500 })
   }
 }

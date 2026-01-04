@@ -162,3 +162,52 @@ export async function logLoginFailed(email: string, request: Request) {
   // In a production system, you might want a separate table for failed login attempts
   console.log(`Failed login attempt for ${email} from ${getClientIp(request)}`)
 }
+
+export async function logUserUpdated(
+  adminId: string,
+  adminRole: UserRole,
+  targetUserId: string,
+  targetUserEmail: string,
+  changes: Record<string, { old: unknown; new: unknown }>,
+  request: Request
+) {
+  const changeDescriptions = Object.entries(changes)
+    .map(([field, { old: oldVal, new: newVal }]) => `${field}: ${oldVal} → ${newVal}`)
+    .join(', ')
+
+  return createAuditLog({
+    userId: adminId,
+    userRole: adminRole,
+    action: 'USER_UPDATED',
+    resourceType: 'USER',
+    resourceId: targetUserId,
+    description: `Updated user ${targetUserEmail}: ${changeDescriptions}`,
+    oldValue: Object.fromEntries(
+      Object.entries(changes).map(([k, v]) => [k, v.old])
+    ) as Prisma.InputJsonValue,
+    newValue: Object.fromEntries(
+      Object.entries(changes).map(([k, v]) => [k, v.new])
+    ) as Prisma.InputJsonValue,
+    ipAddress: getClientIp(request),
+    userAgent: getUserAgent(request),
+  })
+}
+
+export async function logUserSuspended(
+  adminId: string,
+  adminRole: UserRole,
+  targetUserId: string,
+  targetUserEmail: string,
+  request: Request
+) {
+  return createAuditLog({
+    userId: adminId,
+    userRole: adminRole,
+    action: 'USER_SUSPENDED',
+    resourceType: 'USER',
+    resourceId: targetUserId,
+    description: `Suspended user ${targetUserEmail}`,
+    ipAddress: getClientIp(request),
+    userAgent: getUserAgent(request),
+  })
+}

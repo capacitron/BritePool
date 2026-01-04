@@ -42,6 +42,21 @@ export const RateLimitConfigs = {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 100, // 100 requests per minute
   },
+  // Moderate limit for standard API operations (30 req/min)
+  moderate: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 30, // 30 requests per minute
+  },
+  // Strict limit for sensitive submissions (10 req/min)
+  submissions: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 10, // 10 requests per minute
+  },
+  // Lenient limit for realtime/SSE connections (60 req/min)
+  realtime: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 60, // 60 requests per minute
+  },
 } as const
 
 // Clean up expired entries periodically

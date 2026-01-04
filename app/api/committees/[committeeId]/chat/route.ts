@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { createChatMessageSchema } from '@/lib/validations/committee'
+import { logError } from '@/lib/api-utils'
+import { z } from 'zod'
+
+const createMessageSchema = z.object({
+  content: z.string().min(1).max(5000),
+  category: z.string().default('general'),
+})
 
 // Get chat messages for a committee
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -17,75 +23,77 @@ export async function GET(
 
     const { committeeId } = await params
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category') || 'GENERAL'
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const before = searchParams.get('before') // cursor for pagination
+    const category = searchParams.get('category') || 'general'
 
-    // Check if user is a member
+    // Verify committee exists
+    const committee = await prisma.committee.findUnique({
+      where: { id: committeeId },
+    })
+
+    if (!committee) {
+      return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
+    }
+
+    // Check if user is a member of the committee
     const membership = await prisma.committeeMember.findUnique({
       where: {
         userId_committeeId: {
           userId: session.user.id,
-          committeeId
-        }
-      }
+          committeeId,
+        },
+      },
     })
 
     if (!membership) {
-      return NextResponse.json({ error: 'Not a member of this committee' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'You must be a member of this committee to view chat' },
+        { status: 403 }
+      )
     }
 
-    // Get or create the chat for this category
-    let chat = await prisma.committeeChat.findUnique({
+    // Upsert chat - create if doesn't exist
+    const chat = await prisma.committeeChat.upsert({
       where: {
         committeeId_category: {
           committeeId,
-          category: category as any
-        }
-      }
-    })
-
-    if (!chat) {
-      chat = await prisma.committeeChat.create({
-        data: {
-          committeeId,
-          category: category as any
-        }
-      })
-    }
-
-    // Get messages
-    const messages = await prisma.committeeChatMessage.findMany({
-      where: {
-        chatId: chat.id,
-        isDeleted: false,
-        ...(before ? { createdAt: { lt: new Date(before) } } : {})
+          category,
+        },
       },
+      create: {
+        committeeId,
+        category,
+      },
+      update: {},
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            role: true
-          }
-        }
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 100, // Limit messages returned
+        },
       },
-      orderBy: { createdAt: 'desc' },
-      take: limit
     })
+
+    // Fetch author info for messages
+    const authorIds = [...new Set(chat.messages.map((m) => m.authorId))]
+    const authors = await prisma.user.findMany({
+      where: { id: { in: authorIds } },
+      select: { id: true, name: true, email: true },
+    })
+
+    const authorMap = new Map(authors.map((a) => [a.id, a]))
+
+    const messagesWithAuthors = chat.messages.map((message) => ({
+      ...message,
+      author: authorMap.get(message.authorId) || null,
+    }))
 
     return NextResponse.json({
       chatId: chat.id,
       category: chat.category,
-      messages: messages.reverse(), // Return in chronological order
-      hasMore: messages.length === limit
+      messages: messagesWithAuthors,
     })
   } catch (error) {
-    console.error('Error fetching chat messages:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch chat messages' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_committee_chat' })
+    return NextResponse.json({ error: 'Failed to fetch chat messages' }, { status: 500 })
   }
 }
 
@@ -93,7 +101,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ committeeId: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await auth()
 
@@ -103,22 +111,34 @@ export async function POST(
 
     const { committeeId } = await params
 
-    // Check if user is a member
+    // Verify committee exists
+    const committee = await prisma.committee.findUnique({
+      where: { id: committeeId },
+    })
+
+    if (!committee) {
+      return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
+    }
+
+    // Check if user is a member of the committee
     const membership = await prisma.committeeMember.findUnique({
       where: {
         userId_committeeId: {
           userId: session.user.id,
-          committeeId
-        }
-      }
+          committeeId,
+        },
+      },
     })
 
     if (!membership) {
-      return NextResponse.json({ error: 'Not a member of this committee' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'You must be a member of this committee to post messages' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
-    const parsed = createChatMessageSchema.safeParse(body)
+    const parsed = createMessageSchema.safeParse(body)
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -127,26 +147,22 @@ export async function POST(
       )
     }
 
-    const { content, category, attachmentUrl, attachmentName } = parsed.data
+    const { content, category } = parsed.data
 
-    // Get or create the chat for this category
-    let chat = await prisma.committeeChat.findUnique({
+    // Upsert chat - create if doesn't exist
+    const chat = await prisma.committeeChat.upsert({
       where: {
         committeeId_category: {
           committeeId,
-          category: category as any
-        }
-      }
+          category,
+        },
+      },
+      create: {
+        committeeId,
+        category,
+      },
+      update: {},
     })
-
-    if (!chat) {
-      chat = await prisma.committeeChat.create({
-        data: {
-          committeeId,
-          category: category as any
-        }
-      })
-    }
 
     // Create the message
     const message = await prisma.committeeChatMessage.create({
@@ -154,26 +170,24 @@ export async function POST(
         chatId: chat.id,
         authorId: session.user.id,
         content,
-        attachmentUrl,
-        attachmentName
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            role: true
-          }
-        }
-      }
     })
 
-    return NextResponse.json(message, { status: 201 })
-  } catch (error) {
-    console.error('Error creating chat message:', error)
+    // Fetch author info
+    const author = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true },
+    })
+
     return NextResponse.json(
-      { error: 'Failed to create chat message' },
-      { status: 500 }
+      {
+        ...message,
+        author,
+      },
+      { status: 201 }
     )
+  } catch (error) {
+    logError(error, { action: 'create_chat_message' })
+    return NextResponse.json({ error: 'Failed to create message' }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const createCommitteeSchema = z.object({
@@ -13,7 +14,7 @@ const createCommitteeSchema = z.object({
 export async function GET() {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -23,39 +24,36 @@ export async function GET() {
         members: {
           include: {
             user: {
-              select: { id: true, name: true, role: true }
-            }
-          }
+              select: { id: true, name: true, role: true },
+            },
+          },
         },
         _count: {
-          select: { members: true, tasks: true }
-        }
+          select: { members: true, tasks: true },
+        },
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     })
 
-    const formattedCommittees = committees.map(committee => ({
+    const formattedCommittees = committees.map((committee) => ({
       ...committee,
       memberCount: committee._count.members,
       taskCount: committee._count.tasks,
-      leader: committee.members.find(m => m.role === 'LEADER')?.user || null,
-      isMember: committee.members.some(m => m.userId === session.user.id),
+      leader: committee.members.find((m) => m.role === 'LEADER')?.user || null,
+      isMember: committee.members.some((m) => m.userId === session.user.id),
     }))
 
     return NextResponse.json(formattedCommittees)
   } catch (error) {
-    console.error('Error fetching committees:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch committees' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_committees' })
+    return NextResponse.json({ error: 'Failed to fetch committees' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
     const { name, slug, description, type } = parsed.data
 
     const existing = await prisma.committee.findFirst({
-      where: { OR: [{ name }, { slug }] }
+      where: { OR: [{ name }, { slug }] },
     })
 
     if (existing) {
@@ -92,17 +90,14 @@ export async function POST(request: NextRequest) {
       data: { name, slug, description, type },
       include: {
         _count: {
-          select: { members: true, tasks: true }
-        }
-      }
+          select: { members: true, tasks: true },
+        },
+      },
     })
 
     return NextResponse.json(committee, { status: 201 })
   } catch (error) {
-    console.error('Error creating committee:', error)
-    return NextResponse.json(
-      { error: 'Failed to create committee' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_committee' })
+    return NextResponse.json({ error: 'Failed to create committee' }, { status: 500 })
   }
 }

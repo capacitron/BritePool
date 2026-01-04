@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 
+// GET: Fetch user's notifications with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'notifications', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -11,47 +18,75 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const unreadOnly = searchParams.get('unreadOnly') === 'true'
-    const limit = parseInt(searchParams.get('limit') || '20', 10)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
+    const isReadFilter = searchParams.get('isRead')
 
-    const where: Record<string, unknown> = {
-      userId: session.user.id
+    const skip = (page - 1) * limit
+
+    // Build where clause
+    const where: { userId: string; isRead?: boolean } = {
+      userId: session.user.id,
     }
 
-    if (unreadOnly) {
+    // Filter by read status if provided
+    if (isReadFilter === 'true') {
+      where.isRead = true
+    } else if (isReadFilter === 'false') {
       where.isRead = false
     }
 
-    const notifications = await prisma.notification.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(limit, 100)
-    })
-
-    // Get unread count
-    const unreadCount = await prisma.notification.count({
-      where: {
-        userId: session.user.id,
-        isRead: false
-      }
-    })
+    // Fetch notifications and unread count in parallel
+    const [notifications, totalCount, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          message: true,
+          link: true,
+          isRead: true,
+          metadata: true,
+          createdAt: true,
+        },
+      }),
+      prisma.notification.count({ where }),
+      prisma.notification.count({
+        where: {
+          userId: session.user.id,
+          isRead: false,
+        },
+      }),
+    ])
 
     return NextResponse.json({
       notifications,
-      unreadCount
+      unreadCount,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: skip + notifications.length < totalCount,
+      },
     })
   } catch (error) {
-    console.error('Error fetching notifications:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_notifications' })
+    return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 })
   }
 }
 
-// Mark notifications as read
+// PATCH: Mark notifications as read
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'notifications', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -59,45 +94,57 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { notificationIds, markAllRead } = body
+    const { notificationIds, markAllRead } = body as {
+      notificationIds?: string[]
+      markAllRead?: boolean
+    }
 
-    if (markAllRead) {
-      // Mark all user's notifications as read
-      await prisma.notification.updateMany({
-        where: {
-          userId: session.user.id,
-          isRead: false
-        },
-        data: {
-          isRead: true,
-          readAt: new Date()
-        }
-      })
-    } else if (notificationIds && Array.isArray(notificationIds)) {
-      // Mark specific notifications as read
-      await prisma.notification.updateMany({
-        where: {
-          id: { in: notificationIds },
-          userId: session.user.id
-        },
-        data: {
-          isRead: true,
-          readAt: new Date()
-        }
-      })
-    } else {
+    // Validate input
+    if (
+      !markAllRead &&
+      (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0)
+    ) {
       return NextResponse.json(
-        { error: 'Either notificationIds or markAllRead is required' },
+        { error: 'Either notificationIds array or markAllRead must be provided' },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ success: true })
+    let updatedCount: number
+
+    if (markAllRead) {
+      // Mark all unread notifications as read for this user
+      const result = await prisma.notification.updateMany({
+        where: {
+          userId: session.user.id,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+        },
+      })
+      updatedCount = result.count
+    } else {
+      // Mark specific notifications as read (only if they belong to the user)
+      const result = await prisma.notification.updateMany({
+        where: {
+          id: { in: notificationIds },
+          userId: session.user.id,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+        },
+      })
+      updatedCount = result.count
+    }
+
+    return NextResponse.json({
+      success: true,
+      updatedCount,
+    })
   } catch (error) {
-    console.error('Error updating notifications:', error)
-    return NextResponse.json(
-      { error: 'Failed to update notifications' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_notifications' })
+    return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 })
   }
 }

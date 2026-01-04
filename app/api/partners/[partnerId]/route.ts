@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updatePartnerSchema = z.object({
@@ -9,7 +10,9 @@ const updatePartnerSchema = z.object({
   logo: z.string().url().optional().nullable(),
   website: z.string().url().optional().nullable(),
   email: z.string().email().optional().nullable(),
-  category: z.enum(['ADVISORY_BOARD', 'PRACTITIONER', 'SPONSOR', 'VENDOR', 'COLLABORATOR']).optional(),
+  category: z
+    .enum(['ADVISORY_BOARD', 'PRACTITIONER', 'SPONSOR', 'VENDOR', 'COLLABORATOR'])
+    .optional(),
   status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).optional(),
 })
 
@@ -21,7 +24,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -29,7 +32,7 @@ export async function GET(
     const { partnerId } = await params
 
     const partner = await prisma.partner.findUnique({
-      where: { id: partnerId }
+      where: { id: partnerId },
     })
 
     if (!partner) {
@@ -38,11 +41,8 @@ export async function GET(
 
     return NextResponse.json(partner)
   } catch (error) {
-    console.error('Error fetching partner:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch partner' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_partner' })
+    return NextResponse.json({ error: 'Failed to fetch partner' }, { status: 500 })
   }
 }
 
@@ -52,7 +52,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -68,7 +68,7 @@ export async function PATCH(
     const { partnerId } = await params
 
     const existingPartner = await prisma.partner.findUnique({
-      where: { id: partnerId }
+      where: { id: partnerId },
     })
 
     if (!existingPartner) {
@@ -86,7 +86,7 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {}
-    
+
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description
     if (parsed.data.logo !== undefined) updateData.logo = parsed.data.logo
@@ -97,16 +97,13 @@ export async function PATCH(
 
     const partner = await prisma.partner.update({
       where: { id: partnerId },
-      data: updateData
+      data: updateData,
     })
 
     return NextResponse.json(partner)
   } catch (error) {
-    console.error('Error updating partner:', error)
-    return NextResponse.json(
-      { error: 'Failed to update partner' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_partner' })
+    return NextResponse.json({ error: 'Failed to update partner' }, { status: 500 })
   }
 }
 
@@ -116,7 +113,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -132,7 +129,7 @@ export async function DELETE(
     const { partnerId } = await params
 
     const existingPartner = await prisma.partner.findUnique({
-      where: { id: partnerId }
+      where: { id: partnerId },
     })
 
     if (!existingPartner) {
@@ -140,15 +137,12 @@ export async function DELETE(
     }
 
     await prisma.partner.delete({
-      where: { id: partnerId }
+      where: { id: partnerId },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting partner:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete partner' },
-      { status: 500 }
-    )
+    logError(error, { action: 'delete_partner' })
+    return NextResponse.json({ error: 'Failed to delete partner' }, { status: 500 })
   }
 }

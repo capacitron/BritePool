@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { isAdmin } from '@/lib/auth/roles'
 
@@ -17,7 +18,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,15 +29,15 @@ export async function GET(
       where: { id: requestId },
       include: {
         submittedBy: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         resolvedBy: {
-          select: { id: true, name: true, role: true }
-        }
-      }
+          select: { id: true, name: true, role: true },
+        },
+      },
     })
 
     if (!maintenanceRequest) {
@@ -45,11 +46,8 @@ export async function GET(
 
     return NextResponse.json(maintenanceRequest)
   } catch (error) {
-    console.error('Error fetching maintenance request:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch maintenance request' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_maintenance_request' })
+    return NextResponse.json({ error: 'Failed to fetch maintenance request' }, { status: 500 })
   }
 }
 
@@ -59,14 +57,14 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true }
+      select: { role: true },
     })
 
     if (!user || !isAdmin(user.role)) {
@@ -76,7 +74,7 @@ export async function PATCH(
     const { requestId } = await params
 
     const existingRequest = await prisma.maintenanceRequest.findUnique({
-      where: { id: requestId }
+      where: { id: requestId },
     })
 
     if (!existingRequest) {
@@ -96,7 +94,7 @@ export async function PATCH(
     const { status, priority, assignedToId, resolutionNotes } = parsed.data
 
     const updateData: Record<string, unknown> = {}
-    
+
     if (priority !== undefined) {
       updateData.priority = priority
     }
@@ -104,13 +102,10 @@ export async function PATCH(
     if (assignedToId !== undefined) {
       if (assignedToId) {
         const assignee = await prisma.user.findUnique({
-          where: { id: assignedToId }
+          where: { id: assignedToId },
         })
         if (!assignee) {
-          return NextResponse.json(
-            { error: 'Assigned user not found' },
-            { status: 404 }
-          )
+          return NextResponse.json({ error: 'Assigned user not found' }, { status: 404 })
         }
         updateData.assignedToId = assignedToId
         updateData.assignedAt = new Date()
@@ -125,7 +120,7 @@ export async function PATCH(
 
     if (status !== undefined) {
       updateData.status = status
-      
+
       if (status === 'RESOLVED') {
         updateData.resolvedById = session.user.id
         updateData.resolvedAt = new Date()
@@ -148,23 +143,20 @@ export async function PATCH(
       data: updateData,
       include: {
         submittedBy: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         assignedTo: {
-          select: { id: true, name: true, role: true }
+          select: { id: true, name: true, role: true },
         },
         resolvedBy: {
-          select: { id: true, name: true, role: true }
-        }
-      }
+          select: { id: true, name: true, role: true },
+        },
+      },
     })
 
     return NextResponse.json(maintenanceRequest)
   } catch (error) {
-    console.error('Error updating maintenance request:', error)
-    return NextResponse.json(
-      { error: 'Failed to update maintenance request' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_maintenance_request' })
+    return NextResponse.json({ error: 'Failed to update maintenance request' }, { status: 500 })
   }
 }

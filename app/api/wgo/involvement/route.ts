@@ -1,31 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
-const createInvolvementSchema = z.object({
-  wgoId: z.string().min(1, 'WGO ID is required'),
-  proofType: z.enum(['LINK', 'IMAGE', 'BOTH']).default('LINK'),
-  proofUrl: z.string().url().optional().nullable(),
-  proofImageUrl: z.string().url().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  investedAmount: z.number().optional().nullable(),
-  joinedDate: z.string().datetime().optional().nullable(),
+const joinWGOSchema = z.object({
+  wgoId: z.string().min(1),
+  role: z.enum(['PARTICIPANT', 'OBSERVER']).optional().default('PARTICIPANT'),
 })
 
 const updateInvolvementSchema = z.object({
-  proofType: z.enum(['LINK', 'IMAGE', 'BOTH']).optional(),
-  proofUrl: z.string().url().optional().nullable(),
-  proofImageUrl: z.string().url().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  investedAmount: z.number().optional().nullable(),
-  joinedDate: z.string().datetime().optional().nullable(),
-  status: z.enum(['ACTIVE', 'PAUSED', 'EXITED']).optional(),
+  involvementId: z.string().min(1),
+  role: z.enum(['LEADER', 'COORDINATOR', 'PARTICIPANT', 'OBSERVER']).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).optional(),
 })
 
-// GET - List user's WGO involvements
+const leaveWGOSchema = z.object({
+  wgoId: z.string().min(1),
+})
+
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-involvement', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -33,20 +33,25 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId') || session.user.id
-    const status = searchParams.get('status')
+    const userId = searchParams.get('userId')
+    const wgoId = searchParams.get('wgoId')
 
-    // Users can only view their own involvements unless admin
-    const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const where: Record<string, unknown> = {}
 
-    if (userId !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only admins can view other users' involvements
+    if (userId && userId !== session.user.id) {
+      const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      where.userId = userId
+    } else if (!wgoId) {
+      // Default to current user's involvements
+      where.userId = session.user.id
     }
 
-    const where: Record<string, unknown> = { userId }
-    if (status) {
-      where.status = status
+    if (wgoId) {
+      where.wgoId = wgoId
     }
 
     const involvements = await prisma.userWGOInvolvement.findMany({
@@ -55,30 +60,33 @@ export async function GET(request: NextRequest) {
         wgo: {
           select: {
             id: true,
-            name: true,
-            logo: true,
+            title: true,
+            description: true,
             category: true,
             status: true,
-            riskTolerance: true,
-            website: true,
-            affiliateLink: true,
-            forumCategoryId: true,
-          }
-        }
+            targetAmount: true,
+            currentAmount: true,
+            creatorId: true,
+            createdAt: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { joinedAt: 'desc' },
     })
 
     return NextResponse.json(involvements)
   } catch (error) {
-    console.error('Error fetching involvements:', error)
+    logError(error, { action: 'fetch_involvements' })
     return NextResponse.json({ error: 'Failed to fetch involvements' }, { status: 500 })
   }
 }
 
-// POST - Create new involvement
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-involvement', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
@@ -86,193 +94,254 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validatedData = createInvolvementSchema.parse(body)
+    const parsed = joinWGOSchema.safeParse(body)
 
-    // Check WGO exists
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { wgoId, role } = parsed.data
+
+    // Check if WGO exists and is active
     const wgo = await prisma.wealthOpportunity.findUnique({
-      where: { id: validatedData.wgoId }
+      where: { id: wgoId },
     })
 
     if (!wgo) {
-      return NextResponse.json({ error: 'WGO not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
     }
 
-    // Check for existing involvement
-    const existing = await prisma.userWGOInvolvement.findUnique({
+    if (wgo.status !== 'ACTIVE' && wgo.status !== 'DRAFT') {
+      return NextResponse.json(
+        { error: 'Cannot join a WGO that is not active or in draft status' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user is already involved
+    const existingInvolvement = await prisma.userWGOInvolvement.findUnique({
       where: {
         userId_wgoId: {
           userId: session.user.id,
-          wgoId: validatedData.wgoId
-        }
-      }
+          wgoId,
+        },
+      },
     })
 
-    if (existing) {
-      return NextResponse.json({ error: 'Already involved in this WGO' }, { status: 400 })
+    if (existingInvolvement) {
+      return NextResponse.json({ error: 'You are already involved in this WGO' }, { status: 409 })
     }
 
     const involvement = await prisma.userWGOInvolvement.create({
       data: {
         userId: session.user.id,
-        wgoId: validatedData.wgoId,
-        proofType: validatedData.proofType,
-        proofUrl: validatedData.proofUrl || null,
-        proofImageUrl: validatedData.proofImageUrl || null,
-        notes: validatedData.notes || null,
-        investedAmount: validatedData.investedAmount || null,
-        joinedDate: validatedData.joinedDate ? new Date(validatedData.joinedDate) : null,
+        wgoId,
+        role,
+        status: 'ACTIVE',
       },
       include: {
         wgo: {
           select: {
             id: true,
-            name: true,
-            logo: true,
+            title: true,
             category: true,
             status: true,
-            riskTolerance: true,
-          }
-        }
-      }
-    })
-
-    // Increment total members count on WGO
-    await prisma.wealthOpportunity.update({
-      where: { id: validatedData.wgoId },
-      data: { totalMembers: { increment: 1 } }
+          },
+        },
+      },
     })
 
     return NextResponse.json(involvement, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
-    }
-    console.error('Error creating involvement:', error)
-    return NextResponse.json({ error: 'Failed to create involvement' }, { status: 500 })
+    logError(error, { action: 'join_wgo' })
+    return NextResponse.json({ error: 'Failed to join wealth opportunity' }, { status: 500 })
   }
 }
 
-// PATCH - Update involvement
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-involvement', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const involvementId = searchParams.get('id')
+    const body = await request.json()
+    const parsed = updateInvolvementSchema.safeParse(body)
 
-    if (!involvementId) {
-      return NextResponse.json({ error: 'Involvement ID required' }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
     }
 
+    const { involvementId, role, status } = parsed.data
+
+    // Get the involvement and check permissions
     const involvement = await prisma.userWGOInvolvement.findUnique({
-      where: { id: involvementId }
+      where: { id: involvementId },
+      include: {
+        wgo: {
+          include: {
+            involvements: {
+              where: { userId: session.user.id },
+            },
+          },
+        },
+      },
     })
 
     if (!involvement) {
       return NextResponse.json({ error: 'Involvement not found' }, { status: 404 })
     }
 
-    if (involvement.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Check if user has permission to update involvement
+    const userInvolvement = involvement.wgo.involvements[0]
+    const isCreator = involvement.wgo.creatorId === session.user.id
+    const isLeaderOrCoordinator =
+      userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
+    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const isOwnInvolvement = involvement.userId === session.user.id
+
+    // Users can only update their own status to INACTIVE (leaving)
+    if (isOwnInvolvement && !isCreator && !isLeaderOrCoordinator && !isAdmin) {
+      if (role || (status && status !== 'INACTIVE')) {
+        return NextResponse.json(
+          { error: 'Forbidden: You can only update your own status to leave' },
+          { status: 403 }
+        )
+      }
     }
 
-    const body = await request.json()
-    const validatedData = updateInvolvementSchema.parse(body)
+    // Only leaders, coordinators, and admins can change roles
+    if (role && !isCreator && !isLeaderOrCoordinator && !isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only leaders and coordinators can change roles' },
+        { status: 403 }
+      )
+    }
 
-    const wasActive = involvement.status === 'ACTIVE'
-    const willBeActive = validatedData.status === 'ACTIVE' || (!validatedData.status && wasActive)
-    const willBeExited = validatedData.status === 'EXITED'
+    // Cannot demote yourself if you're the only leader
+    if (isOwnInvolvement && role && role !== 'LEADER' && userInvolvement?.role === 'LEADER') {
+      const leaderCount = await prisma.userWGOInvolvement.count({
+        where: {
+          wgoId: involvement.wgoId,
+          role: 'LEADER',
+          status: 'ACTIVE',
+        },
+      })
 
-    const updated = await prisma.userWGOInvolvement.update({
+      if (leaderCount === 1) {
+        return NextResponse.json(
+          { error: 'Cannot demote yourself as the only leader. Assign another leader first.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (role) updateData.role = role
+    if (status) updateData.status = status
+
+    const updatedInvolvement = await prisma.userWGOInvolvement.update({
       where: { id: involvementId },
-      data: {
-        ...validatedData,
-        joinedDate: validatedData.joinedDate ? new Date(validatedData.joinedDate) : undefined,
-      },
+      data: updateData,
       include: {
         wgo: {
           select: {
             id: true,
-            name: true,
-            logo: true,
+            title: true,
             category: true,
             status: true,
-            riskTolerance: true,
-          }
-        }
-      }
+          },
+        },
+      },
     })
 
-    // Update member count if status changed
-    if (wasActive && willBeExited) {
-      await prisma.wealthOpportunity.update({
-        where: { id: involvement.wgoId },
-        data: { totalMembers: { decrement: 1 } }
-      })
-    } else if (!wasActive && willBeActive && involvement.status === 'EXITED') {
-      await prisma.wealthOpportunity.update({
-        where: { id: involvement.wgoId },
-        data: { totalMembers: { increment: 1 } }
-      })
-    }
-
-    return NextResponse.json(updated)
+    return NextResponse.json(updatedInvolvement)
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
-    }
-    console.error('Error updating involvement:', error)
+    logError(error, { action: 'update_involvement' })
     return NextResponse.json({ error: 'Failed to update involvement' }, { status: 500 })
   }
 }
 
-// DELETE - Remove involvement
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'wgo-involvement', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const involvementId = searchParams.get('id')
+    const body = await request.json()
+    const parsed = leaveWGOSchema.safeParse(body)
 
-    if (!involvementId) {
-      return NextResponse.json({ error: 'Involvement ID required' }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
     }
 
+    const { wgoId } = parsed.data
+
+    // Get user's involvement
     const involvement = await prisma.userWGOInvolvement.findUnique({
-      where: { id: involvementId }
+      where: {
+        userId_wgoId: {
+          userId: session.user.id,
+          wgoId,
+        },
+      },
+      include: {
+        wgo: true,
+      },
     })
 
     if (!involvement) {
-      return NextResponse.json({ error: 'Involvement not found' }, { status: 404 })
+      return NextResponse.json({ error: 'You are not involved in this WGO' }, { status: 404 })
     }
 
-    if (involvement.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Cannot leave if you're the only leader
+    if (involvement.role === 'LEADER') {
+      const leaderCount = await prisma.userWGOInvolvement.count({
+        where: {
+          wgoId,
+          role: 'LEADER',
+          status: 'ACTIVE',
+        },
+      })
+
+      if (leaderCount === 1) {
+        return NextResponse.json(
+          {
+            error:
+              'Cannot leave as the only leader. Assign another leader first or delete the WGO.',
+          },
+          { status: 400 }
+        )
+      }
     }
 
     await prisma.userWGOInvolvement.delete({
-      where: { id: involvementId }
+      where: { id: involvement.id },
     })
 
-    // Decrement member count if was active
-    if (involvement.status === 'ACTIVE') {
-      await prisma.wealthOpportunity.update({
-        where: { id: involvement.wgoId },
-        data: { totalMembers: { decrement: 1 } }
-      })
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'Successfully left the wealth opportunity' })
   } catch (error) {
-    console.error('Error deleting involvement:', error)
-    return NextResponse.json({ error: 'Failed to delete involvement' }, { status: 500 })
+    logError(error, { action: 'leave_wgo' })
+    return NextResponse.json({ error: 'Failed to leave wealth opportunity' }, { status: 500 })
   }
 }

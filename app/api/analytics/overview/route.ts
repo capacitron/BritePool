@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole } from '@prisma/client'
 
@@ -71,9 +72,12 @@ export async function GET() {
       }),
     ])
 
-    const growthRate = membersTwoMonthsAgo > 0
-      ? ((membersLastMonth - membersTwoMonthsAgo) / membersTwoMonthsAgo) * 100
-      : membersLastMonth > 0 ? 100 : 0
+    const growthRate =
+      membersTwoMonthsAgo > 0
+        ? ((membersLastMonth - membersTwoMonthsAgo) / membersTwoMonthsAgo) * 100
+        : membersLastMonth > 0
+          ? 100
+          : 0
 
     const formattedTopCommittees = topCommittees.map((committee) => ({
       id: committee.id,
@@ -82,7 +86,8 @@ export async function GET() {
       memberCount: committee._count.members,
       taskCount: committee._count.tasks,
       eventCount: committee._count.events,
-      activityScore: committee._count.members + committee._count.tasks * 2 + committee._count.events * 3,
+      activityScore:
+        committee._count.members + committee._count.tasks * 2 + committee._count.events * 3,
     }))
 
     const formattedSubscriptionBreakdown = subscriptionBreakdown.map((tier) => ({
@@ -95,19 +100,14 @@ export async function GET() {
       newMembersThisMonth: membersLastMonth,
       growthRate: Math.round(growthRate * 10) / 10,
       activeUsers,
-      activeUserPercentage: totalMembers > 0
-        ? Math.round((activeUsers / totalMembers) * 100)
-        : 0,
+      activeUserPercentage: totalMembers > 0 ? Math.round((activeUsers / totalMembers) * 100) : 0,
       totalParticipationHours: participationStats._sum.hours || 0,
       totalParticipationLogs: participationStats._count,
       topCommittees: formattedTopCommittees,
       subscriptionBreakdown: formattedSubscriptionBreakdown,
     })
   } catch (error) {
-    console.error('Error fetching analytics overview:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics overview' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_analytics_overview' })
+    return NextResponse.json({ error: 'Failed to fetch analytics overview' }, { status: 500 })
   }
 }

@@ -3,13 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getGreeting, formatDate, cn } from '@/lib/utils'
 import { getRoleBadgeStyles, getRoleDisplayName } from '@/lib/auth/roles'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   FileCheck,
@@ -22,6 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
+import { DashboardStats } from '@/components/dashboard/DashboardStats'
 
 export default async function DashboardPage({
   searchParams,
@@ -74,10 +69,13 @@ export default async function DashboardPage({
       {/* Hero Welcome Section */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-8 md:p-10 text-white">
         {/* Decorative pattern */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23fff' fill-opacity='0.5'/%3E%3C/svg%3E")`,
-          backgroundSize: '20px 20px'
-        }} />
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23fff' fill-opacity='0.5'/%3E%3C/svg%3E")`,
+            backgroundSize: '20px 20px',
+          }}
+        />
         <div className="absolute top-0 right-0 w-64 h-64 bg-earth-400/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-forest-400/10 rounded-full blur-2xl" />
 
@@ -103,12 +101,17 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* User Activity Stats */}
+      <DashboardStats userId={user.id} />
+
+      {/* Account Stats Grid */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-forest-500 to-forest-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-forest-600 font-body">Covenant Status</CardTitle>
+            <CardTitle className="text-sm font-medium text-forest-600 font-body">
+              Covenant Status
+            </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-forest-100 flex items-center justify-center group-hover:bg-forest-200 transition-colors">
               <FileCheck className="h-5 w-5 text-forest-600" />
             </div>
@@ -118,7 +121,9 @@ export default async function DashboardPage({
               <>
                 <div className="text-3xl font-display font-bold text-forest-700">Accepted</div>
                 <div className="mt-2 flex items-center gap-2 text-xs text-forest-500 font-body">
-                  <span className="px-2 py-0.5 bg-forest-100 rounded-full">v{user.covenantVersion || '1.0'}</span>
+                  <span className="px-2 py-0.5 bg-forest-100 rounded-full">
+                    v{user.covenantVersion || '1.0'}
+                  </span>
                   <span>{formatDate(user.covenantAcceptedAt)}</span>
                 </div>
               </>
@@ -134,7 +139,9 @@ export default async function DashboardPage({
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sand-500 to-sand-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-forest-600 font-body">Subscription</CardTitle>
+            <CardTitle className="text-sm font-medium text-forest-600 font-body">
+              Subscription
+            </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center group-hover:bg-sand-200 transition-colors">
               <CreditCard className="h-5 w-5 text-sand-700" />
             </div>
@@ -144,10 +151,14 @@ export default async function DashboardPage({
               {user.subscriptionTier.toLowerCase()}
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-xs font-medium font-body",
-                user.subscriptionStatus === 'ACTIVE' ? 'bg-forest-100 text-forest-700' : 'bg-earth-100 text-earth-700'
-              )}>
+              <span
+                className={cn(
+                  'px-2 py-0.5 rounded-full text-xs font-medium font-body',
+                  user.subscriptionStatus === 'ACTIVE'
+                    ? 'bg-forest-100 text-forest-700'
+                    : 'bg-earth-100 text-earth-700'
+                )}
+              >
                 {user.subscriptionStatus.toLowerCase()}
               </span>
             </div>
@@ -157,14 +168,17 @@ export default async function DashboardPage({
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-500 to-earth-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-forest-600 font-body">Participation</CardTitle>
+            <CardTitle className="text-sm font-medium text-forest-600 font-body">
+              Participation
+            </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-earth-100 flex items-center justify-center group-hover:bg-earth-200 transition-colors">
               <Clock className="h-5 w-5 text-earth-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-display font-bold text-forest-800">
-              {user.profile?.totalHoursLogged?.toFixed(1) || '0'} <span className="text-lg font-normal text-forest-500">hrs</span>
+              {user.profile?.totalHoursLogged?.toFixed(1) || '0'}{' '}
+              <span className="text-lg font-normal text-forest-500">hrs</span>
             </div>
             <div className="mt-2 flex items-center gap-2 text-xs font-body">
               <span className="text-forest-500">Equity Units:</span>
@@ -178,7 +192,9 @@ export default async function DashboardPage({
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative bg-gradient-to-br from-white to-sand-50">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-forest-600 to-forest-400" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-forest-600 font-body">Quick Actions</CardTitle>
+            <CardTitle className="text-sm font-medium text-forest-600 font-body">
+              Quick Actions
+            </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-forest-100 flex items-center justify-center group-hover:bg-forest-200 transition-colors">
               <Zap className="h-5 w-5 text-forest-600" />
             </div>
@@ -209,12 +225,14 @@ export default async function DashboardPage({
               <Users className="h-7 w-7 text-forest-600" />
             </div>
             <CardTitle className="text-xl">Committees</CardTitle>
-            <CardDescription>
-              Join and participate in community committees
-            </CardDescription>
+            <CardDescription>Join and participate in community committees</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="ghost" className="w-full justify-between group-hover:bg-forest-50 transition-colors">
+            <Button
+              asChild
+              variant="ghost"
+              className="w-full justify-between group-hover:bg-forest-50 transition-colors"
+            >
               <Link href="/dashboard/committees">
                 Explore Committees
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -230,12 +248,14 @@ export default async function DashboardPage({
               <Calendar className="h-7 w-7 text-earth-600" />
             </div>
             <CardTitle className="text-xl">Upcoming Events</CardTitle>
-            <CardDescription>
-              Workshops, meetings, and community gatherings
-            </CardDescription>
+            <CardDescription>Workshops, meetings, and community gatherings</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="ghost" className="w-full justify-between group-hover:bg-earth-50 transition-colors">
+            <Button
+              asChild
+              variant="ghost"
+              className="w-full justify-between group-hover:bg-earth-50 transition-colors"
+            >
               <Link href="/dashboard/events">
                 View Calendar
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -251,12 +271,14 @@ export default async function DashboardPage({
               <BookOpen className="h-7 w-7 text-sand-700" />
             </div>
             <CardTitle className="text-xl">Learning Center</CardTitle>
-            <CardDescription>
-              Courses and educational resources
-            </CardDescription>
+            <CardDescription>Courses and educational resources</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="ghost" className="w-full justify-between group-hover:bg-sand-100 transition-colors">
+            <Button
+              asChild
+              variant="ghost"
+              className="w-full justify-between group-hover:bg-sand-100 transition-colors"
+            >
               <Link href="/dashboard/courses">
                 Browse Courses
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />

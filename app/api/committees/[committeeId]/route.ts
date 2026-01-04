@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateCommitteeSchema = z.object({
@@ -14,7 +15,7 @@ export async function GET(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -27,30 +28,30 @@ export async function GET(
         members: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, role: true }
-            }
+              select: { id: true, name: true, email: true, role: true },
+            },
           },
-          orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }]
+          orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
         },
         tasks: {
           include: {
             assignedTo: {
-              select: { id: true, name: true }
-            }
+              select: { id: true, name: true },
+            },
           },
-          orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }]
+          orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
         },
         events: {
           where: {
-            startTime: { gte: new Date() }
+            startTime: { gte: new Date() },
           },
           orderBy: { startTime: 'asc' },
-          take: 10
+          take: 10,
         },
         _count: {
-          select: { members: true, tasks: true }
-        }
-      }
+          select: { members: true, tasks: true },
+        },
+      },
     })
 
     if (!committee) {
@@ -61,15 +62,12 @@ export async function GET(
       ...committee,
       memberCount: committee._count.members,
       taskCount: committee._count.tasks,
-      isMember: committee.members.some(m => m.userId === session.user.id),
-      userMembership: committee.members.find(m => m.userId === session.user.id) || null,
+      isMember: committee.members.some((m) => m.userId === session.user.id),
+      userMembership: committee.members.find((m) => m.userId === session.user.id) || null,
     })
   } catch (error) {
-    console.error('Error fetching committee:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch committee' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_committee' })
+    return NextResponse.json({ error: 'Failed to fetch committee' }, { status: 500 })
   }
 }
 
@@ -79,7 +77,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -106,17 +104,14 @@ export async function PATCH(
       data: parsed.data,
       include: {
         _count: {
-          select: { members: true, tasks: true }
-        }
-      }
+          select: { members: true, tasks: true },
+        },
+      },
     })
 
     return NextResponse.json(committee)
   } catch (error) {
-    console.error('Error updating committee:', error)
-    return NextResponse.json(
-      { error: 'Failed to update committee' },
-      { status: 500 }
-    )
+    logError(error, { action: 'update_committee' })
+    return NextResponse.json({ error: 'Failed to update committee' }, { status: 500 })
   }
 }

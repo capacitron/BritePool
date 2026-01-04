@@ -1,36 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { cookies } from 'next/headers'
+import { logError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   try {
-    // Debug: Check what cookies are available
-    const cookieStore = await cookies()
-    const allCookies = cookieStore.getAll()
-    const sessionCookie = allCookies.find(c => c.name.includes('authjs') || c.name.includes('next-auth'))
-
-    console.log('Contract accept - Cookies debug:', {
-      cookieCount: allCookies.length,
-      cookieNames: allCookies.map(c => c.name),
-      hasSessionCookie: !!sessionCookie,
-    })
-
     const session = await auth()
 
-    console.log('Contract accept - Session debug:', {
-      hasSession: !!session,
-      sessionKeys: session ? Object.keys(session) : [],
-      hasUser: !!session?.user,
-      userKeys: session?.user ? Object.keys(session.user) : [],
-      userId: session?.user?.id,
-    })
-
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in again.' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized. Please log in again.' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -44,9 +22,9 @@ export async function POST(request: NextRequest) {
     }
 
     const contract = await prisma.contractVersion.findFirst({
-      where: { 
+      where: {
         id: contractVersionId,
-        isActive: true 
+        isActive: true,
       },
     })
 
@@ -57,9 +35,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                      request.headers.get('x-real-ip') || 
-                      'unknown'
+    const ipAddress =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
 
     await prisma.user.update({
       where: { id: session.user.id },
@@ -75,10 +52,7 @@ export async function POST(request: NextRequest) {
       acceptedAt: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Error accepting contract:', error)
-    return NextResponse.json(
-      { error: 'Failed to accept contract' },
-      { status: 500 }
-    )
+    logError(error, { action: 'accept_contract' })
+    return NextResponse.json({ error: 'Failed to accept contract' }, { status: 500 })
   }
 }

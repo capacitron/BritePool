@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/api-utils'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
@@ -8,20 +9,14 @@ export async function POST(request: NextRequest) {
   const signature = request.headers.get('stripe-signature')
 
   if (!signature) {
-    return NextResponse.json(
-      { error: 'Missing stripe-signature header' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  
+
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set')
-    return NextResponse.json(
-      { error: 'Webhook secret not configured' },
-      { status: 500 }
-    )
+    logError(new Error('STRIPE_WEBHOOK_SECRET is not set'), { action: 'stripe_webhook' })
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
   }
 
   const stripe = getStripe()
@@ -30,11 +25,8 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (error) {
-    console.error('Webhook signature verification failed:', error)
-    return NextResponse.json(
-      { error: 'Webhook signature verification failed' },
-      { status: 400 }
-    )
+    logError(error, { action: 'stripe_webhook_signature_verification' })
+    return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 })
   }
 
   try {
@@ -52,7 +44,6 @@ export async function POST(request: NextRequest) {
               subscriptionStatus: 'ACTIVE',
             },
           })
-          console.log(`User ${userId} subscription activated: ${tier}`)
         }
         break
       }
@@ -63,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         if (userId) {
           let status: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'INACTIVE' = 'ACTIVE'
-          
+
           if (subscription.status === 'past_due') {
             status = 'PAST_DUE'
           } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
@@ -80,7 +71,6 @@ export async function POST(request: NextRequest) {
               subscriptionStatus: status,
             },
           })
-          console.log(`User ${userId} subscription status updated: ${status}`)
         }
         break
       }
@@ -97,21 +87,14 @@ export async function POST(request: NextRequest) {
               subscriptionStatus: 'CANCELLED',
             },
           })
-          console.log(`User ${userId} subscription cancelled, reverted to FREE`)
         }
         break
       }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook handler error:', error)
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 500 }
-    )
+    logError(error, { action: 'stripe_webhook_handler' })
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }

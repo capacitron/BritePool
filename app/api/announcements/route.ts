@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { logError } from '@/lib/api-utils'
 import { isAdmin } from '@/lib/auth/roles'
 import { UserRole, AnnouncementPriority } from '@prisma/client'
 import { z } from 'zod'
@@ -17,7 +18,7 @@ const createAnnouncementSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -33,19 +34,13 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {}
 
     if (!includeExpired) {
-      where.OR = [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ]
+      where.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
     }
 
     if (!isAdmin(userRole)) {
       where.AND = [
         {
-          OR: [
-            { targetRoles: { isEmpty: true } },
-            { targetRoles: { has: userRole } },
-          ],
+          OR: [{ targetRoles: { isEmpty: true } }, { targetRoles: { has: userRole } }],
         },
       ]
     }
@@ -55,11 +50,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: [
-          { isPinned: 'desc' },
-          { priority: 'asc' },
-          { publishedAt: 'desc' },
-        ],
+        orderBy: [{ isPinned: 'desc' }, { priority: 'asc' }, { publishedAt: 'desc' }],
       }),
       prisma.announcement.count({ where }),
     ])
@@ -74,18 +65,15 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching announcements:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch announcements' },
-      { status: 500 }
-    )
+    logError(error, { action: 'fetch_announcements' })
+    return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -120,10 +108,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(announcement, { status: 201 })
   } catch (error) {
-    console.error('Error creating announcement:', error)
-    return NextResponse.json(
-      { error: 'Failed to create announcement' },
-      { status: 500 }
-    )
+    logError(error, { action: 'create_announcement' })
+    return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 })
   }
 }

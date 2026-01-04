@@ -1,18 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createPledgeSchema, updatePledgeSchema } from '@/lib/validations/pool'
+import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { logError } from '@/lib/api-utils'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { z } from 'zod'
 
-type CutWithPledges = {
-  pledges: { amount: number }[]
-}
+const createPledgeSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+  notes: z.string().max(2000).optional(),
+})
 
-// GET /api/pools/cuts/[cutId]/pledges - List pledges
+const updatePledgeSchema = z.object({
+  amount: z.number().positive('Amount must be positive').optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'PAID', 'CANCELLED']).optional(),
+  notes: z.string().max(2000).optional(),
+})
+
+// GET /api/pools/cuts/[cutId]/pledges - List pledges for a cut
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ cutId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -20,234 +34,322 @@ export async function GET(
 
     const { cutId } = await params
 
-    // Verify cut exists and user is overseer
+    // Verify cut exists
     const cut = await prisma.poolCut.findUnique({
       where: { id: cutId },
-      select: { overseerId: true }
+      select: { id: true, poolId: true },
     })
 
     if (!cut) {
       return NextResponse.json({ error: 'Cut not found' }, { status: 404 })
     }
 
-    // Only overseer can see all pledges
-    if (cut.overseerId !== session.user.id) {
-      // Return only user's own pledge
-      const userPledge = await prisma.pledge.findUnique({
-        where: {
-          cutId_memberId: {
-            cutId,
-            memberId: session.user.id
-          }
-        }
-      })
-
-      return NextResponse.json(userPledge ? [userPledge] : [])
-    }
-
+    // Fetch pledges with user info
     const pledges = await prisma.pledge.findMany({
       where: { cutId },
       include: {
-        member: {
-          select: { id: true, name: true, email: true }
-        }
+        cut: {
+          select: {
+            id: true,
+            name: true,
+            minAmount: true,
+            maxAmount: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(pledges)
+    // Fetch user info separately to get name and email
+    const userIds = pledges.map((p) => p.userId)
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true },
+    })
+
+    const userMap = new Map(users.map((u) => [u.id, u]))
+
+    const pledgesWithUser = pledges.map((pledge) => ({
+      ...pledge,
+      user: userMap.get(pledge.userId) || { id: pledge.userId, name: 'Unknown', email: '' },
+    }))
+
+    return NextResponse.json({ pledges: pledgesWithUser })
   } catch (error) {
-    console.error('Error fetching pledges:', error)
+    logError(error, { action: 'fetch_pledges' })
     return NextResponse.json({ error: 'Failed to fetch pledges' }, { status: 500 })
   }
 }
 
-// POST /api/pools/cuts/[cutId]/pledges - Create pledge
+// POST /api/pools/cuts/[cutId]/pledges - Create a pledge
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ cutId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { cutId } = await params
-    const body = await request.json()
 
-    // Validate amount from body
-    const amount = body.amount
-    if (typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ error: 'Pledge amount must be a positive number' }, { status: 400 })
-    }
-
-    // Verify cut exists
+    // Verify cut exists and get constraints
     const cut = await prisma.poolCut.findUnique({
       where: { id: cutId },
-      include: { pool: true }
+      include: {
+        pool: {
+          select: { id: true, status: true },
+        },
+      },
     })
 
     if (!cut) {
       return NextResponse.json({ error: 'Cut not found' }, { status: 404 })
     }
 
-    if (cut.pool.status === 'CLOSED') {
-      return NextResponse.json({ error: 'This pool is closed' }, { status: 400 })
+    // Check if pool is active
+    if (cut.pool.status !== 'ACTIVE') {
+      return NextResponse.json(
+        { error: 'Cannot pledge to a pool that is not active' },
+        { status: 400 }
+      )
     }
 
-    // Check if user has accepted invitation or is overseer
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true }
-    })
-
-    const isOverseer = cut.overseerId === session.user.id
-
-    if (!isOverseer) {
-      const invitation = await prisma.poolInvitation.findFirst({
-        where: {
-          cutId,
-          invitedEmail: user?.email,
-          acceptedAt: { not: null }
-        }
-      })
-
-      if (!invitation) {
-        return NextResponse.json(
-          { error: 'You must verify your password before pledging' },
-          { status: 403 }
-        )
-      }
-    }
-
-    // Check if user already has a pledge
+    // Check for duplicate pledge (unique constraint on [cutId, userId])
     const existingPledge = await prisma.pledge.findUnique({
       where: {
-        cutId_memberId: {
+        cutId_userId: {
           cutId,
-          memberId: session.user.id
-        }
-      }
+          userId: session.user.id,
+        },
+      },
     })
 
     if (existingPledge) {
-      // Update existing pledge
-      const updatedPledge = await prisma.pledge.update({
-        where: { id: existingPledge.id },
-        data: { amount }
-      })
-
-      // Check if goal is reached
-      await checkAndUpdatePoolStatus(cut.poolId)
-
-      return NextResponse.json(updatedPledge)
+      return NextResponse.json(
+        { error: 'You have already made a pledge for this cut' },
+        { status: 409 }
+      )
     }
 
-    // Create new pledge
+    const body = await request.json()
+    const parsed = createPledgeSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { amount, notes } = parsed.data
+
+    // Validate amount against cut constraints
+    if (amount < cut.minAmount) {
+      return NextResponse.json(
+        { error: `Amount must be at least ${cut.minAmount}` },
+        { status: 400 }
+      )
+    }
+
+    if (cut.maxAmount !== null && amount > cut.maxAmount) {
+      return NextResponse.json({ error: `Amount cannot exceed ${cut.maxAmount}` }, { status: 400 })
+    }
+
     const pledge = await prisma.pledge.create({
       data: {
         cutId,
-        memberId: session.user.id,
-        amount
-      }
+        userId: session.user.id,
+        amount,
+        notes: notes || null,
+        status: 'PENDING',
+      },
+      include: {
+        cut: {
+          select: {
+            id: true,
+            name: true,
+            minAmount: true,
+            maxAmount: true,
+          },
+        },
+      },
     })
 
-    // Check if goal is reached
-    await checkAndUpdatePoolStatus(cut.poolId)
+    // Fetch user info
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true },
+    })
 
-    return NextResponse.json(pledge, { status: 201 })
+    return NextResponse.json({ ...pledge, user }, { status: 201 })
   } catch (error) {
-    console.error('Error creating pledge:', error)
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    logError(error, { action: 'create_pledge' })
     return NextResponse.json({ error: 'Failed to create pledge' }, { status: 500 })
   }
 }
 
-// PATCH /api/pools/cuts/[cutId]/pledges - Update pledge status
+// PATCH /api/pools/cuts/[cutId]/pledges - Update pledge status/amount
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ cutId: string }> }
 ) {
   try {
+    // Rate limit: 30 requests per minute
+    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { cutId } = await params
-    const { searchParams } = new URL(request.url)
-    const pledgeId = searchParams.get('pledgeId')
+
+    const body = await request.json()
+    const { pledgeId, ...updateData } = body
 
     if (!pledgeId) {
-      return NextResponse.json({ error: 'Pledge ID required' }, { status: 400 })
+      return NextResponse.json({ error: 'pledgeId is required' }, { status: 400 })
     }
 
-    // Verify user is overseer
-    const cut = await prisma.poolCut.findUnique({
-      where: { id: cutId },
-      select: { overseerId: true }
+    const parsed = updatePledgeSchema.safeParse(updateData)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { amount, status, notes } = parsed.data
+
+    // Fetch the pledge
+    const pledge = await prisma.pledge.findUnique({
+      where: { id: pledgeId },
+      include: {
+        cut: {
+          include: {
+            pool: {
+              select: { id: true, creatorId: true },
+            },
+          },
+        },
+      },
     })
 
-    if (!cut || cut.overseerId !== session.user.id) {
+    if (!pledge) {
+      return NextResponse.json({ error: 'Pledge not found' }, { status: 404 })
+    }
+
+    // Verify pledge belongs to the specified cut
+    if (pledge.cutId !== cutId) {
+      return NextResponse.json({ error: 'Pledge does not belong to this cut' }, { status: 400 })
+    }
+
+    const isOwner = pledge.userId === session.user.id
+    const userIsAdmin = isAdmin(session.user.role)
+    const isPoolCreator = pledge.cut.pool.creatorId === session.user.id
+
+    // Permission checks
+    if (!isOwner && !userIsAdmin && !isPoolCreator) {
       return NextResponse.json(
-        { error: 'Only the overseer can update pledge status' },
+        { error: 'Forbidden: You can only update your own pledges' },
         { status: 403 }
       )
     }
 
-    const body = await request.json()
-    const validatedData = updatePledgeSchema.parse(body)
+    // Owner can only update if status is PENDING
+    if (isOwner && !userIsAdmin && !isPoolCreator) {
+      if (pledge.status !== 'PENDING') {
+        return NextResponse.json(
+          { error: 'You can only update pledges with PENDING status' },
+          { status: 403 }
+        )
+      }
 
-    const pledge = await prisma.pledge.update({
+      // Owner cannot change status (only amount and notes)
+      if (status) {
+        return NextResponse.json(
+          { error: 'You cannot change the status of your own pledge' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Validate amount if provided
+    if (amount !== undefined) {
+      if (amount < pledge.cut.minAmount) {
+        return NextResponse.json(
+          { error: `Amount must be at least ${pledge.cut.minAmount}` },
+          { status: 400 }
+        )
+      }
+
+      if (pledge.cut.maxAmount !== null && amount > pledge.cut.maxAmount) {
+        return NextResponse.json(
+          { error: `Amount cannot exceed ${pledge.cut.maxAmount}` },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Build update data
+    const updatePayload: {
+      amount?: number
+      status?: 'PENDING' | 'CONFIRMED' | 'PAID' | 'CANCELLED'
+      notes?: string | null
+      paidAt?: Date | null
+    } = {}
+
+    if (amount !== undefined) {
+      updatePayload.amount = amount
+    }
+
+    if (status !== undefined) {
+      updatePayload.status = status
+      // Set paidAt when status changes to PAID
+      if (status === 'PAID') {
+        updatePayload.paidAt = new Date()
+      } else if (pledge.status === 'PAID') {
+        // Clear paidAt if status changes from PAID to something else
+        updatePayload.paidAt = null
+      }
+    }
+
+    if (notes !== undefined) {
+      updatePayload.notes = notes || null
+    }
+
+    const updatedPledge = await prisma.pledge.update({
       where: { id: pledgeId },
-      data: {
-        status: validatedData.status,
-        paymentRef: validatedData.paymentRef,
-        paidAt: validatedData.status === 'PAID' ? new Date() : undefined
-      }
+      data: updatePayload,
+      include: {
+        cut: {
+          select: {
+            id: true,
+            name: true,
+            minAmount: true,
+            maxAmount: true,
+          },
+        },
+      },
     })
 
-    return NextResponse.json(pledge)
+    // Fetch user info
+    const user = await prisma.user.findUnique({
+      where: { id: updatedPledge.userId },
+      select: { id: true, name: true, email: true },
+    })
+
+    return NextResponse.json({ ...updatedPledge, user })
   } catch (error) {
-    console.error('Error updating pledge:', error)
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Invalid input data' }, { status: 400 })
-    }
+    logError(error, { action: 'update_pledge' })
     return NextResponse.json({ error: 'Failed to update pledge' }, { status: 500 })
-  }
-}
-
-// Helper function to check and update pool status
-async function checkAndUpdatePoolStatus(poolId: string) {
-  const pool = await prisma.pool.findUnique({
-    where: { id: poolId },
-    include: {
-      cuts: {
-        include: {
-          pledges: {
-            where: { status: { not: 'CANCELLED' } }
-          }
-        }
-      }
-    }
-  })
-
-  if (!pool || pool.status !== 'OPEN') return
-
-  const totalPledged = (pool.cuts as CutWithPledges[]).reduce((sum: number, cut) =>
-    sum + cut.pledges.reduce((s: number, p: { amount: number }) => s + p.amount, 0), 0
-  )
-
-  if (totalPledged >= pool.goalAmount) {
-    await prisma.pool.update({
-      where: { id: poolId },
-      data: { status: 'GOAL_REACHED' }
-    })
-
-    // TODO: Send notifications to all pledgers
-    console.log(`Pool ${poolId} has reached its goal!`)
   }
 }

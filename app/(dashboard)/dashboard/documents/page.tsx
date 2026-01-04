@@ -56,7 +56,7 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -84,20 +84,23 @@ export default function DocumentsPage() {
         const data = await res.json()
         setDocuments(data)
       }
-    } catch (error) {
-      console.error('Error fetching documents:', error)
+    } catch {
+      // Failed to fetch documents
     } finally {
       setLoading(false)
     }
   }
 
-  const groupedDocuments = documents.reduce((acc, doc) => {
-    if (!acc[doc.category]) {
-      acc[doc.category] = []
-    }
-    acc[doc.category].push(doc)
-    return acc
-  }, {} as Record<string, Document[]>)
+  const groupedDocuments = documents.reduce(
+    (acc, doc) => {
+      if (!acc[doc.category]) {
+        acc[doc.category] = []
+      }
+      acc[doc.category].push(doc)
+      return acc
+    },
+    {} as Record<string, Document[]>
+  )
 
   return (
     <div className="space-y-6">
@@ -208,7 +211,9 @@ function DocumentCard({ document }: { document: Document }) {
                 {document.title}
               </Link>
               <div className="flex items-center gap-4 text-sm text-forest-500 mt-1 font-body">
-                <span className={`px-2 py-0.5 rounded-full text-xs border ${categoryColors[document.category]}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs border ${categoryColors[document.category]}`}
+                >
                   {document.category}
                 </span>
                 <span className="flex items-center gap-1">
@@ -219,9 +224,7 @@ function DocumentCard({ document }: { document: Document }) {
                   <Calendar className="h-3 w-3" />
                   {formatDate(document.createdAt)}
                 </span>
-                <span className="uppercase text-xs font-medium">
-                  {document.fileType}
-                </span>
+                <span className="uppercase text-xs font-medium">{document.fileType}</span>
               </div>
             </div>
           </div>
@@ -268,8 +271,7 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         const error = await res.json()
         alert(error.error || 'Failed to upload document')
       }
-    } catch (error) {
-      console.error('Error uploading document:', error)
+    } catch {
       alert('Failed to upload document')
     } finally {
       setSubmitting(false)
@@ -282,7 +284,9 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         <h2 className="text-xl font-semibold font-display text-forest-800 mb-4">Upload Document</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">Title</label>
+            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+              Title
+            </label>
             <input
               type="text"
               required
@@ -292,7 +296,9 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">Description</label>
+            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+              Description
+            </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -301,19 +307,25 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">Category</label>
+            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+              Category
+            </label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
             >
               {CATEGORIES.slice(1).map((cat) => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">File URL</label>
+            <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+              File URL
+            </label>
             <input
               type="url"
               required
@@ -325,7 +337,9 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1 font-body">File Type</label>
+              <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+                File Type
+              </label>
               <input
                 type="text"
                 required
@@ -335,18 +349,27 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1 font-body">File Size (bytes)</label>
+              <label className="block text-sm font-medium text-forest-700 mb-1 font-body">
+                File Size (bytes)
+              </label>
               <input
                 type="number"
                 required
                 value={formData.fileSize}
-                onChange={(e) => setFormData({ ...formData, fileSize: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fileSize: parseInt(e.target.value) || 0 })
+                }
                 className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
               />
             </div>
           </div>
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 border-forest-600 text-forest-700 hover:bg-forest-50">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 border-forest-600 text-forest-700 hover:bg-forest-50"
+            >
               Cancel
             </Button>
             <Button
