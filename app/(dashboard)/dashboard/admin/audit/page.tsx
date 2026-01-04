@@ -134,12 +134,15 @@ export default function AuditLogsPage() {
 
       <div className="bg-white p-4 rounded-lg border shadow-sm">
         <div className="flex flex-wrap gap-4">
-          <Select value={actionFilter} onValueChange={setActionFilter}>
+          <Select
+            value={actionFilter || 'all'}
+            onValueChange={(v) => setActionFilter(v === 'all' ? '' : v)}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All Actions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Actions</SelectItem>
+              <SelectItem value="all">All Actions</SelectItem>
               {ACTIONS.map((action) => (
                 <SelectItem key={action} value={action}>
                   {action.replace(/_/g, ' ')}
@@ -148,12 +151,15 @@ export default function AuditLogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={resourceTypeFilter} onValueChange={setResourceTypeFilter}>
+          <Select
+            value={resourceTypeFilter || 'all'}
+            onValueChange={(v) => setResourceTypeFilter(v === 'all' ? '' : v)}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Resources" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Resources</SelectItem>
+              <SelectItem value="all">All Resources</SelectItem>
               {RESOURCE_TYPES.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type.replace(/_/g, ' ')}
