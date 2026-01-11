@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => { setCovenantFilter(e.target.value); setPage(1); }}
                 className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
               >
-                <option value="">Covenant Status</option>
+                <option value="">Agreement Status</option>
                 <option value="accepted">Accepted</option>
                 <option value="pending">Pending</option>
               </select>
@@ -249,7 +249,7 @@ export default function AdminUsersPage() {
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Email</th>
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Role</th>
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Subscription</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Covenant</th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Agreement</th>
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Actions</th>
                   </tr>
                 </thead>

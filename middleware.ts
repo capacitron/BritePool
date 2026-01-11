@@ -35,14 +35,13 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
-  // Check covenant acceptance for authenticated users (NOT onboarding - handled by pages)
-  // TEMPORARILY DISABLED - Direct page access enabled
-  // if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
-  //   const covenantAccepted = req.auth?.user?.covenantAcceptedAt
-  //   if (!covenantAccepted) {
-  //     return NextResponse.redirect(new URL('/contract-review', nextUrl))
-  //   }
-  // }
+  // Check agreement acceptance for authenticated users (NOT onboarding - handled by pages)
+  if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
+    const agreementAcceptedAt = req.auth?.user?.covenantAcceptedAt
+    if (!agreementAcceptedAt) {
+      return NextResponse.redirect(new URL('/contract-review', nextUrl))
+    }
+  }
 
   return NextResponse.next()
 })

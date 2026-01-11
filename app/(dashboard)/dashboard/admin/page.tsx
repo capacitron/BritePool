@@ -81,7 +81,7 @@ export default async function AdminDashboardPage() {
 
         <Card className="border-sand-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-display text-forest-800">Pending Covenant</CardTitle>
+            <CardTitle className="text-sm font-medium font-display text-forest-800">Pending Agreement</CardTitle>
             <FileCheck className="h-4 w-4 text-earth-500" />
           </CardHeader>
           <CardContent>
@@ -146,7 +146,7 @@ export default async function AdminDashboardPage() {
                       {formatDate(user.createdAt)}
                     </p>
                     {user.covenantAcceptedAt ? (
-                      <span className="text-xs text-forest-600 font-medium font-body">Covenant Accepted</span>
+                      <span className="text-xs text-forest-600 font-medium font-body">Agreement Accepted</span>
                     ) : (
                       <span className="text-xs text-earth-500 font-medium font-body">Pending</span>
                     )}

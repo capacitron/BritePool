@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { logWGOCreated } from '@/lib/audit'
 import { z } from 'zod'
 
 const createWGOSchema = z.object({
@@ -166,6 +167,16 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Audit log WGO creation
+    await logWGOCreated(
+      session.user.id,
+      session.user.role,
+      wgo.id,
+      wgo.title,
+      wgo.category,
+      request
+    )
 
     return NextResponse.json(wgo, { status: 201 })
   } catch (error) {

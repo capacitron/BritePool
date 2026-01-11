@@ -158,9 +158,56 @@ export async function logLoginSuccess(userId: string, userRole: UserRole, reques
 }
 
 export async function logLoginFailed(email: string, request: Request) {
-  // For failed logins, we don't have a userId, so we create a minimal log
-  // In a production system, you might want a separate table for failed login attempts
-  console.log(`Failed login attempt for ${email} from ${getClientIp(request)}`)
+  return createAuditLog({
+    userId: 'anonymous',
+    userRole: 'RESIDENT',
+    action: 'LOGIN_FAILED',
+    resourceType: 'USER',
+    description: `Failed login attempt for ${email}`,
+    ipAddress: getClientIp(request),
+    userAgent: getUserAgent(request),
+  })
+}
+
+export async function logPoolCreated(
+  userId: string,
+  userRole: UserRole,
+  poolId: string,
+  poolName: string,
+  request: Request
+) {
+  return createAuditLog({
+    userId,
+    userRole,
+    action: 'POOL_CREATED',
+    resourceType: 'POOL',
+    resourceId: poolId,
+    description: `Created pool "${poolName}"`,
+    newValue: { name: poolName },
+    ipAddress: getClientIp(request),
+    userAgent: getUserAgent(request),
+  })
+}
+
+export async function logWGOCreated(
+  userId: string,
+  userRole: UserRole,
+  wgoId: string,
+  wgoTitle: string,
+  wgoCategory: string,
+  request: Request
+) {
+  return createAuditLog({
+    userId,
+    userRole,
+    action: 'WGO_CREATED',
+    resourceType: 'WGO',
+    resourceId: wgoId,
+    description: `Created wealth opportunity "${wgoTitle}"`,
+    newValue: { title: wgoTitle, category: wgoCategory },
+    ipAddress: getClientIp(request),
+    userAgent: getUserAgent(request),
+  })
 }
 
 export async function logUserUpdated(
