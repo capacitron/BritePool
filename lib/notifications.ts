@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { sendEmail } from './email'
+import { broadcastNotification } from '@/lib/realtime'
 import { NotificationType, Prisma } from '@prisma/client'
 
 // Environment configuration
@@ -326,6 +327,20 @@ export async function createNotification(
       metadata: metadata ? (metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
     },
   })
+
+  // Broadcast to user's real-time connection
+  try {
+    broadcastNotification(userId, {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      createdAt: notification.createdAt.toISOString(),
+    })
+  } catch (error) {
+    // Log but don't fail the notification creation
+    console.error('Failed to broadcast notification:', error)
+  }
 
   let emailSent = false
   let emailError: unknown = undefined

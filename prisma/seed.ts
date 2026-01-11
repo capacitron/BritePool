@@ -199,41 +199,38 @@ async function main() {
   }
 
   const committees = [
-    { name: 'Governance Board', slug: 'governance', type: 'GOVERNANCE' as const, description: 'Oversees organizational policies and strategic direction' },
-    { name: 'Wealth Board', slug: 'wealth', type: 'WEALTH' as const, description: 'Manages financial resources and investment strategies' },
-    { name: 'Education Board', slug: 'education', type: 'EDUCATION' as const, description: 'Develops learning programs and educational initiatives' },
-    { name: 'Health Board', slug: 'health', type: 'HEALTH' as const, description: 'Promotes wellness and healing practices' },
-    { name: 'Operations Board', slug: 'operations', type: 'OPERATIONS' as const, description: 'Coordinates daily activities and sanctuary management' },
+    { name: 'Board of Directors', type: 'GOVERNANCE' as const, description: 'Oversees organizational strategy and governance' },
+    { name: 'Operations Committee', type: 'OPERATIONS' as const, description: 'Manages day-to-day operations' },
+    { name: 'Community Outreach', type: 'COMMUNITY' as const, description: 'Builds community relationships' },
+    { name: 'Finance Committee', type: 'FINANCE' as const, description: 'Oversees financial planning and budgets' },
+    { name: 'Education Committee', type: 'EDUCATION' as const, description: 'Develops educational programs' },
   ]
 
   for (const committee of committees) {
-    const existing = await prisma.committee.findUnique({
-      where: { slug: committee.slug }
+    await prisma.committee.upsert({
+      where: { name: committee.name },
+      update: {},
+      create: committee,
     })
-    if (!existing) {
-      await prisma.committee.create({ data: committee })
-      console.log(`Created committee: ${committee.name}`)
-    }
   }
+  console.log('✓ Committees seeded')
 
-  const forumCategories = [
-    { name: 'General Discussion', slug: 'general-discussion', description: 'Open discussions about BRITE POOL and community topics' },
-    { name: 'Governance', slug: 'governance', description: 'Discussions about policies, procedures, and organizational decisions' },
-    { name: 'Wealth', slug: 'wealth', description: 'Financial strategies, investments, and resource management discussions' },
-    { name: 'Education', slug: 'education', description: 'Learning opportunities, courses, and educational resources' },
-    { name: 'Health', slug: 'health', description: 'Wellness practices, healing modalities, and health-related topics' },
-    { name: 'Operations', slug: 'operations', description: 'Day-to-day operations, sanctuary management, and logistics' },
+  const categories = [
+    { name: 'General Discussion', slug: 'general', description: 'Open discussion for all members' },
+    { name: 'Announcements', slug: 'announcements', description: 'Official announcements' },
+    { name: 'Help & Support', slug: 'help-support', description: 'Get help from the community' },
+    { name: 'Ideas & Suggestions', slug: 'ideas', description: 'Share your ideas' },
+    { name: 'Events', slug: 'events', description: 'Discuss upcoming events' },
   ]
 
-  for (const category of forumCategories) {
-    const existing = await prisma.forumCategory.findUnique({
-      where: { slug: category.slug }
+  for (const category of categories) {
+    await prisma.forumCategory.upsert({
+      where: { slug: category.slug },
+      update: {},
+      create: category,
     })
-    if (!existing) {
-      await prisma.forumCategory.create({ data: category })
-      console.log(`Created forum category: ${category.name}`)
-    }
   }
+  console.log('✓ Forum categories seeded')
 
   console.log('Seed completed!')
 }

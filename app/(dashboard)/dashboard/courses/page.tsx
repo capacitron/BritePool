@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
-import { BookOpen, Clock, User, Filter } from 'lucide-react'
+import { BookOpen, Clock, User, Filter, Plus } from 'lucide-react'
 import { CourseCardSkeleton } from '@/components/ui/skeleton'
+import { AddCourseModal } from '@/components/courses/AddCourseModal'
 
 interface Course {
   id: string
@@ -36,10 +39,17 @@ const CATEGORIES = [
 ]
 
 export default function CoursesPage() {
+  const router = useRouter()
+  const { data: session } = useSession()
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'browse' | 'my'>('browse')
   const [category, setCategory] = useState('ALL')
+  const [showAddModal, setShowAddModal] = useState(false)
+
+  const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR', 'CONTENT_MODERATOR'].includes(
+    session?.user?.role as string
+  )
 
   useEffect(() => {
     fetchCourses()
@@ -102,19 +112,30 @@ export default function CoursesPage() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-forest-500" />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="border border-sand-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
-          >
-            {CATEGORIES.map((cat) => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-forest-500" />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="border border-sand-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-forest-500 font-body"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {isAdmin && (
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="bg-forest-600 hover:bg-forest-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Course
+            </Button>
+          )}
         </div>
       </div>
 
@@ -218,6 +239,12 @@ export default function CoursesPage() {
           ))}
         </div>
       )}
+
+      <AddCourseModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   )
 }
