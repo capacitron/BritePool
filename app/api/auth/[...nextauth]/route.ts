@@ -7,12 +7,12 @@ export const runtime = 'nodejs'
 
 const originalPost = handlers.POST
 
-async function rateLimitedPost(request: NextRequest, context: { params: Promise<{ nextauth: string[] }> }) {
+async function rateLimitedPost(request: NextRequest) {
   // Apply rate limiting to login attempts
   const rateLimitResult = rateLimit(request, 'login', RateLimitConfigs.login)
   if (rateLimitResult) return rateLimitResult
 
-  return originalPost(request, context)
+  return originalPost(request)
 }
 
 export const GET = handlers.GET

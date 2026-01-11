@@ -5,6 +5,7 @@ interface MobileSidebarContextType {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   toggle: () => void
+  close: () => void
 }
 
 const MobileSidebarContext = createContext<MobileSidebarContextType | null>(null)
@@ -12,7 +13,7 @@ const MobileSidebarContext = createContext<MobileSidebarContextType | null>(null
 export function MobileSidebarProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   return (
-    <MobileSidebarContext.Provider value={{ isOpen, setIsOpen, toggle: () => setIsOpen(p => !p) }}>
+    <MobileSidebarContext.Provider value={{ isOpen, setIsOpen, toggle: () => setIsOpen(p => !p), close: () => setIsOpen(false) }}>
       {children}
     </MobileSidebarContext.Provider>
   )

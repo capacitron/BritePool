@@ -199,11 +199,11 @@ async function main() {
   }
 
   const committees = [
-    { name: 'Board of Directors', type: 'GOVERNANCE' as const, description: 'Oversees organizational strategy and governance' },
-    { name: 'Operations Committee', type: 'OPERATIONS' as const, description: 'Manages day-to-day operations' },
-    { name: 'Community Outreach', type: 'COMMUNITY' as const, description: 'Builds community relationships' },
-    { name: 'Finance Committee', type: 'FINANCE' as const, description: 'Oversees financial planning and budgets' },
-    { name: 'Education Committee', type: 'EDUCATION' as const, description: 'Develops educational programs' },
+    { name: 'Board of Directors', slug: 'board-of-directors', type: 'GOVERNANCE' as const, description: 'Oversees organizational strategy and governance' },
+    { name: 'Operations Committee', slug: 'operations-committee', type: 'OPERATIONS' as const, description: 'Manages day-to-day operations' },
+    { name: 'Wealth Building Committee', slug: 'wealth-building', type: 'WEALTH' as const, description: 'Develops wealth building opportunities' },
+    { name: 'Health & Wellness Committee', slug: 'health-wellness', type: 'HEALTH' as const, description: 'Promotes health and wellness initiatives' },
+    { name: 'Education Committee', slug: 'education-committee', type: 'EDUCATION' as const, description: 'Develops educational programs' },
   ]
 
   for (const committee of committees) {

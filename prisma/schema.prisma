@@ -759,6 +759,8 @@ enum AuditAction {
   PASSWORD_CHANGED
   PASSWORD_RESET
   FEATURE_FLAG_CHANGED
+  POOL_CREATED
+  WGO_CREATED
 }
 
 enum ResourceType {
