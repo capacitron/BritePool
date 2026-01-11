@@ -13,10 +13,6 @@ import {
 import { StatCard } from '@/components/analytics/StatCard'
 import { ChartPlaceholder } from '@/components/analytics/ChartPlaceholder'
 import {
-  Users,
-  TrendingUp,
-  Clock,
-  UserCheck,
   BookOpen,
   Calendar,
   MessageSquare,
@@ -108,7 +104,7 @@ export default async function AnalyticsDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          icon={Users}
+          iconName="Users"
           value={totalMembers}
           label="Total Members"
           change={{
@@ -117,19 +113,19 @@ export default async function AnalyticsDashboardPage() {
           }}
         />
         <StatCard
-          icon={UserCheck}
+          iconName="UserCheck"
           value={`${activeUserPercentage}%`}
           label="Active Users (30d)"
           iconClassName="bg-forest-100"
         />
         <StatCard
-          icon={Clock}
+          iconName="Clock"
           value={Math.round(participationStats._sum.hours || 0)}
           label="Participation Hours"
           iconClassName="bg-earth-100"
         />
         <StatCard
-          icon={TrendingUp}
+          iconName="TrendingUp"
           value={membersLastMonth}
           label="New This Month"
           change={{

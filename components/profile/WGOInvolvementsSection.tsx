@@ -161,9 +161,13 @@ export function WGOInvolvementsSection() {
     }
   }
 
+  // Ensure we have arrays before calling array methods
+  const safeInvolvements = Array.isArray(involvements) ? involvements : []
+  const safeAvailableWGOs = Array.isArray(availableWGOs) ? availableWGOs : []
+
   // Filter out already-involved WGOs
-  const involvedWgoIds = involvements.map(i => i.wgoId)
-  const availableToAdd = availableWGOs.filter(w => !involvedWgoIds.includes(w.id))
+  const involvedWgoIds = safeInvolvements.map(i => i.wgoId)
+  const availableToAdd = safeAvailableWGOs.filter(w => !involvedWgoIds.includes(w.id))
 
   if (loading) {
     return (
@@ -226,7 +230,7 @@ export function WGOInvolvementsSection() {
             </div>
           )}
 
-          {involvements.length === 0 ? (
+          {safeInvolvements.length === 0 ? (
             <div className="text-center py-8">
               <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <p className="text-forest-600 mb-4 font-body">No WGO involvements yet</p>
@@ -247,7 +251,7 @@ export function WGOInvolvementsSection() {
             </div>
           ) : (
             <div className="space-y-4">
-              {involvements.map((involvement) => (
+              {safeInvolvements.map((involvement) => (
                 <div
                   key={involvement.id}
                   className="flex items-start gap-4 p-4 bg-gradient-to-r from-forest-50 to-transparent rounded-lg border border-forest-100"
