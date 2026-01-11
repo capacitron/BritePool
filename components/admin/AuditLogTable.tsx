@@ -22,12 +22,12 @@ interface AuditLog {
   newValue: Record<string, unknown> | null
   ipAddress: string
   timestamp: string
-  user: {
+  user?: {
     id: string
     name: string
     email: string
-  }
-  userRole: UserRole
+  } | null
+  userRole?: UserRole | null
 }
 
 interface AuditLogTableProps {
@@ -96,8 +96,8 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium text-sm">{log.user.name}</p>
-                  <p className="text-xs text-muted-foreground">{log.userRole.replace(/_/g, ' ')}</p>
+                  <p className="font-medium text-sm">{log.user?.name ?? 'System'}</p>
+                  <p className="text-xs text-muted-foreground">{log.userRole?.replace(/_/g, ' ') ?? 'N/A'}</p>
                 </div>
               </TableCell>
               <TableCell>
