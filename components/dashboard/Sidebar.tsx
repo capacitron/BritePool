@@ -138,7 +138,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                     'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-earth-500 text-white'
-                      : 'text-earth-300 bg-earth-500/10 hover:bg-earth-500/20'
+                      : 'text-sand-200 bg-earth-500/10 hover:bg-earth-500/20 hover:text-white'
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -153,7 +153,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         {navGroups.map((group) => (
           <div key={group.title} className="mb-4">
             <div className="px-3 py-2">
-              <h3 className="text-xs font-semibold text-forest-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-sand-400 uppercase tracking-wider">
                 {group.title}
               </h3>
             </div>
@@ -169,8 +169,8 @@ export function Sidebar({ userRole }: SidebarProps) {
                   className={cn(
                     'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors font-body',
                     isActive
-                      ? 'bg-forest-600 text-sand-100'
-                      : 'text-forest-200 hover:bg-forest-800 hover:text-sand-100'
+                      ? 'bg-forest-600 text-sand-50'
+                      : 'text-sand-200 hover:bg-forest-700 hover:text-sand-50'
                   )}
                 >
                   <Icon className="h-5 w-5" />
