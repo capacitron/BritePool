@@ -24,6 +24,11 @@ export default auth((req) => {
 
   // Redirect logged in users away from auth routes
   if (isAuthRoute && isLoggedIn) {
+    // Redirect admins to admin dashboard
+    const userRole = req.auth?.user?.role
+    if (userRole === 'WEB_STEWARD' || userRole === 'BOARD_CHAIR') {
+      return NextResponse.redirect(new URL('/dashboard/admin', nextUrl))
+    }
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 

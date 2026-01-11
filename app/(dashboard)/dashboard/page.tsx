@@ -55,10 +55,12 @@ export default async function DashboardPage({
 
   // Check if onboarding is completed - redirect if not
   // Skip check if user just completed onboarding (prevents redirect loop)
+  // Skip for admin users (WEB_STEWARD, BOARD_CHAIR)
   const params = await searchParams
   const justCompletedOnboarding = params?.onboarding_complete === 'true'
+  const isAdminUser = user.role === 'WEB_STEWARD' || user.role === 'BOARD_CHAIR'
 
-  if (!user.onboardingCompleted && !justCompletedOnboarding) {
+  if (!user.onboardingCompleted && !justCompletedOnboarding && !isAdminUser) {
     redirect('/onboarding')
   }
 

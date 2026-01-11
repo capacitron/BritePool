@@ -7,7 +7,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card'
 import { loginSchema, type LoginInput } from '@/lib/validations/auth'
 
 export default function LoginPage() {
@@ -51,7 +58,15 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        router.push('/dashboard')
+        // Check if user is admin and redirect accordingly
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const role = session?.user?.role
+        if (role === 'WEB_STEWARD' || role === 'BOARD_CHAIR') {
+          router.push('/dashboard/admin')
+        } else {
+          router.push('/dashboard')
+        }
         router.refresh()
       }
     } catch (err) {
@@ -65,9 +80,7 @@ export default function LoginPage() {
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle>Welcome Back</CardTitle>
-        <CardDescription>
-          Sign in to your BRITE POOL account
-        </CardDescription>
+        <CardDescription>Sign in to your BRITE POOL account</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
@@ -111,7 +124,10 @@ export default function LoginPage() {
           </Button>
           <p className="text-sm text-forest-600 text-center font-body">
             Don't have an account?{' '}
-            <Link href="/register" className="text-forest-700 hover:text-forest-800 hover:underline font-medium">
+            <Link
+              href="/register"
+              className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
+            >
               Create one
             </Link>
           </p>
