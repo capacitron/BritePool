@@ -119,22 +119,20 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
       <div
         className="fixed inset-0 z-40 bg-black/50 md:hidden"
         onClick={close}
-        aria-hidden="true"
       />
 
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-forest-900 md:hidden flex flex-col animate-in slide-in-from-left duration-300">
+      <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-forest-900 md:hidden flex flex-col">
         <div className="p-6 border-b border-forest-700 flex items-center justify-between">
-          <Link href="/dashboard" className="block" onClick={close}>
+          <div>
             <h1 className="text-xl font-display font-bold text-sand-100">BRITE POOL</h1>
-            <p className="text-xs text-forest-300 mt-1 font-body">Ministerium of Empowerment</p>
-          </Link>
+            <p className="text-xs text-forest-300 mt-1">Ministerium of Empowerment</p>
+          </div>
           <Button
             variant="ghost"
-            size="icon"
-            className="text-sand-100 hover:bg-forest-800"
+            size="sm"
             onClick={close}
-            aria-label="Close menu"
+            className="text-forest-300 hover:text-sand-100 hover:bg-forest-800"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -151,7 +149,7 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
               {adminNavItems.map((item) => {
                 const isActive =
                   pathname === item.href ||
-                  (item.href === '/dashboard/admin' && pathname.startsWith('/dashboard/admin'))
+                  (item.href !== '/dashboard/admin' && pathname.startsWith(item.href + '/'))
                 const Icon = item.icon
 
                 return (
@@ -183,7 +181,9 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
                 </h3>
               </div>
               {group.items.map((item) => {
-                const isActive = pathname === item.href
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
                 const Icon = item.icon
 
                 return (
@@ -192,7 +192,7 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
                     href={item.href}
                     onClick={close}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors font-body',
+                      'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-forest-600 text-sand-100'
                         : 'text-forest-200 hover:bg-forest-800 hover:text-sand-100'
@@ -208,7 +208,7 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
         </nav>
 
         <div className="p-4 border-t border-forest-700">
-          <p className="text-xs text-forest-400 text-center font-body">&copy; 2024 BRITE POOL</p>
+          <p className="text-xs text-forest-400 text-center">© 2024 BRITE POOL</p>
         </div>
       </aside>
     </>

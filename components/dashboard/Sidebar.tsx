@@ -24,6 +24,10 @@ import {
   Bell,
   Wallet,
   Globe,
+  Shield,
+  ClipboardList,
+  Megaphone,
+  BarChart3,
 } from 'lucide-react'
 
 interface NavItem {
@@ -86,6 +90,11 @@ const navGroups: NavGroup[] = [
 
 const adminNavItems: NavItem[] = [
   { href: '/dashboard/admin', label: 'Admin Panel', icon: Settings },
+  { href: '/dashboard/admin/users', label: 'Users', icon: Users },
+  { href: '/dashboard/admin/moderation', label: 'Moderation', icon: Shield },
+  { href: '/dashboard/admin/announcements', label: 'Announcements', icon: Megaphone },
+  { href: '/dashboard/admin/audit', label: 'Audit Log', icon: ClipboardList },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ]
 
 const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
@@ -118,7 +127,7 @@ export function Sidebar({ userRole }: SidebarProps) {
             {adminNavItems.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href === '/dashboard/admin' && pathname.startsWith('/dashboard/admin'))
+                (item.href !== '/dashboard/admin' && pathname.startsWith(item.href + '/'))
               const Icon = item.icon
 
               return (
