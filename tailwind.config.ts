@@ -68,6 +68,65 @@ const config: Config = {
         'warm-md': '0 10px 15px -3px rgba(61, 48, 40, 0.08), 0 4px 6px -2px rgba(61, 48, 40, 0.04)',
         'warm-lg': '0 20px 25px -5px rgba(61, 48, 40, 0.10), 0 10px 10px -5px rgba(61, 48, 40, 0.04)',
         'forest': '0 4px 14px -3px rgba(50, 76, 58, 0.15)',
+        'glow-forest': '0 0 20px rgba(79, 118, 88, 0.25)',
+        'glow-earth': '0 0 20px rgba(226, 109, 74, 0.25)',
+        'inner-warm': 'inset 0 2px 4px 0 rgba(61, 48, 40, 0.06)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
+        'fade-up': 'fadeUp 0.6s ease-out forwards',
+        'scale-in': 'scaleIn 0.4s ease-out forwards',
+        'slide-in-left': 'slideInLeft 0.5s ease-out forwards',
+        'slide-in-right': 'slideInRight 0.5s ease-out forwards',
+        'shimmer': 'shimmer 1.5s infinite',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'botanical-drift': 'botanical-drift 20s linear infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        fadeUp: {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          from: { opacity: '0', transform: 'scale(0.95)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        slideInLeft: {
+          from: { opacity: '0', transform: 'translateX(-20px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        slideInRight: {
+          from: { opacity: '0', transform: 'translateX(20px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        'botanical-drift': {
+          '0%': { backgroundPosition: '0% 0%' },
+          '100%': { backgroundPosition: '100% 100%' },
+        },
+      },
+      transitionTimingFunction: {
+        'botanical': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'bounce-soft': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+      backdropBlur: {
+        xs: '2px',
       },
     },
   },

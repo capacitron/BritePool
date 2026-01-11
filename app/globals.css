@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Forest Wealth Design System - Base Styles */
+  /* Forest Wealth Design System - Botanical Luxury */
 
   /* All headlines use Playfair Display */
   h1,
@@ -19,63 +19,147 @@
   p {
     @apply leading-relaxed;
   }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection color - using direct values for pseudo-element compatibility */
+  ::selection {
+    background-color: #c2d1c6; /* forest-200 */
+    color: #243329; /* forest-900 */
+  }
 }
 
 @layer components {
-  /* Primary Button */
+  /* Primary Button - Botanical luxury with subtle depth */
   .btn-primary {
-    @apply px-8 py-4 bg-forest-600 hover:bg-forest-700 text-sand-50 rounded-lg font-medium transition-colors;
+    @apply px-8 py-4 bg-forest-600 text-sand-50 rounded-lg font-medium;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-forest-700 hover:shadow-lg hover:shadow-forest-600/25;
+    @apply active:scale-[0.98] active:shadow-md;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2;
+    background-image: linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, transparent 50%);
   }
 
-  /* Secondary Button */
+  /* Secondary Button - Refined earth tones */
   .btn-secondary {
-    @apply px-8 py-4 bg-sand-100 hover:bg-sand-200 text-forest-800 border border-sand-300 rounded-lg font-medium transition-colors;
+    @apply px-8 py-4 bg-sand-100 text-forest-800 border border-sand-300 rounded-lg font-medium;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-sand-200 hover:border-sand-400 hover:shadow-md;
+    @apply active:scale-[0.98];
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2;
   }
 
-  /* Accent/CTA Button */
+  /* Accent/CTA Button - Warm earth with glow */
   .btn-accent {
-    @apply px-8 py-4 bg-earth-500 hover:bg-earth-600 text-white rounded-lg font-medium transition-colors;
+    @apply px-8 py-4 bg-earth-500 text-white rounded-lg font-medium;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-earth-600 hover:shadow-lg hover:shadow-earth-500/30;
+    @apply active:scale-[0.98] active:shadow-md;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-earth-400 focus-visible:ring-offset-2;
+    background-image: linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, transparent 50%);
   }
 
-  /* Card Component */
+  /* Ghost Button - Minimal botanical elegance */
+  .btn-ghost {
+    @apply px-8 py-4 text-forest-700 rounded-lg font-medium;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-forest-50 hover:text-forest-800;
+    @apply active:scale-[0.98];
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2;
+  }
+
+  /* Card Component - Layered depth with botanical warmth */
   .card {
-    @apply bg-white rounded-2xl p-8 border border-sand-200 hover:shadow-lg transition-shadow;
+    @apply bg-white rounded-2xl p-8 border border-sand-200;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:shadow-xl hover:shadow-forest-900/5 hover:border-sand-300;
+    @apply hover:-translate-y-0.5;
   }
 
   /* Card on sand background */
   .card-sand {
-    @apply bg-sand-100 rounded-2xl p-8 border border-sand-200 hover:shadow-lg transition-shadow;
+    @apply bg-sand-100 rounded-2xl p-8 border border-sand-200;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:shadow-xl hover:shadow-forest-900/5 hover:border-sand-300;
+    @apply hover:-translate-y-0.5;
   }
 
-  /* Input Field */
+  /* Elevated Card - Premium floating effect */
+  .card-elevated {
+    @apply bg-white rounded-2xl p-8 border border-sand-100;
+    @apply shadow-lg shadow-forest-900/5;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:shadow-2xl hover:shadow-forest-900/10;
+    @apply hover:-translate-y-1;
+  }
+
+  /* Input Field - Refined with focus glow */
   .input-field {
-    @apply w-full px-5 py-4 rounded-xl border border-sand-300 bg-cream focus:outline-none focus:ring-2 focus:ring-forest-500 font-body transition-all;
+    @apply w-full px-5 py-4 rounded-xl border border-sand-300 bg-cream font-body;
+    @apply transition-all duration-200 ease-out;
+    @apply focus:outline-none focus:border-forest-400 focus:ring-4 focus:ring-forest-500/10;
+    @apply placeholder:text-forest-400/60;
   }
 
   /* Section with forest tint */
   .section-forest {
     @apply bg-forest-50;
+    background-image: radial-gradient(ellipse at 30% 0%, rgba(var(--forest-100-rgb, 240, 249, 240), 0.5) 0%, transparent 50%);
   }
 
   /* Section with sand tint */
   .section-sand {
     @apply bg-sand-100;
+    background-image: radial-gradient(ellipse at 70% 100%, rgba(255, 252, 245, 0.8) 0%, transparent 50%);
   }
 
-  /* Dark section */
+  /* Dark section - Deep forest atmosphere */
   .section-dark {
     @apply bg-forest-900 text-sand-100;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(34, 85, 51, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(45, 90, 60, 0.3) 0%, transparent 50%);
+  }
+
+  /* Badge - Botanical status indicators */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply transition-colors duration-200;
+  }
+
+  .badge-forest {
+    @apply bg-forest-100 text-forest-700 border border-forest-200;
+  }
+
+  .badge-earth {
+    @apply bg-earth-100 text-earth-700 border border-earth-200;
+  }
+
+  .badge-sand {
+    @apply bg-sand-200 text-forest-700 border border-sand-300;
+  }
+
+  /* Divider with botanical flair */
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-sand-300 to-transparent;
+  }
+
+  .divider-forest {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-forest-300 to-transparent;
   }
 }
 
 @layer utilities {
   /* Text styles following design system */
   .text-headline {
-    @apply text-forest-950 font-display font-medium;
+    @apply text-forest-950 font-display font-medium tracking-tight;
   }
 
   .text-subheadline {
-    @apply text-forest-900 font-display;
+    @apply text-forest-900 font-display tracking-tight;
   }
 
   .text-body-primary {
@@ -84,6 +168,132 @@
 
   .text-body-secondary {
     @apply text-forest-600 font-body leading-relaxed;
+  }
+
+  /* Botanical Luxury - Animation Utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.5s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+  }
+
+  /* Staggered animation delays for lists */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-6 { animation-delay: 0.6s; }
+
+  /* Grain texture overlay - adds premium feel */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /* Glass morphism for floating elements */
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-forest-900/70 backdrop-blur-md border border-forest-700/30;
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-transform duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    @apply -translate-y-1;
+  }
+
+  /* Focus ring with botanical theme */
+  .focus-botanical {
+    @apply focus:outline-none focus:ring-2 focus:ring-forest-500/50 focus:ring-offset-2 focus:ring-offset-cream;
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Gradient text for special headings */
+  .text-gradient-forest {
+    @apply bg-gradient-to-r from-forest-700 via-forest-600 to-forest-800 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-earth {
+    @apply bg-gradient-to-r from-earth-600 via-earth-500 to-earth-700 bg-clip-text text-transparent;
+  }
+
+  /* Decorative underline */
+  .underline-botanical {
+    position: relative;
+  }
+  .underline-botanical::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--forest-500, #2d5a3c) 0%, transparent 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease-out;
+  }
+  .underline-botanical:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-botanical {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.forest.300') theme('colors.sand.100');
+  }
+  .scrollbar-botanical::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-botanical::-webkit-scrollbar-track {
+    background: theme('colors.sand.100');
+    border-radius: 4px;
+  }
+  .scrollbar-botanical::-webkit-scrollbar-thumb {
+    background: theme('colors.forest.300');
+    border-radius: 4px;
+  }
+  .scrollbar-botanical::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.forest.400');
   }
   :root {
     --background: 0 0% 100%;
@@ -193,5 +403,107 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Botanical Luxury - Keyframe Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Botanical pattern background (optional usage) */
+@keyframes botanical-drift {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
