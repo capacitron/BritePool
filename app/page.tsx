@@ -82,7 +82,7 @@ export default function Home() {
           </div>
 
           {/* Feature Cards - Mobile First Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 px-2 md:px-0 mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 w-full">
             {/* Card 1 - Community Governance */}
             <div className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden border border-sand-200">
               {/* Accent Bar */}
@@ -154,7 +154,7 @@ export default function Home() {
           </div>
 
           {/* Trust Badges Section */}
-          <div className="mt-12 md:mt-16 p-6 md:p-8 bg-forest-900 rounded-2xl mx-2 md:mx-0">
+          <div className="mt-12 md:mt-16 p-6 md:p-8 bg-forest-900 rounded-2xl w-full">
             <div className="flex flex-col items-center justify-center gap-6">
               <div className="text-center">
                 <h3 className="text-xl md:text-2xl font-display font-semibold text-sand-100 mb-2">
@@ -184,7 +184,7 @@ export default function Home() {
           </div>
 
           {/* Bottom Decorative Elements - Mobile Optimized */}
-          <div className="mt-10 md:mt-16 flex flex-wrap items-center justify-center gap-3 md:gap-4 text-forest-500 px-4">
+          <div className="mt-10 md:mt-16 flex flex-wrap items-center justify-center gap-3 md:gap-4 text-forest-500">
             <div className="flex items-center gap-2">
               <Leaf className="w-4 md:w-5 h-4 md:h-5" />
               <span className="text-xs md:text-sm font-body">Rooted in Community</span>
