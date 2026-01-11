@@ -43,6 +43,9 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
 
+  // Soft delete
+  deletedAt     DateTime?
+
   // Relations
   profile       UserProfile?
   sessions      Session[]
@@ -62,6 +65,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([deletedAt])
 }
 
 model UserProfile {
@@ -157,15 +161,25 @@ model CommitteeMember {
   userId      String
   committeeId String
   role        CommitteeMemberRole @default(MEMBER)
+  status      MembershipStatus @default(PENDING)
 
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   committee   Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
 
   joinedAt    DateTime @default(now())
+  approvedAt  DateTime?
+  approvedBy  String?
 
   @@unique([userId, committeeId])
   @@index([committeeId])
   @@index([userId])
+  @@index([status])
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum CommitteeType {
@@ -273,6 +287,8 @@ model Event {
 
   @@index([startTime])
   @@index([type])
+  @@index([committeeId])
+  @@index([startTime, type])
 }
 
 model EventRegistration {
@@ -331,10 +347,14 @@ model ForumPost {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Soft delete
+  deletedAt   DateTime?
+
   @@index([authorId])
   @@index([categoryId])
   @@index([createdAt])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model ForumCategory {
@@ -402,11 +422,15 @@ model MediaItem {
 
   createdAt    DateTime @default(now())
 
+  // Soft delete
+  deletedAt    DateTime?
+
   @@index([uploadedById])
   @@index([type])
   @@index([category])
   @@index([mapLocationId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model Album {
@@ -685,9 +709,13 @@ model Document {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // Soft delete
+  deletedAt       DateTime?
+
   @@index([uploadedById])
   @@index([category])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 enum DocumentCategory {
@@ -734,7 +762,10 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([resourceType])
+  @@index([resourceId])
   @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
 }
 
 enum AuditAction {

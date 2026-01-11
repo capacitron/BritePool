@@ -23,7 +23,7 @@ const CONNECTION_TIMEOUT = 300000
 export async function GET(request: NextRequest) {
   try {
     // Rate limit: 60 requests per minute (lenient for SSE connections)
-    const rateLimitResult = rateLimit(request, 'realtime', RateLimitConfigs.realtime)
+    const rateLimitResult = await rateLimit(request, 'realtime', RateLimitConfigs.realtime)
     if (rateLimitResult) return rateLimitResult
 
     // Authenticate user

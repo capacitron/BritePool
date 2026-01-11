@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-cuts-verify', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-cuts-verify', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

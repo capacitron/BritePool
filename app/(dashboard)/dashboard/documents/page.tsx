@@ -96,7 +96,7 @@ export default function DocumentsPage() {
       if (!acc[doc.category]) {
         acc[doc.category] = []
       }
-      acc[doc.category].push(doc)
+      acc[doc.category]!.push(doc)
       return acc
     },
     {} as Record<string, Document[]>

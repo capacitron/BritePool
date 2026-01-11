@@ -1,20 +1,13 @@
 'use client'
 
-import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ErrorBoundary } from '@/components/error-boundary'
 
-export default function CourseDetailError({
+export default function CourseError({
   error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return (
-    <ErrorBoundary
-      fallbackUrl="/dashboard/courses"
-      fallbackLabel="Back to Courses"
-    >
-      <div />
-    </ErrorBoundary>
-  )
+  return <ErrorBoundary error={error} reset={reset} />
 }

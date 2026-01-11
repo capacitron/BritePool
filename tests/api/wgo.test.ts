@@ -8,7 +8,7 @@ vi.mock('@/lib/auth', () => ({
 
 // Mock rate limiting - return null to allow requests through
 vi.mock('@/lib/rate-limit', () => ({
-  rateLimit: vi.fn(() => null),
+  rateLimit: vi.fn().mockResolvedValue(null),
   RateLimitConfigs: {
     moderate: { windowMs: 60000, maxRequests: 30 },
   },

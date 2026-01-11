@@ -33,7 +33,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const customerId = customers.data[0].id
+    const customer = customers.data[0]
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'No billing account found. Please subscribe to a plan first.' },
+        { status: 404 }
+      )
+    }
+    const customerId = customer.id
 
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ||

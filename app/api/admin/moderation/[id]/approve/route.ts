@@ -23,7 +23,7 @@ const approveSchema = z.object({
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Rate limiting
-  const rateLimitResponse = rateLimit(request, 'admin-approve', RateLimitConfigs.admin)
+  const rateLimitResponse = await rateLimit(request, 'admin-approve', RateLimitConfigs.admin)
   if (rateLimitResponse) return rateLimitResponse
 
   // Auth check

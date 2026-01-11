@@ -124,6 +124,17 @@ const config: Config = {
       transitionTimingFunction: {
         'botanical': 'cubic-bezier(0.4, 0, 0.2, 1)',
         'bounce-soft': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'ease-out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      // Standardized animation duration scale
+      transitionDuration: {
+        '75': '75ms',    // Micro-interactions (hover states, focus rings)
+        '150': '150ms',  // Quick transitions (button clicks, toggles)
+        '200': '200ms',  // Standard transitions (dropdowns, tooltips)
+        '300': '300ms',  // Medium transitions (modals appearing)
+        '500': '500ms',  // Slow transitions (page elements fading in)
+        '700': '700ms',  // Slower transitions (complex animations)
+        '1000': '1000ms', // Long transitions (background effects)
       },
       backdropBlur: {
         xs: '2px',

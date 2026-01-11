@@ -1,6 +1,6 @@
 'use client'
 
-import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function AnalyticsError({
   error,
@@ -9,12 +9,5 @@ export default function AnalyticsError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return (
-    <ErrorBoundary
-      fallbackUrl="/dashboard"
-      fallbackLabel="Back to Dashboard"
-    >
-      <div />
-    </ErrorBoundary>
-  )
+  return <ErrorBoundary error={error} reset={reset} />
 }

@@ -85,12 +85,12 @@ export default function CompletePage() {
 
   useEffect(() => {
     // Generate confetti only on client side to avoid hydration mismatch
-    const colors = ['#ea8f6f', '#324c3a', '#4f7658', '#d0a46d', '#6f9379']
+    const colors = ['#ea8f6f', '#324c3a', '#4f7658', '#d0a46d', '#6f9379'] as const
     const particles: ConfettiData[] = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
       delay: i * 50,
       left: Math.random() * 100,
-      color: colors[Math.floor(Math.random() * colors.length)],
+      color: colors[Math.floor(Math.random() * colors.length)] ?? '#ea8f6f',
       duration: 2000 + Math.random() * 1000,
     }))
     setConfettiParticles(particles)

@@ -27,7 +27,7 @@ const queryParamsSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Rate limit: 10 requests per minute (strict for submissions)
-    const rateLimitResult = rateLimit(request, 'communal-seat', RateLimitConfigs.submissions)
+    const rateLimitResult = await rateLimit(request, 'communal-seat', RateLimitConfigs.submissions)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 10 requests per minute (strict for submissions)
-    const rateLimitResult = rateLimit(request, 'communal-seat', RateLimitConfigs.submissions)
+    const rateLimitResult = await rateLimit(request, 'communal-seat', RateLimitConfigs.submissions)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

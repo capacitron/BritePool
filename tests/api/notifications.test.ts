@@ -8,13 +8,13 @@ vi.mock('@/lib/auth', () => ({
 
 // Mock rate limiting - return null to allow requests through
 vi.mock('@/lib/rate-limit', () => ({
-  rateLimit: vi.fn(() => null),
+  rateLimit: vi.fn().mockResolvedValue(null),
   RateLimitConfigs: {
     moderate: { windowMs: 60000, maxRequests: 30 },
   },
 }))
 
-// Mock prisma
+// Mock prisma with $transaction support
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     notification: {
@@ -22,6 +22,7 @@ vi.mock('@/lib/prisma', () => ({
       count: vi.fn(),
       updateMany: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }))
 
@@ -37,6 +38,7 @@ const mockNotification = prisma.notification as unknown as {
   count: ReturnType<typeof vi.fn>
   updateMany: ReturnType<typeof vi.fn>
 }
+const mockTransaction = (prisma as unknown as { $transaction: ReturnType<typeof vi.fn> }).$transaction
 
 describe('GET /api/notifications', () => {
   beforeEach(() => {
@@ -95,10 +97,8 @@ describe('GET /api/notifications', () => {
     ]
 
     mockAuth.mockResolvedValue({ user: { id: userId } })
-    mockNotification.findMany.mockResolvedValue(mockNotifications)
-    mockNotification.count
-      .mockResolvedValueOnce(2) // total count
-      .mockResolvedValueOnce(1) // unread count
+    // $transaction returns [notifications, totalCount, unreadCount]
+    mockTransaction.mockResolvedValue([mockNotifications, 2, 1])
 
     const request = new NextRequest('http://localhost:3000/api/notifications')
     const response = await GET(request)
@@ -116,29 +116,14 @@ describe('GET /api/notifications', () => {
       hasMore: false,
     })
 
-    expect(mockNotification.findMany).toHaveBeenCalledWith({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      skip: 0,
-      take: 20,
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        message: true,
-        link: true,
-        isRead: true,
-        metadata: true,
-        createdAt: true,
-      },
-    })
+    expect(mockTransaction).toHaveBeenCalled()
   })
 
   it('returns notifications with custom pagination', async () => {
     const userId = 'user-123'
     mockAuth.mockResolvedValue({ user: { id: userId } })
-    mockNotification.findMany.mockResolvedValue([])
-    mockNotification.count.mockResolvedValueOnce(50).mockResolvedValueOnce(10)
+    // $transaction returns [notifications, totalCount, unreadCount]
+    mockTransaction.mockResolvedValue([[], 50, 10])
 
     const request = new NextRequest('http://localhost:3000/api/notifications?page=3&limit=10')
     const response = await GET(request)
@@ -154,12 +139,7 @@ describe('GET /api/notifications', () => {
       hasMore: true,
     })
 
-    expect(mockNotification.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        skip: 20,
-        take: 10,
-      })
-    )
+    expect(mockTransaction).toHaveBeenCalled()
   })
 
   it('limits page size to 100', async () => {

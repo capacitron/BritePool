@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { getPriorityColors } from '@/lib/design-system'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, User } from 'lucide-react'
 
@@ -15,13 +16,6 @@ interface TaskCardProps {
   }
 }
 
-const priorityStyles: Record<string, string> = {
-  LOW: 'bg-gray-100 text-gray-700',
-  MEDIUM: 'bg-blue-100 text-blue-700',
-  HIGH: 'bg-orange-100 text-orange-700',
-  URGENT: 'bg-red-100 text-red-700',
-}
-
 export function TaskCard({ task }: TaskCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -29,6 +23,7 @@ export function TaskCard({ task }: TaskCardProps) {
   }
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
+  const priorityColors = getPriorityColors(task.priority)
 
   return (
     <Link href={`/dashboard/tasks/${task.id}`}>
@@ -41,7 +36,8 @@ export function TaskCard({ task }: TaskCardProps) {
             <span
               className={cn(
                 'px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap',
-                priorityStyles[task.priority]
+                priorityColors.bg,
+                priorityColors.text
               )}
             >
               {task.priority}
@@ -51,7 +47,7 @@ export function TaskCard({ task }: TaskCardProps) {
         <CardContent className="pt-0">
           <div className="flex items-center justify-between text-xs text-earth-brown-light">
             {task.dueDate && (
-              <div className={cn('flex items-center gap-1', isOverdue && 'text-red-600')}>
+              <div className={cn('flex items-center gap-1', isOverdue && 'text-earth-600')}>
                 <Calendar className="h-3 w-3" />
                 {formatDate(task.dueDate)}
               </div>

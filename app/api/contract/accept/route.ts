@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       data: {
         covenantAcceptedAt: new Date(),
         covenantVersion: version,
-        covenantIpAddress: ipAddress.split(',')[0].trim(),
+        covenantIpAddress: ipAddress.split(',')[0]?.trim() ?? ipAddress,
       },
     })
 

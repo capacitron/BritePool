@@ -24,7 +24,7 @@ export async function GET(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -88,7 +88,7 @@ export async function POST(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -201,7 +201,7 @@ export async function PATCH(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-pledges', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

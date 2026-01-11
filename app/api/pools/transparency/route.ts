@@ -7,7 +7,7 @@ import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 export async function GET(request: NextRequest) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-transparency', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-transparency', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

@@ -2,10 +2,11 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { getPoolColors, type PoolColorType } from '@/lib/design-system'
 import { Lock, Users } from 'lucide-react'
 
 interface PoolColorCardProps {
-  color: 'PURPLE' | 'ORANGE' | 'GREEN' | 'BLUE'
+  color: PoolColorType
   total: number
   pledgeCount: number
   goalAmount?: number
@@ -14,42 +15,7 @@ interface PoolColorCardProps {
   onClick?: () => void
 }
 
-const colorStyles = {
-  PURPLE: {
-    bg: 'bg-purple-500',
-    light: 'bg-purple-100',
-    border: 'border-purple-300',
-    text: 'text-purple-700',
-    hover: 'hover:bg-purple-50 hover:border-purple-400',
-    ring: 'ring-purple-500'
-  },
-  ORANGE: {
-    bg: 'bg-orange-500',
-    light: 'bg-orange-100',
-    border: 'border-orange-300',
-    text: 'text-orange-700',
-    hover: 'hover:bg-orange-50 hover:border-orange-400',
-    ring: 'ring-orange-500'
-  },
-  GREEN: {
-    bg: 'bg-green-500',
-    light: 'bg-green-100',
-    border: 'border-green-300',
-    text: 'text-green-700',
-    hover: 'hover:bg-green-50 hover:border-green-400',
-    ring: 'ring-green-500'
-  },
-  BLUE: {
-    bg: 'bg-blue-500',
-    light: 'bg-blue-100',
-    border: 'border-blue-300',
-    text: 'text-blue-700',
-    hover: 'hover:bg-blue-50 hover:border-blue-400',
-    ring: 'ring-blue-500'
-  }
-}
-
-const colorLabels = {
+const colorLabels: Record<PoolColorType, string> = {
   PURPLE: 'Purple',
   ORANGE: 'Orange',
   GREEN: 'Green',
@@ -65,7 +31,7 @@ export function PoolColorCard({
   isLocked = true,
   onClick
 }: PoolColorCardProps) {
-  const styles = colorStyles[color]
+  const styles = getPoolColors(color)
   const progress = goalAmount && goalAmount > 0 ? (total / goalAmount) * 100 : 0
 
   return (

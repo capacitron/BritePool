@@ -7,7 +7,7 @@ import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   // Rate limit registration attempts
-  const rateLimitResult = rateLimit(request, 'register', RateLimitConfigs.register)
+  const rateLimitResult = await rateLimit(request, 'register', RateLimitConfigs.register)
   if (rateLimitResult) return rateLimitResult
 
   try {

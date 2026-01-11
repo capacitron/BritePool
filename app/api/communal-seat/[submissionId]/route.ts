@@ -24,7 +24,7 @@ export async function GET(
 ) {
   try {
     // Rate limit: 10 requests per minute (strict for submissions)
-    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    const rateLimitResult = await rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -86,7 +86,7 @@ export async function PATCH(
 ) {
   try {
     // Rate limit: 10 requests per minute (strict for submissions)
-    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    const rateLimitResult = await rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -206,7 +206,7 @@ export async function DELETE(
 ) {
   try {
     // Rate limit: 10 requests per minute (strict for submissions)
-    const rateLimitResult = rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
+    const rateLimitResult = await rateLimit(request, 'communal-seat-detail', RateLimitConfigs.submissions)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

@@ -68,6 +68,7 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/pools', label: 'Pools', icon: Wallet },
       { href: '/dashboard/participation', label: 'Participation', icon: Clock },
       { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
+      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
     ],
   },
   {
@@ -75,7 +76,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
       { href: '/dashboard/media', label: 'Media', icon: Image },
     ],
   },
@@ -85,17 +85,12 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench },
       { href: '/dashboard/map', label: 'Map', icon: Map },
       { href: '/dashboard/partners', label: 'Partners', icon: Handshake },
-      { href: '/dashboard/profile', label: 'Profile', icon: UserCircle },
     ],
   },
 ]
 
 const adminNavItems: NavItem[] = [
   { href: '/dashboard/admin', label: 'Admin Panel', icon: Settings },
-  { href: '/dashboard/admin/users', label: 'Users', icon: Users },
-  { href: '/dashboard/admin/moderation', label: 'Moderation', icon: Shield },
-  { href: '/dashboard/admin/announcements', label: 'Announcements', icon: Megaphone },
-  { href: '/dashboard/admin/audit', label: 'Audit Log', icon: ClipboardList },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ]
 
@@ -165,20 +160,22 @@ export function Sidebar({ userRole }: SidebarProps) {
   }
 
   return (
-    <aside className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col">
+    <aside className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col" role="complementary" aria-label="Main navigation sidebar">
       <div className="p-6 border-b border-forest-700">
-        <Link href="/dashboard" className="block">
+        <Link href="/dashboard" className="block" aria-label="Go to dashboard home">
           <h1 className="text-xl font-display font-bold text-sand-100">BRITE POOL</h1>
           <p className="text-xs text-forest-300 mt-1 font-body">Ministerium of Empowerment</p>
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none" role="navigation" aria-label="Main navigation">
         {isAdmin && (
           <>
             <button
               onClick={() => toggleSection('Admin')}
               className="w-full flex items-center justify-between px-3 py-2 group"
+              aria-expanded={expandedSections.Admin}
+              aria-controls="admin-nav-section"
             >
               <h3 className="text-xs font-semibold text-sand-300 uppercase tracking-wider">
                 Admin
@@ -188,13 +185,17 @@ export function Sidebar({ userRole }: SidebarProps) {
                   'h-4 w-4 text-sand-300 transition-transform duration-200',
                   expandedSections.Admin ? 'rotate-0' : '-rotate-90'
                 )}
+                aria-hidden="true"
               />
             </button>
             <div
+              id="admin-nav-section"
               className={cn(
                 'overflow-hidden transition-all duration-200',
                 expandedSections.Admin ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
               )}
+              role="group"
+              aria-label="Admin navigation items"
             >
               {adminNavItems.map((item) => {
                 const isActive =

@@ -28,7 +28,7 @@ export default function OnboardingPage() {
             '/onboarding/complete',
           ]
           const currentStep = data.onboardingStep || 0
-          window.location.href = stepRoutes[Math.min(currentStep, stepRoutes.length - 1)]
+          window.location.href = stepRoutes[Math.min(currentStep, stepRoutes.length - 1)] ?? '/onboarding/welcome'
         } else {
           // Error or unauthorized - go to welcome
           window.location.href = '/onboarding/welcome'

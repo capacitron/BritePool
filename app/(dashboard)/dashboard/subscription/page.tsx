@@ -81,10 +81,10 @@ export default function SubscriptionPage() {
       PAST_DUE: { color: 'bg-earth-500 text-white', label: 'Past Due' },
       CANCELLED: { color: 'bg-sand-200 text-forest-700', label: 'Cancelled' },
     }
-    const config = statusConfig[status] || statusConfig.INACTIVE
+    const config = statusConfig[status] ?? statusConfig.INACTIVE
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium font-body ${config.color}`}>
-        {config.label}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium font-body ${config?.color ?? ''}`}>
+        {config?.label ?? 'Unknown'}
       </span>
     )
   }

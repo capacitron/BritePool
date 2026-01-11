@@ -39,7 +39,7 @@ export async function GET(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -75,7 +75,7 @@ export async function POST(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -157,7 +157,7 @@ export async function DELETE(
 ) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools-invitations', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()

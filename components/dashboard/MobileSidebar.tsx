@@ -70,6 +70,7 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/pools', label: 'Pools', icon: Wallet },
       { href: '/dashboard/participation', label: 'Participation', icon: Clock },
       { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
+      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
     ],
   },
   {
@@ -77,7 +78,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
       { href: '/dashboard/media', label: 'Media', icon: Image },
     ],
   },
@@ -87,17 +87,12 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench },
       { href: '/dashboard/map', label: 'Map', icon: Map },
       { href: '/dashboard/partners', label: 'Partners', icon: Handshake },
-      { href: '/dashboard/profile', label: 'Profile', icon: UserCircle },
     ],
   },
 ]
 
 const adminNavItems: NavItem[] = [
   { href: '/dashboard/admin', label: 'Admin Panel', icon: Settings },
-  { href: '/dashboard/admin/users', label: 'Users', icon: Users },
-  { href: '/dashboard/admin/moderation', label: 'Moderation', icon: Shield },
-  { href: '/dashboard/admin/announcements', label: 'Announcements', icon: Megaphone },
-  { href: '/dashboard/admin/audit', label: 'Audit Log', icon: ClipboardList },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ]
 

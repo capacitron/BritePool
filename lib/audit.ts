@@ -44,7 +44,7 @@ export async function createAuditLog(input: AuditLogInput) {
 export function getClientIp(request: Request): string {
   const forwardedFor = request.headers.get('x-forwarded-for')
   if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim()
+    return forwardedFor.split(',')[0]?.trim() ?? forwardedFor
   }
 
   const realIp = request.headers.get('x-real-ip')

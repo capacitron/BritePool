@@ -2,7 +2,7 @@
 
 import { ErrorBoundary } from '@/components/error-boundary'
 
-export default function CommitteeError({
+export default function DocumentError({
   error,
   reset,
 }: {

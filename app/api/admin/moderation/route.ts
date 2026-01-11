@@ -15,7 +15,7 @@ import type { ContentStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   // Rate limiting
-  const rateLimitResponse = rateLimit(request, 'admin-moderation', RateLimitConfigs.admin)
+  const rateLimitResponse = await rateLimit(request, 'admin-moderation', RateLimitConfigs.admin)
   if (rateLimitResponse) return rateLimitResponse
 
   // Auth check

@@ -1,6 +1,6 @@
 'use client'
 
-import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function ProfileError({
   error,
@@ -9,12 +9,5 @@ export default function ProfileError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return (
-    <ErrorBoundary
-      fallbackUrl="/dashboard"
-      fallbackLabel="Back to Dashboard"
-    >
-      <div />
-    </ErrorBoundary>
-  )
+  return <ErrorBoundary error={error} reset={reset} />
 }

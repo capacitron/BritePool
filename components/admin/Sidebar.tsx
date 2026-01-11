@@ -49,15 +49,15 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => userRole && item.roles.includes(userRole))
 
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col">
-      <div className="p-6 border-b border-slate-800">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <span className="text-xl font-serif font-bold">BRITE POOL</span>
+    <aside className="w-64 bg-forest-900 text-white min-h-screen flex flex-col" role="complementary" aria-label="Admin navigation sidebar">
+      <div className="p-6 border-b border-forest-700">
+        <Link href="/dashboard" className="flex items-center space-x-2" aria-label="Go to main dashboard">
+          <span className="text-xl font-display font-bold text-sand-100">BRITE POOL</span>
         </Link>
-        <p className="text-xs text-slate-400 mt-1">Admin Panel</p>
+        <p className="text-xs text-forest-300 mt-1 font-body">Admin Panel</p>
       </div>
 
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4" role="navigation" aria-label="Admin navigation">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const isActive =
@@ -70,10 +70,10 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors',
+                    'flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors font-body',
                     isActive
-                      ? 'bg-slate-800 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-earth-500 text-white'
+                      : 'text-sand-200 hover:bg-forest-700 hover:text-sand-50'
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -85,10 +85,10 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-forest-700">
         <Link
           href="/dashboard"
-          className="flex items-center space-x-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors"
+          className="flex items-center space-x-3 px-4 py-3 text-sand-200 hover:bg-forest-700 hover:text-sand-50 rounded-lg transition-colors font-body"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Back to Dashboard</span>

@@ -280,11 +280,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                     </p>
                   </div>
 
-                  {course.lessons.length > 0 && (
+                  {course.lessons.length > 0 && course.lessons[0] && (
                     <Link
                       href={`/dashboard/courses/${course.id}/lessons/${
                         course.lessons.find((l) => !completedLessons.includes(l.id))?.id ||
-                        course.lessons[0].id
+                        course.lessons[0]?.id
                       }`}
                     >
                       <Button className="w-full">

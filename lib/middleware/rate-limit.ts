@@ -65,7 +65,7 @@ export function rateLimit(
   request: NextRequest,
   configKey: keyof typeof rateLimitConfigs = 'api'
 ): { success: boolean; response?: NextResponse } {
-  const config = rateLimitConfigs[configKey]
+  const config = rateLimitConfigs[configKey]!  // configKey is typed to be a valid key
   const clientId = getClientIdentifier(request)
   const key = `${configKey}:${clientId}`
   const now = Date.now()

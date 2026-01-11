@@ -48,6 +48,7 @@ export async function POST(
         userId: session.user.id,
         committeeId,
         role: 'MEMBER',
+        status: 'PENDING',
       },
       include: {
         user: {
@@ -59,7 +60,10 @@ export async function POST(
       },
     })
 
-    return NextResponse.json(membership, { status: 201 })
+    return NextResponse.json({
+      ...membership,
+      message: 'Your request to join has been submitted for approval.'
+    }, { status: 201 })
   } catch (error) {
     logError(error, { action: 'join_committee' })
     return NextResponse.json({ error: 'Failed to join committee' }, { status: 500 })

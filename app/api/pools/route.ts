@@ -20,7 +20,7 @@ const createPoolSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 30 requests per minute
-    const rateLimitResult = rateLimit(request, 'pools', RateLimitConfigs.moderate)
+    const rateLimitResult = await rateLimit(request, 'pools', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
 
     const session = await auth()
