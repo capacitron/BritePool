@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['*.replit.dev', '*.worf.replit.dev'],
   images: {
     domains: ['localhost'],
     remotePatterns: [
