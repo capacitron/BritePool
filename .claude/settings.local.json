@@ -38,7 +38,8 @@
       "Bash(npm run db:push:*)",
       "Bash(npm run db:seed:*)",
       "Bash(then grep -iE \"\\(AUTH|SECRET\\)\" /home/runner/workspace/.env)",
-      "Bash(else echo \"No .env file found\")"
+      "Bash(else echo \"No .env file found\")",
+      "Bash(npx ts-node:*)"
     ],
     "deny": []
   },

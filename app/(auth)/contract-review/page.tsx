@@ -13,6 +13,8 @@ interface Contract {
   publishedAt: string
 }
 
+const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
+
 export default function ContractReviewPage() {
   const router = useRouter()
   const { data: session, status, update: updateSession } = useSession()
@@ -26,15 +28,27 @@ export default function ContractReviewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated, or to dashboard if admin
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
     }
-  }, [status, router])
+    // Redirect admin users directly to admin dashboard
+    if (status === 'authenticated' && session?.user?.role) {
+      if (ADMIN_ROLES.includes(session.user.role as string)) {
+        router.push('/dashboard/admin')
+        return
+      }
+    }
+  }, [status, session, router])
 
   useEffect(() => {
     async function fetchContract() {
+      // Skip fetching for admin users - they'll be redirected
+      if (session?.user?.role && ADMIN_ROLES.includes(session.user.role as string)) {
+        return
+      }
+
       try {
         const response = await fetch('/api/contract/active')
         if (!response.ok) {
@@ -58,7 +72,7 @@ export default function ContractReviewPage() {
     if (status === 'authenticated') {
       fetchContract()
     }
-  }, [status])
+  }, [status, session])
 
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current

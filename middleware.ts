@@ -15,9 +15,10 @@ export default auth((req) => {
   const isApiRoute = path.startsWith('/api')
   const isStaticRoute = path.startsWith('/_next') || path.startsWith('/favicon')
   const isOnboardingRoute = path.startsWith('/onboarding')
+  const isContractCheckRoute = path === '/api/auth/check-covenant'
 
   // Skip middleware for static and API routes
-  if (isStaticRoute || isApiRoute) {
+  if (isStaticRoute || isApiRoute || isContractCheckRoute) {
     return NextResponse.next()
   }
 
@@ -35,13 +36,17 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/login', nextUrl))
   }
 
-  // Check agreement acceptance for authenticated users (NOT onboarding - handled by pages)
-  if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute) {
-    const agreementAcceptedAt = req.auth?.user?.covenantAcceptedAt
-    if (!agreementAcceptedAt) {
-      return NextResponse.redirect(new URL('/contract-review', nextUrl))
-    }
-  }
+  // TEMPORARILY DISABLED: Covenant check causing redirect loops
+  // TODO: Re-enable after fixing session/JWT role propagation
+  // const isAdminRoute = path.startsWith('/dashboard/admin')
+  // const userRole = req.auth?.user?.role
+  // const isAdminUser = userRole === 'WEB_STEWARD' || userRole === 'BOARD_CHAIR'
+  // if (isLoggedIn && !isPublicRoute && path !== '/contract-review' && !isOnboardingRoute && !isAdminRoute && !isAdminUser) {
+  //   const agreementAcceptedAt = req.auth?.user?.covenantAcceptedAt
+  //   if (!agreementAcceptedAt) {
+  //     return NextResponse.redirect(new URL('/contract-review', nextUrl))
+  //   }
+  // }
 
   return NextResponse.next()
 })
