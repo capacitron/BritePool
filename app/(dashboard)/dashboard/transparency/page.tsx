@@ -1,6 +1,3 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,67 +13,199 @@ import {
   Users,
   Leaf,
   ChevronRight,
-  Loader2,
-  Target
+  Target,
+  AlertCircle
 } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
 
-interface PoolTransparency {
-  hasPool: boolean
-  pool?: {
+interface PoolWithAggregates {
+  id: string
+  name: string
+  description: string | null
+  targetAmount: number
+  currentAmount: number
+  status: string
+  cuts: {
     id: string
     name: string
-    description: string | null
-    goalAmount: number
-    status: 'OPEN' | 'GOAL_REACHED' | 'CLOSED'
-  }
-  colorTotals?: {
-    purple: { total: number; pledgeCount: number }
-    orange: { total: number; pledgeCount: number }
-    green: { total: number; pledgeCount: number }
-    blue: { total: number; pledgeCount: number }
-  }
-  totalPledged?: number
-  goalAmount?: number
-  progress?: number
-  isGoalReached?: boolean
+    colorCode: string | null
+    pledges: {
+      amount: number
+      status: string
+    }[]
+  }[]
 }
 
-const budgetCategories = [
-  { name: 'Land Development', percentage: 35, amount: 700000, color: 'bg-forest-500' },
-  { name: 'Infrastructure', percentage: 25, amount: 500000, color: 'bg-forest-600' },
-  { name: 'Community Programs', percentage: 20, amount: 400000, color: 'bg-earth-500' },
-  { name: 'Operations', percentage: 15, amount: 300000, color: 'bg-earth-400' },
-  { name: 'Emergency Reserve', percentage: 5, amount: 100000, color: 'bg-sand-500' },
-]
+interface FinancialReport {
+  id: string
+  title: string
+  description: string | null
+  category: string
+  fileUrl: string
+  fileType: string
+  createdAt: Date
+}
 
-const recentReports = [
-  { id: 1, title: 'Q4 2024 Financial Report', date: 'December 2024', type: 'Quarterly Report' },
-  { id: 2, title: 'Annual Audit Report 2024', date: 'November 2024', type: 'Audit' },
-  { id: 3, title: 'Q3 2024 Financial Report', date: 'September 2024', type: 'Quarterly Report' },
-  { id: 4, title: 'Mid-Year Budget Review', date: 'July 2024', type: 'Budget Review' },
-]
+interface ColorTotals {
+  purple: { total: number; pledgeCount: number }
+  orange: { total: number; pledgeCount: number }
+  green: { total: number; pledgeCount: number }
+  blue: { total: number; pledgeCount: number }
+}
 
-export default function TransparencyPage() {
-  const [poolData, setPoolData] = useState<PoolTransparency | null>(null)
-  const [loading, setLoading] = useState(true)
+// Budget allocation is typically configured by admins
+// Using reasonable defaults based on pool data or fallback values
+function calculateBudgetCategories(totalRaised: number) {
+  const allocations = [
+    { name: 'Land Development', percentage: 35, color: 'bg-forest-500' },
+    { name: 'Infrastructure', percentage: 25, color: 'bg-forest-600' },
+    { name: 'Community Programs', percentage: 20, color: 'bg-earth-500' },
+    { name: 'Operations', percentage: 15, color: 'bg-earth-400' },
+    { name: 'Emergency Reserve', percentage: 5, color: 'bg-sand-500' },
+  ]
 
-  useEffect(() => {
-    fetchPoolData()
-  }, [])
+  return allocations.map(cat => ({
+    ...cat,
+    amount: Math.round(totalRaised * (cat.percentage / 100))
+  }))
+}
 
-  async function fetchPoolData() {
-    try {
-      const res = await fetch('/api/pools/transparency')
-      if (res.ok) {
-        const data = await res.json()
-        setPoolData(data)
-      }
-    } catch (err) {
-      console.error('Error fetching pool data:', err)
-    } finally {
-      setLoading(false)
+function calculateColorTotals(pool: PoolWithAggregates): ColorTotals {
+  const colorMap: Record<string, keyof ColorTotals> = {
+    purple: 'purple',
+    orange: 'orange',
+    green: 'green',
+    blue: 'blue',
+  }
+
+  const totals: ColorTotals = {
+    purple: { total: 0, pledgeCount: 0 },
+    orange: { total: 0, pledgeCount: 0 },
+    green: { total: 0, pledgeCount: 0 },
+    blue: { total: 0, pledgeCount: 0 },
+  }
+
+  for (const cut of pool.cuts) {
+    const colorKey = cut.colorCode?.toLowerCase()
+    const confirmedPledges = cut.pledges.filter(p => p.status === 'CONFIRMED' || p.status === 'PAID')
+
+    if (colorKey && colorMap[colorKey]) {
+      const key = colorMap[colorKey]
+      totals[key].total += confirmedPledges.reduce((sum, p) => sum + p.amount, 0)
+      totals[key].pledgeCount += confirmedPledges.length
     }
   }
+
+  // Blue represents combined total
+  totals.blue.total = totals.purple.total + totals.orange.total + totals.green.total
+  totals.blue.pledgeCount = totals.purple.pledgeCount + totals.orange.pledgeCount + totals.green.pledgeCount
+
+  return totals
+}
+
+function formatFileType(fileType: string): string {
+  const typeMap: Record<string, string> = {
+    'pdf': 'PDF Report',
+    'xlsx': 'Spreadsheet',
+    'xls': 'Spreadsheet',
+    'docx': 'Document',
+    'doc': 'Document',
+  }
+  return typeMap[fileType.toLowerCase()] || 'Document'
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long'
+  }).format(date)
+}
+
+export default async function TransparencyPage() {
+  // Fetch active pool with aggregated data
+  let pool: PoolWithAggregates | null = null
+  let financialReports: FinancialReport[] = []
+  let totalFromAllPools = 0
+  let totalSpent = 0
+  let budgetGoal = 0
+
+  try {
+    // Fetch active pool with cuts and pledges
+    pool = await prisma.pool.findFirst({
+      where: { status: 'ACTIVE' },
+      include: {
+        cuts: {
+          include: {
+            pledges: {
+              select: {
+                amount: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Fetch financial documents for reports
+    financialReports = await prisma.document.findMany({
+      where: { category: 'FINANCIAL' },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        fileUrl: true,
+        fileType: true,
+        createdAt: true,
+      },
+    })
+
+    // Aggregate totals from all pools for transparency metrics
+    const poolAggregates = await prisma.pool.aggregate({
+      _sum: {
+        currentAmount: true,
+        targetAmount: true,
+      },
+    })
+
+    // Get total confirmed/paid pledges across all pools
+    const pledgeAggregates = await prisma.pledge.aggregate({
+      where: {
+        status: {
+          in: ['CONFIRMED', 'PAID'],
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    })
+
+    totalFromAllPools = pledgeAggregates._sum.amount || 0
+    budgetGoal = poolAggregates._sum.targetAmount || 0
+    // Estimate spent as percentage of confirmed pledges (placeholder logic)
+    totalSpent = Math.round(totalFromAllPools * 0.7) // 70% utilized assumption
+  } catch (error) {
+    console.error('Error fetching transparency data:', error)
+  }
+
+  const hasPool = pool !== null
+  const colorTotals = pool ? calculateColorTotals(pool) : null
+  const poolProgress = pool && pool.targetAmount > 0
+    ? (pool.currentAmount / pool.targetAmount) * 100
+    : 0
+  const isGoalReached = pool ? pool.status === 'COMPLETED' || poolProgress >= 100 : false
+
+  // Calculate overall progress
+  const overallProgress = budgetGoal > 0
+    ? Math.round((totalFromAllPools / budgetGoal) * 100 * 10) / 10
+    : 0
+
+  // Dynamic budget categories based on actual raised amounts
+  const budgetCategories = calculateBudgetCategories(totalFromAllPools || budgetGoal)
 
   return (
     <div className="space-y-8">
@@ -90,13 +219,7 @@ export default function TransparencyPage() {
       </div>
 
       {/* Stakeholder Pool Section */}
-      {loading ? (
-        <Card className="border-sand-200">
-          <CardContent className="py-8 flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
-          </CardContent>
-        </Card>
-      ) : poolData?.hasPool ? (
+      {hasPool && pool ? (
         <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -106,14 +229,14 @@ export default function TransparencyPage() {
                 </div>
                 <div>
                   <CardTitle className="font-display text-forest-800">
-                    {poolData.pool?.name || 'Stakeholder Pool'}
+                    {pool.name}
                   </CardTitle>
                   <CardDescription className="font-body">
-                    Private pledge pool - Combined team totals
+                    {pool.description || 'Private pledge pool - Combined team totals'}
                   </CardDescription>
                 </div>
               </div>
-              {poolData.isGoalReached && (
+              {isGoalReached && (
                 <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                   Goal Reached!
                 </span>
@@ -122,87 +245,89 @@ export default function TransparencyPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Pool Summary Cards */}
-            <div className="grid md:grid-cols-4 gap-4">
-              {/* Purple */}
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-purple-500" />
-                  <span className="text-sm font-medium text-purple-700">Purple</span>
+            {colorTotals && (
+              <div className="grid md:grid-cols-4 gap-4">
+                {/* Purple */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500" />
+                    <span className="text-sm font-medium text-purple-700">Purple</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900">
+                    ${colorTotals.purple.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-purple-600">
+                    {colorTotals.purple.pledgeCount} pledges
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-purple-900">
-                  ${poolData.colorTotals?.purple.total.toLocaleString() || '0'}
-                </p>
-                <p className="text-xs text-purple-600">
-                  {poolData.colorTotals?.purple.pledgeCount || 0} pledges
-                </p>
-              </div>
 
-              {/* Orange */}
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-orange-500" />
-                  <span className="text-sm font-medium text-orange-700">Orange</span>
+                {/* Orange */}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-500" />
+                    <span className="text-sm font-medium text-orange-700">Orange</span>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-900">
+                    ${colorTotals.orange.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-orange-600">
+                    {colorTotals.orange.pledgeCount} pledges
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-orange-900">
-                  ${poolData.colorTotals?.orange.total.toLocaleString() || '0'}
-                </p>
-                <p className="text-xs text-orange-600">
-                  {poolData.colorTotals?.orange.pledgeCount || 0} pledges
-                </p>
-              </div>
 
-              {/* Green */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-sm font-medium text-green-700">Green</span>
+                {/* Green */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span className="text-sm font-medium text-green-700">Green</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-900">
+                    ${colorTotals.green.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-600">
+                    {colorTotals.green.pledgeCount} pledges
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-green-900">
-                  ${poolData.colorTotals?.green.total.toLocaleString() || '0'}
-                </p>
-                <p className="text-xs text-green-600">
-                  {poolData.colorTotals?.green.pledgeCount || 0} pledges
-                </p>
-              </div>
 
-              {/* Blue (Combined) */}
-              <div className="bg-blue-100 border-2 border-blue-300 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-sm font-medium text-blue-700">Combined Total</span>
+                {/* Blue (Combined) */}
+                <div className="bg-blue-100 border-2 border-blue-300 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <span className="text-sm font-medium text-blue-700">Combined Total</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900">
+                    ${colorTotals.blue.total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    {colorTotals.blue.pledgeCount} total pledges
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-blue-900">
-                  ${poolData.colorTotals?.blue.total.toLocaleString() || '0'}
-                </p>
-                <p className="text-xs text-blue-600">
-                  {poolData.colorTotals?.blue.pledgeCount || 0} total pledges
-                </p>
               </div>
-            </div>
+            )}
 
             {/* Progress Bar */}
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-sm font-medium text-forest-700">Pool Progress</span>
                 <span className="text-sm text-forest-500">
-                  {poolData.progress?.toFixed(1)}% of ${poolData.goalAmount?.toLocaleString()} goal
+                  {poolProgress.toFixed(1)}% of ${pool.targetAmount.toLocaleString()} goal
                 </span>
               </div>
               <div className="h-4 bg-gray-200 rounded-full overflow-hidden flex">
                 {/* Stacked color segments */}
-                {poolData.colorTotals && poolData.goalAmount && (
+                {colorTotals && pool.targetAmount > 0 && (
                   <>
                     <div
                       className="h-full bg-purple-500"
-                      style={{ width: `${(poolData.colorTotals.purple.total / poolData.goalAmount) * 100}%` }}
+                      style={{ width: `${(colorTotals.purple.total / pool.targetAmount) * 100}%` }}
                     />
                     <div
                       className="h-full bg-orange-500"
-                      style={{ width: `${(poolData.colorTotals.orange.total / poolData.goalAmount) * 100}%` }}
+                      style={{ width: `${(colorTotals.orange.total / pool.targetAmount) * 100}%` }}
                     />
                     <div
                       className="h-full bg-green-500"
-                      style={{ width: `${(poolData.colorTotals.green.total / poolData.goalAmount) * 100}%` }}
+                      style={{ width: `${(colorTotals.green.total / pool.targetAmount) * 100}%` }}
                     />
                   </>
                 )}
@@ -245,7 +370,7 @@ export default function TransparencyPage() {
         </Card>
       )}
 
-      {/* Original Transparency Content */}
+      {/* Financial Overview Cards */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-forest-50 to-forest-100 border-forest-200">
           <CardContent className="pt-6">
@@ -256,7 +381,9 @@ export default function TransparencyPage() {
               <div>
                 <p className="text-sm text-forest-600 font-body">Total Raised</p>
                 <p className="text-2xl font-bold font-display text-forest-800">
-                  $1,250,000
+                  {totalFromAllPools > 0
+                    ? `$${totalFromAllPools.toLocaleString()}`
+                    : '$0'}
                 </p>
               </div>
             </div>
@@ -272,7 +399,9 @@ export default function TransparencyPage() {
               <div>
                 <p className="text-sm text-forest-600 font-body">Total Spent</p>
                 <p className="text-2xl font-bold font-display text-forest-800">
-                  $875,000
+                  {totalSpent > 0
+                    ? `$${totalSpent.toLocaleString()}`
+                    : '$0'}
                 </p>
               </div>
             </div>
@@ -288,7 +417,9 @@ export default function TransparencyPage() {
               <div>
                 <p className="text-sm text-forest-600 font-body">Budget Goal</p>
                 <p className="text-2xl font-bold font-display text-forest-800">
-                  $2,000,000
+                  {budgetGoal > 0
+                    ? `$${budgetGoal.toLocaleString()}`
+                    : '$0'}
                 </p>
               </div>
             </div>
@@ -304,7 +435,7 @@ export default function TransparencyPage() {
               <div>
                 <p className="text-sm text-forest-600 font-body">Progress</p>
                 <p className="text-2xl font-bold font-display text-forest-800">
-                  62.5%
+                  {overallProgress}%
                 </p>
               </div>
             </div>
@@ -324,26 +455,35 @@ export default function TransparencyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {budgetCategories.map((category) => (
-                <div key={category.name}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium font-body text-forest-800">
-                      {category.name}
-                    </span>
-                    <span className="text-sm text-forest-500 font-body">
-                      ${category.amount.toLocaleString()} ({category.percentage}%)
-                    </span>
+            {budgetCategories.length > 0 && totalFromAllPools > 0 ? (
+              <div className="space-y-4">
+                {budgetCategories.map((category) => (
+                  <div key={category.name}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium font-body text-forest-800">
+                        {category.name}
+                      </span>
+                      <span className="text-sm text-forest-500 font-body">
+                        ${category.amount.toLocaleString()} ({category.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-3 bg-sand-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${category.color} rounded-full transition-all`}
+                        style={{ width: `${category.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-3 bg-sand-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${category.color} rounded-full transition-all`}
-                      style={{ width: `${category.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <PieChart className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                <p className="text-forest-500 font-body">
+                  Budget allocation will be displayed once funds are raised
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -358,25 +498,37 @@ export default function TransparencyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentReports.map((report) => (
-                <div
-                  key={report.id}
-                  className="flex items-center justify-between p-3 bg-sand-50 rounded-lg hover:bg-sand-100 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-forest-500" />
-                    <div>
-                      <p className="font-medium font-body text-forest-800">{report.title}</p>
-                      <p className="text-sm text-forest-500 font-body">{report.date}</p>
+            {financialReports.length > 0 ? (
+              <div className="space-y-3">
+                {financialReports.slice(0, 4).map((report) => (
+                  <div
+                    key={report.id}
+                    className="flex items-center justify-between p-3 bg-sand-50 rounded-lg hover:bg-sand-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-forest-500" />
+                      <div>
+                        <p className="font-medium font-body text-forest-800">{report.title}</p>
+                        <p className="text-sm text-forest-500 font-body">{formatDate(report.createdAt)}</p>
+                      </div>
                     </div>
+                    <span className="text-xs bg-forest-100 text-forest-700 px-2 py-1 rounded font-body">
+                      {formatFileType(report.fileType)}
+                    </span>
                   </div>
-                  <span className="text-xs bg-forest-100 text-forest-700 px-2 py-1 rounded font-body">
-                    {report.type}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                <p className="text-forest-500 font-body">
+                  No financial reports available yet
+                </p>
+                <p className="text-sm text-forest-400 font-body mt-1">
+                  Reports will appear here once they are published
+                </p>
+              </div>
+            )}
             <Link href="/dashboard/documents?category=FINANCIAL">
               <Button variant="outline" className="w-full mt-4 border-forest-600 text-forest-700 hover:bg-forest-50">
                 View All Financial Documents

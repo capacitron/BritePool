@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
+import { logPoolCreated } from '@/lib/audit'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
@@ -99,6 +100,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Audit log pool creation
+    await logPoolCreated(
+      session.user.id,
+      session.user.role,
+      pool.id,
+      pool.name,
+      request
+    )
 
     return NextResponse.json(pool, { status: 201 })
   } catch (error) {

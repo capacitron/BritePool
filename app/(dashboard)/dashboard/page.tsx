@@ -110,7 +110,7 @@ export default async function DashboardPage({
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-forest-500 to-forest-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-forest-600 font-body">
-              Covenant Status
+              Agreement Status
             </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-forest-100 flex items-center justify-center group-hover:bg-forest-200 transition-colors">
               <FileCheck className="h-5 w-5 text-forest-600" />

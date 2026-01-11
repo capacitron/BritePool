@@ -38,6 +38,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} ${lora.variable}`}>
         <Providers>
           {children}
+          <Toaster />
         </Providers>
         <Toaster />
       </body>

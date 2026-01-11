@@ -3,8 +3,13 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
+import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  // Rate limit registration attempts
+  const rateLimitResult = rateLimit(request, 'register', RateLimitConfigs.register)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     const body = await request.json()
     const parsed = registerSchema.safeParse(body)

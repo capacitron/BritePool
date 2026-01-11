@@ -434,7 +434,7 @@ export default function AdminUserDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Covenant Status</CardTitle>
+              <CardTitle>Agreement Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
