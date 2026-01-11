@@ -107,9 +107,9 @@ interface SidebarProps {
 
 // Helper to check if a route is within a nav group
 function isRouteInGroup(pathname: string, items: NavItem[]): boolean {
-  return items.some(item =>
-    pathname === item.href ||
-    (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+  return items.some(
+    (item) =>
+      pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
   )
 }
 
@@ -123,7 +123,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   // Initialize expanded sections - auto-expand section with active route
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = { Admin: true }
-    navGroups.forEach(group => {
+    navGroups.forEach((group) => {
       initial[group.title] = isRouteInGroup(pathname, group.items)
     })
     return initial
@@ -136,10 +136,10 @@ export function Sidebar({ userRole }: SidebarProps) {
       if (saved) {
         const parsed = JSON.parse(saved)
         // Merge with current state, ensuring active section stays open
-        setExpandedSections(prev => {
+        setExpandedSections((prev) => {
           const merged = { ...parsed }
           // Always expand section containing current route
-          navGroups.forEach(group => {
+          navGroups.forEach((group) => {
             if (isRouteInGroup(pathname, group.items)) {
               merged[group.title] = true
             }
@@ -155,7 +155,7 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   // Save preferences when changed
   const toggleSection = (title: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const next = { ...prev, [title]: !prev[title] }
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
@@ -180,20 +180,22 @@ export function Sidebar({ userRole }: SidebarProps) {
               onClick={() => toggleSection('Admin')}
               className="w-full flex items-center justify-between px-3 py-2 group"
             >
-              <h3 className="text-xs font-semibold text-earth-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-sand-300 uppercase tracking-wider">
                 Admin
               </h3>
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 text-earth-400 transition-transform duration-200",
-                  expandedSections.Admin ? "rotate-0" : "-rotate-90"
+                  'h-4 w-4 text-sand-300 transition-transform duration-200',
+                  expandedSections.Admin ? 'rotate-0' : '-rotate-90'
                 )}
               />
             </button>
-            <div className={cn(
-              "overflow-hidden transition-all duration-200",
-              expandedSections.Admin ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-            )}>
+            <div
+              className={cn(
+                'overflow-hidden transition-all duration-200',
+                expandedSections.Admin ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              )}
+            >
               {adminNavItems.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -230,29 +232,34 @@ export function Sidebar({ userRole }: SidebarProps) {
               <button
                 onClick={() => toggleSection(group.title)}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors",
-                  hasActiveItem && !isExpanded && "bg-forest-800"
+                  'w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors',
+                  hasActiveItem && !isExpanded && 'bg-forest-800'
                 )}
               >
-                <h3 className={cn(
-                  "text-xs font-semibold uppercase tracking-wider transition-colors",
-                  hasActiveItem ? "text-sand-200" : "text-sand-400"
-                )}>
+                <h3
+                  className={cn(
+                    'text-xs font-semibold uppercase tracking-wider transition-colors',
+                    hasActiveItem ? 'text-sand-100' : 'text-sand-300'
+                  )}
+                >
                   {group.title}
                 </h3>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-sand-400 transition-transform duration-200",
-                    isExpanded ? "rotate-0" : "-rotate-90"
+                    'h-4 w-4 text-sand-300 transition-transform duration-200',
+                    isExpanded ? 'rotate-0' : '-rotate-90'
                   )}
                 />
               </button>
-              <div className={cn(
-                "overflow-hidden transition-all duration-200",
-                isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-              )}>
+              <div
+                className={cn(
+                  'overflow-hidden transition-all duration-200',
+                  isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                )}
+              >
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href ||
+                  const isActive =
+                    pathname === item.href ||
                     (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
                   const Icon = item.icon
 
