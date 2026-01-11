@@ -1,11 +1,13 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { LucideIcon } from 'lucide-react'
+import { Users, TrendingUp, Clock, UserCheck, BookOpen, Calendar, MessageSquare, Award, LucideIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
+const iconMap: Record<string, LucideIcon> = { Users, TrendingUp, Clock, UserCheck, BookOpen, Calendar, MessageSquare, Award }
+
 interface StatCardProps {
-  icon: LucideIcon
+  iconName: string
   value: string | number
   label: string
   change?: {
@@ -17,13 +19,14 @@ interface StatCardProps {
 }
 
 export function StatCard({
-  icon: Icon,
+  iconName,
   value,
   label,
   change,
   className,
   iconClassName,
 }: StatCardProps) {
+  const Icon = iconMap[iconName] || Users
   return (
     <Card className={cn('', className)}>
       <CardContent className="pt-6">
