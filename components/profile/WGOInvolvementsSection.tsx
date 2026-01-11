@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -257,11 +258,15 @@ export function WGOInvolvementsSection() {
                   className="flex items-start gap-4 p-4 bg-gradient-to-r from-forest-50 to-transparent rounded-lg border border-forest-100"
                 >
                   {involvement.wgo.logo ? (
-                    <img
-                      src={involvement.wgo.logo}
-                      alt={involvement.wgo.name}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
+                    <div className="relative h-12 w-12 rounded-lg overflow-hidden">
+                      <NextImage
+                        src={involvement.wgo.logo}
+                        alt={involvement.wgo.name}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="h-12 w-12 rounded-lg bg-gold-100 flex items-center justify-center">
                       <TrendingUp className="h-6 w-6 text-gold-600" />

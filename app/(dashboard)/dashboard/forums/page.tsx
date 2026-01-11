@@ -45,7 +45,7 @@ export default async function ForumsPage() {
     <div className="space-y-6">
       <PageHeader path="forums" />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((category) => {
           const IconComponent = categoryIcons[category.slug] || MessagesSquare
 

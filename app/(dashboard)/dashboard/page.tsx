@@ -67,7 +67,7 @@ export default async function DashboardPage({
   return (
     <div className="space-y-8">
       {/* Hero Welcome Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-8 md:p-10 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-5 sm:p-8 md:p-10 text-white">
         {/* Decorative pattern */}
         <div
           className="absolute inset-0 opacity-10"
@@ -86,10 +86,10 @@ export default async function DashboardPage({
               {greeting}
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-3">
             {user.name.split(' ')[0]}
           </h1>
-          <p className="text-sand-200 text-lg max-w-md font-body">
+          <p className="text-sand-200 text-base sm:text-lg max-w-md font-body">
             Welcome back to your BRITE POOL dashboard. Your journey of empowerment continues.
           </p>
 
@@ -105,7 +105,7 @@ export default async function DashboardPage({
       <DashboardStats userId={user.id} />
 
       {/* Account Stats Grid */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-4">
         <Card className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-forest-500 to-forest-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -217,7 +217,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Feature Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="group border border-sand-200 shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-forest-500 via-forest-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-4">

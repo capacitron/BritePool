@@ -23,7 +23,7 @@ export function DashboardHeader({ userName, userEmail, userRole, userImage }: Da
     .slice(0, 2)
 
   return (
-    <header className="bg-white border-b border-sand-200 px-4 md:px-6 py-4">
+    <header className="bg-white border-b border-sand-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 md:gap-4">
           {/* Mobile menu trigger - only visible on mobile */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
@@ -192,10 +193,12 @@ export default function PartnersPage() {
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full border-sand-200">
                 <div className="aspect-square relative bg-sand-100 flex items-center justify-center">
                   {partner.logo ? (
-                    <img
+                    <Image
                       src={partner.logo}
                       alt={partner.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="object-cover"
                     />
                   ) : (
                     <Building className="h-16 w-16 text-forest-400" />

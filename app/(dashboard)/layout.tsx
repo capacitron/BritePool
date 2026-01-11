@@ -43,7 +43,7 @@ export default async function DashboardLayout({
             userEmail={user.email}
             userRole={user.role}
           />
-          <main className="flex-1 p-6 bg-sand-50">
+          <main className="flex-1 p-4 sm:p-6 bg-sand-50">
             <Breadcrumbs />
             {children}
           </main>

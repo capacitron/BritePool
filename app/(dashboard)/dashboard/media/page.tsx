@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
@@ -211,10 +212,12 @@ export default function MediaGalleryPage() {
             <Link key={item.id} href={`/dashboard/media/${item.id}`}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-sand-200">
                 <div className="aspect-square relative bg-sand-100">
-                  <img
+                  <NextImage
                     src={item.thumbnailUrl}
                     alt={item.filename}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover"
                   />
                   {(item.type === 'VIDEO' || item.type === 'DRONE_FOOTAGE' || item.type === 'TIMELAPSE') && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">

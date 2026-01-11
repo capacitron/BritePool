@@ -4,7 +4,7 @@ export default function DashboardLoading() {
   return (
     <div className="space-y-8">
       {/* Hero Welcome Section Skeleton */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-8 md:p-10">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest-800 via-forest-700 to-forest-800 p-5 sm:p-8 md:p-10">
         <div className="relative space-y-4">
           <Skeleton className="h-4 w-24 bg-white/20" />
           <Skeleton className="h-12 w-48 bg-white/20" />
@@ -14,7 +14,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Stats Grid Skeleton */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
@@ -22,7 +22,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Feature Cards Skeleton */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <DashboardCardSkeleton />
         <DashboardCardSkeleton />
         <DashboardCardSkeleton />
