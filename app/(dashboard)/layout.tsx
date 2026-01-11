@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { BreadcrumbWrapper } from '@/components/dashboard/BreadcrumbWrapper'
 import { prisma } from '@/lib/prisma'
 
 export default async function DashboardLayout({
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
           userRole={user.role}
         />
         <main className="flex-1 p-6 bg-sand-50">
+          <BreadcrumbWrapper />
           {children}
         </main>
       </div>
