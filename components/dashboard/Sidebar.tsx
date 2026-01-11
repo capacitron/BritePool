@@ -116,7 +116,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none">
         {isAdmin && (
           <>
             <div className="px-3 py-2">
