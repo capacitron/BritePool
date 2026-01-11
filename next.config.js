@@ -18,6 +18,12 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  // Optimize icon imports for faster Fast Refresh
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+    },
+  },
   // Security headers applied via middleware
   // Skip ESLint during builds - run separately via `npm run lint`
   // This avoids the circular structure JSON error with flat config

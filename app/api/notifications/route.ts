@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
       where.isRead = false
     }
 
-    // Fetch notifications and unread count in parallel
-    const [notifications, totalCount, unreadCount] = await Promise.all([
+    // Fetch notifications and counts in single transaction for better performance
+    const [notifications, totalCount, unreadCount] = await prisma.$transaction([
       prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
