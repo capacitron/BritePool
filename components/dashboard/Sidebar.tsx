@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -28,6 +29,7 @@ import {
   ClipboardList,
   Megaphone,
   BarChart3,
+  ChevronDown,
 } from 'lucide-react'
 
 interface NavItem {
@@ -103,9 +105,64 @@ interface SidebarProps {
   userRole?: string
 }
 
+// Helper to check if a route is within a nav group
+function isRouteInGroup(pathname: string, items: NavItem[]): boolean {
+  return items.some(item =>
+    pathname === item.href ||
+    (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+  )
+}
+
+// Storage key for persisting collapsed state
+const STORAGE_KEY = 'sidebar-collapsed-sections'
+
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const isAdmin = userRole && adminRoles.includes(userRole)
+
+  // Initialize expanded sections - auto-expand section with active route
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = { Admin: true }
+    navGroups.forEach(group => {
+      initial[group.title] = isRouteInGroup(pathname, group.items)
+    })
+    return initial
+  })
+
+  // Load saved preferences on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Merge with current state, ensuring active section stays open
+        setExpandedSections(prev => {
+          const merged = { ...parsed }
+          // Always expand section containing current route
+          navGroups.forEach(group => {
+            if (isRouteInGroup(pathname, group.items)) {
+              merged[group.title] = true
+            }
+          })
+          if (isAdmin && isRouteInGroup(pathname, adminNavItems)) {
+            merged.Admin = true
+          }
+          return merged
+        })
+      }
+    } catch {}
+  }, [pathname, isAdmin])
+
+  // Save preferences when changed
+  const toggleSection = (title: string) => {
+    setExpandedSections(prev => {
+      const next = { ...prev, [title]: !prev[title] }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {}
+      return next
+    })
+  }
 
   return (
     <aside className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col">
@@ -119,67 +176,106 @@ export function Sidebar({ userRole }: SidebarProps) {
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none">
         {isAdmin && (
           <>
-            <div className="px-3 py-2">
+            <button
+              onClick={() => toggleSection('Admin')}
+              className="w-full flex items-center justify-between px-3 py-2 group"
+            >
               <h3 className="text-xs font-semibold text-earth-400 uppercase tracking-wider">
                 Admin
               </h3>
-            </div>
-            {adminNavItems.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/dashboard/admin' && pathname.startsWith(item.href + '/'))
-              const Icon = item.icon
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-earth-400 transition-transform duration-200",
+                  expandedSections.Admin ? "rotate-0" : "-rotate-90"
+                )}
+              />
+            </button>
+            <div className={cn(
+              "overflow-hidden transition-all duration-200",
+              expandedSections.Admin ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            )}>
+              {adminNavItems.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== '/dashboard/admin' && pathname.startsWith(item.href + '/'))
+                const Icon = item.icon
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-earth-500 text-white'
-                      : 'text-sand-200 bg-earth-500/10 hover:bg-earth-500/20 hover:text-white'
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              )
-            })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-earth-500 text-white'
+                        : 'text-sand-200 bg-earth-500/10 hover:bg-earth-500/20 hover:text-white'
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
             <div className="border-b border-forest-700 my-3" />
           </>
         )}
 
-        {navGroups.map((group) => (
-          <div key={group.title} className="mb-4">
-            <div className="px-3 py-2">
-              <h3 className="text-xs font-semibold text-sand-400 uppercase tracking-wider">
-                {group.title}
-              </h3>
-            </div>
-            {group.items.map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
-              const Icon = item.icon
+        {navGroups.map((group) => {
+          const isExpanded = expandedSections[group.title]
+          const hasActiveItem = isRouteInGroup(pathname, group.items)
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
+          return (
+            <div key={group.title} className="mb-1">
+              <button
+                onClick={() => toggleSection(group.title)}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors",
+                  hasActiveItem && !isExpanded && "bg-forest-800"
+                )}
+              >
+                <h3 className={cn(
+                  "text-xs font-semibold uppercase tracking-wider transition-colors",
+                  hasActiveItem ? "text-sand-200" : "text-sand-400"
+                )}>
+                  {group.title}
+                </h3>
+                <ChevronDown
                   className={cn(
-                    'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors font-body',
-                    isActive
-                      ? 'bg-forest-600 text-sand-50'
-                      : 'text-sand-200 hover:bg-forest-700 hover:text-sand-50'
+                    "h-4 w-4 text-sand-400 transition-transform duration-200",
+                    isExpanded ? "rotate-0" : "-rotate-90"
                   )}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
-        ))}
+                />
+              </button>
+              <div className={cn(
+                "overflow-hidden transition-all duration-200",
+                isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href ||
+                    (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+                  const Icon = item.icon
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors font-body',
+                        isActive
+                          ? 'bg-forest-600 text-sand-50'
+                          : 'text-sand-200 hover:bg-forest-700 hover:text-sand-50'
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </nav>
 
       <div className="p-4 border-t border-forest-700">
