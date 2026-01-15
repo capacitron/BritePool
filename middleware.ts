@@ -23,6 +23,10 @@ export default auth((req) => {
 
   // TEMPORARY: Bypass all auth checks when enabled
   if (BYPASS_AUTH) {
+    // Redirect away from login/auth pages when bypass is active
+    if (isAuthRoute) {
+      return NextResponse.redirect(new URL('/dashboard/admin', nextUrl))
+    }
     return NextResponse.next()
   }
 
