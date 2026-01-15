@@ -3,6 +3,19 @@ import { ZodError, type ZodSchema } from 'zod'
 import { auth } from './auth'
 import type { UserRole } from '@prisma/client'
 
+// TEMPORARY: Set to true to bypass all API authentication checks
+// TODO: Set back to false when done testing
+const BYPASS_API_AUTH = true
+
+// Mock admin user for bypass mode
+const BYPASS_USER = {
+  id: 'bypass-admin-user',
+  email: 'admin@bypass.local',
+  name: 'Bypass Admin',
+  role: 'WEB_STEWARD' as UserRole,
+  status: 'ACTIVE',
+}
+
 // Standard API response types
 interface ApiSuccessResponse<T> {
   success: true
@@ -177,6 +190,11 @@ interface AuthResult {
 export async function requireAuth(): Promise<
   { auth: AuthResult; error: null } | { auth: null; error: NextResponse<ApiErrorResponse> }
 > {
+  // TEMPORARY: Bypass authentication when enabled
+  if (BYPASS_API_AUTH) {
+    return { auth: { user: BYPASS_USER }, error: null }
+  }
+
   const session = await auth()
 
   if (!session?.user) {

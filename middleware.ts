@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth'
 
+// TEMPORARY: Set to true to bypass all authentication checks
+// TODO: Set back to false when done testing
+const BYPASS_AUTH = true
+
 const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
 const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
 
@@ -16,6 +20,11 @@ export default auth((req) => {
   const isStaticRoute = path.startsWith('/_next') || path.startsWith('/favicon')
   const isOnboardingRoute = path.startsWith('/onboarding')
   const isContractCheckRoute = path === '/api/auth/check-covenant'
+
+  // TEMPORARY: Bypass all auth checks when enabled
+  if (BYPASS_AUTH) {
+    return NextResponse.next()
+  }
 
   // Skip middleware for static and API routes
   if (isStaticRoute || isApiRoute || isContractCheckRoute) {
