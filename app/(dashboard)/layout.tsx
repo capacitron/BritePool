@@ -5,16 +5,17 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardClientWrapper } from '@/components/dashboard/DashboardClientWrapper'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { prisma } from '@/lib/prisma'
+import { UserRole } from '@prisma/client'
 
 // TEMPORARY: Set to true to bypass dashboard auth checks
 // TODO: Set back to false when done testing
 const BYPASS_DASHBOARD_AUTH = true
 
 // Mock user for bypass mode
-const BYPASS_USER = {
+const BYPASS_USER: { name: string; email: string; role: UserRole } = {
   name: 'Bypass Admin',
   email: 'admin@bypass.local',
-  role: 'WEB_STEWARD' as const,
+  role: 'WEB_STEWARD',
 }
 
 export default async function DashboardLayout({
