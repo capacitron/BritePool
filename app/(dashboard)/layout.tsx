@@ -6,28 +6,45 @@ import { DashboardClientWrapper } from '@/components/dashboard/DashboardClientWr
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { prisma } from '@/lib/prisma'
 
+// TEMPORARY: Set to true to bypass dashboard auth checks
+// TODO: Set back to false when done testing
+const BYPASS_DASHBOARD_AUTH = true
+
+// Mock user for bypass mode
+const BYPASS_USER = {
+  name: 'Bypass Admin',
+  email: 'admin@bypass.local',
+  role: 'WEB_STEWARD' as const,
+}
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
+  let user = BYPASS_USER
 
-  if (!session?.user?.id) {
-    redirect('/login')
-  }
+  if (!BYPASS_DASHBOARD_AUTH) {
+    const session = await auth()
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      name: true,
-      email: true,
-      role: true,
-    },
-  })
+    if (!session?.user?.id) {
+      redirect('/login')
+    }
 
-  if (!user) {
-    redirect('/login')
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        email: true,
+        role: true,
+      },
+    })
+
+    if (!dbUser) {
+      redirect('/login')
+    }
+
+    user = dbUser
   }
 
   return (

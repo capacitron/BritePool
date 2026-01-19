@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['*.replit.dev', '*.worf.replit.dev'],
+  allowedDevOrigins: ['*', '*.replit.dev', '*.worf.replit.dev'],
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'all' },
+        ],
+      },
+    ]
+  },
   images: {
     domains: ['localhost'],
     remotePatterns: [
