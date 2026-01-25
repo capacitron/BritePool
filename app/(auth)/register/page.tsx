@@ -81,8 +81,8 @@ export default function RegisterPage() {
         <CardTitle>Join BRITE POOL</CardTitle>
         <CardDescription>Create your account to begin your journey</CardDescription>
       </CardHeader>
-      <form onSubmit={onSubmit}>
-        <CardContent className="space-y-4">
+      <form onSubmit={onSubmit} suppressHydrationWarning>
+        <CardContent className="space-y-4" suppressHydrationWarning>
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}

@@ -82,8 +82,8 @@ export default function LoginPage() {
         <CardTitle>Welcome Back</CardTitle>
         <CardDescription>Sign in to your BRITE POOL account</CardDescription>
       </CardHeader>
-      <form onSubmit={onSubmit}>
-        <CardContent className="space-y-4">
+      <form onSubmit={onSubmit} suppressHydrationWarning>
+        <CardContent className="space-y-4" suppressHydrationWarning>
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
