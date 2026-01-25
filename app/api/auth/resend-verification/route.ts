@@ -68,7 +68,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Send verification email
-    await sendVerificationEmail(user.email, user.name, token)
+    const emailResult = await sendVerificationEmail(user.email, user.name, token)
+    if (!emailResult.success) {
+      console.error('[ResendVerification] Email failed:', emailResult.error || 'Unknown error')
+    }
 
     return NextResponse.json({
       success: true,

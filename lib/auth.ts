@@ -54,16 +54,21 @@ const config: NextAuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[Auth] authorize() called')
+
         if (!credentials?.email || !credentials?.password) {
+          console.log('[Auth] Missing credentials')
           throw new Error('Email and password are required')
         }
 
         const email = credentials.email as string
         const password = credentials.password as string
+        console.log('[Auth] Looking up user:', email)
 
         const user = await prisma.user.findUnique({
           where: { email },
         })
+        console.log('[Auth] User lookup complete:', user ? 'found' : 'not found')
 
         if (!user) {
           throw new Error('Invalid email or password')
@@ -84,7 +89,9 @@ const config: NextAuthConfig = {
           throw new Error('Please verify your email before logging in')
         }
 
+        console.log('[Auth] Checking password...')
         const isValidPassword = await comparePassword(password, user.passwordHash)
+        console.log('[Auth] Password valid:', isValidPassword)
 
         if (!isValidPassword) {
           // Increment login attempts
@@ -107,6 +114,7 @@ const config: NextAuthConfig = {
         }
 
         // Reset login attempts on successful login
+        console.log('[Auth] Resetting login attempts...')
         await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -116,6 +124,7 @@ const config: NextAuthConfig = {
           },
         })
 
+        console.log('[Auth] Login successful for:', email)
         return {
           id: user.id,
           email: user.email,

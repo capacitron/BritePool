@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { Resend } from 'resend'
 
 // Lazy-initialize Resend client to avoid build-time errors
@@ -5,8 +6,11 @@ let resendClient: Resend | null = null
 
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY
+  // Debug logging
+  console.log('[Email] RESEND_API_KEY status:', apiKey ? `SET (${apiKey.substring(0, 10)}...)` : 'NOT SET')
   // Check if API key exists and is not a placeholder
   if (!apiKey || apiKey.includes('your_api_key') || apiKey === 'undefined' || apiKey.length < 20) {
+    console.log('[Email] Falling back to mock mode')
     return null
   }
   if (!resendClient) {
@@ -42,10 +46,9 @@ export async function sendEmail({
   const resend = getResendClient()
 
   if (!resend) {
-    console.log('Email would be sent (RESEND_API_KEY not configured):')
-    console.log(`To: ${to}`)
-    console.log(`Subject: ${subject}`)
-    return { success: true, mock: true }
+    console.warn('[Email] WARNING: RESEND_API_KEY not configured - email NOT sent')
+    console.warn(`[Email] Would have sent to: ${to}, Subject: ${subject}`)
+    return { success: false, mock: true, error: 'RESEND_API_KEY not configured' }
   }
 
   try {
