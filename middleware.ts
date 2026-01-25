@@ -6,8 +6,15 @@ import { auth } from '@/lib/auth'
 // TODO: Set back to false when done testing
 const BYPASS_AUTH = true
 
-const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
-const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
+const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+]
+const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
 
 export default auth((req) => {
   const { nextUrl } = req

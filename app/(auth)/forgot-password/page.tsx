@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,12 +13,12 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card'
-import { loginSchema, type LoginInput } from '@/lib/validations/auth'
+import { forgotPasswordSchema } from '@/lib/validations/auth'
 
-export default function LoginPage() {
-  const router = useRouter()
+export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -31,10 +29,9 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget)
     const data = {
       email: formData.get('email') as string,
-      password: formData.get('password') as string,
     }
 
-    const parsed = loginSchema.safeParse(data)
+    const parsed = forgotPasswordSchema.safeParse(data)
     if (!parsed.success) {
       const errors: Record<string, string> = {}
       parsed.error.issues.forEach((err) => {
@@ -49,38 +46,64 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const result = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       })
 
-      if (result?.error) {
-        setError('Invalid email or password')
-      } else if (result?.ok) {
-        // Check if user is admin and redirect accordingly
-        const sessionRes = await fetch('/api/auth/session')
-        const session = await sessionRes.json()
-        const role = session?.user?.role
-        if (role === 'WEB_STEWARD' || role === 'BOARD_CHAIR') {
-          router.push('/dashboard/admin')
-        } else {
-          router.push('/dashboard')
-        }
-        router.refresh()
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || 'An error occurred. Please try again.')
+      } else {
+        setSuccess(true)
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
+  if (success) {
+    return (
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle>Check Your Email</CardTitle>
+          <CardDescription>We sent you a password reset link</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-forest-50 border border-forest-200 text-forest-700 px-4 py-3 rounded-lg text-sm font-body">
+            If an account with that email exists, you'll receive an email with instructions to reset
+            your password. The link will expire in 1 hour.
+          </div>
+          <p className="text-sm text-forest-600 font-body">
+            Didn't receive the email? Check your spam folder or{' '}
+            <button
+              onClick={() => setSuccess(false)}
+              className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
+            >
+              try again
+            </button>
+          </p>
+        </CardContent>
+        <CardFooter>
+          <Link href="/login" className="w-full">
+            <Button variant="outline" className="w-full">
+              Back to Sign In
+            </Button>
+          </Link>
+        </CardFooter>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle>Welcome Back</CardTitle>
-        <CardDescription>Sign in to your BRITE POOL account</CardDescription>
+        <CardTitle>Forgot Password</CardTitle>
+        <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
@@ -103,40 +126,18 @@ export default function LoginPage() {
               <p className="text-sm text-earth-600 font-body">{fieldErrors.email}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-forest-600 hover:text-forest-700 hover:underline font-body"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              disabled={isLoading}
-            />
-            {fieldErrors.password && (
-              <p className="text-sm text-earth-600 font-body">{fieldErrors.password}</p>
-            )}
-          </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Sending...' : 'Send Reset Link'}
           </Button>
           <p className="text-sm text-forest-600 text-center font-body">
-            Don't have an account?{' '}
+            Remember your password?{' '}
             <Link
-              href="/register"
+              href="/login"
               className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
             >
-              Create one
+              Sign in
             </Link>
           </p>
         </CardFooter>

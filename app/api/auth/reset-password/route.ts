@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { resetPasswordSchema } from '@/lib/validations/auth'
+import { hashPassword } from '@/lib/auth-utils'
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Validate input
+    const parsed = resetPasswordSchema.safeParse(body)
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map((issue) => ({
+        field: issue.path[0],
+        message: issue.message,
+      }))
+      return NextResponse.json({ error: 'Validation failed', errors }, { status: 400 })
+    }
+
+    const { token, password } = parsed.data
+
+    // Find valid token
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: {
+        user: {
+          select: { id: true, email: true, status: true },
+        },
+      },
+    })
+
+    // Check if token is valid
+    if (!resetToken) {
+      return NextResponse.json(
+        { error: 'Invalid or expired reset link. Please request a new one.' },
+        { status: 400 }
+      )
+    }
+
+    if (resetToken.usedAt) {
+      return NextResponse.json(
+        { error: 'This reset link has already been used. Please request a new one.' },
+        { status: 400 }
+      )
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      return NextResponse.json(
+        { error: 'This reset link has expired. Please request a new one.' },
+        { status: 400 }
+      )
+    }
+
+    if (resetToken.user.status === 'SUSPENDED' || resetToken.user.status === 'LOCKED') {
+      return NextResponse.json(
+        { error: 'Your account is not active. Please contact support.' },
+        { status: 403 }
+      )
+    }
+
+    // Hash the new password
+    const passwordHash = await hashPassword(password)
+
+    // Update user password and mark token as used in a transaction
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: {
+          passwordHash,
+          loginAttempts: 0, // Reset login attempts
+          lockedUntil: null, // Unlock account if locked
+        },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ])
+
+    return NextResponse.json({
+      message: 'Your password has been reset successfully. You can now sign in.',
+    })
+  } catch (error) {
+    console.error('Reset password error:', error)
+    return NextResponse.json({ error: 'An error occurred. Please try again.' }, { status: 500 })
+  }
+}
