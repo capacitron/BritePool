@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth'
 
-const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
-const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
+const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
+const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
 
 export default auth((req) => {
   const { nextUrl } = req

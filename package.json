@@ -57,6 +57,7 @@
     "prisma": "^5.22.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "resend": "^6.6.0",
     "sonner": "^2.0.7",
     "stripe": "^20.1.0",

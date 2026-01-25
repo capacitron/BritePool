@@ -198,6 +198,49 @@ export async function sendContentApprovedEmail(
   })
 }
 
+export async function sendVerificationEmail(email: string, name: string, verificationToken: string) {
+  const verifyUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #1a365d; margin: 0; font-size: 28px;">BRITE POOL</h1>
+          <p style="color: #64748b; margin: 5px 0;">Ministerium of Empowerment</p>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+          <h2 style="color: #1a365d; margin-top: 0;">Verify Your Email Address</h2>
+          <p>Hi ${name},</p>
+          <p>Thank you for registering with BRITE POOL. Please verify your email address by clicking the button below:</p>
+
+          <a href="${verifyUrl}" style="display: inline-block; background: #16a34a; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin: 20px 0;">Verify Email</a>
+
+          <p style="font-size: 14px; color: #64748b;">This link will expire in 24 hours.</p>
+          <p style="font-size: 14px; color: #64748b;">If you didn't create an account, you can safely ignore this email.</p>
+        </div>
+
+        <p style="color: #64748b; font-size: 14px; text-align: center;">
+          If you have any questions, please contact our support team.
+        </p>
+      </body>
+    </html>
+  `
+
+  return sendEmail({
+    to: email,
+    subject: 'Verify Your BRITE POOL Email',
+    html,
+    text: `Hi ${name}, Please verify your email by visiting: ${verifyUrl} This link expires in 24 hours.`,
+  })
+}
+
 export async function sendContentRejectedEmail(
   email: string,
   name: string,

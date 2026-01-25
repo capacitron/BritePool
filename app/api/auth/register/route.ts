@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   // Rate limit registration attempts
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         passwordHash,
         role: 'STEWARD',
+        status: 'PENDING_VERIFICATION',
         subscriptionTier: 'FREE',
         subscriptionStatus: 'INACTIVE',
         profile: {
@@ -54,10 +57,25 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Create email verification token
+    const verificationToken = randomUUID()
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: tokenExpiresAt,
+      },
+    })
+
+    // Send verification email
+    await sendVerificationEmail(normalizedEmail, name, verificationToken)
+
     return NextResponse.json(
       {
         success: true,
-        message: 'Account created successfully. Please log in.',
+        message: 'Account created successfully. Please check your email to verify your account.',
         userId: user.id,
       },
       { status: 201 }
