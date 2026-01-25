@@ -9,7 +9,7 @@ import { UserRole } from '@prisma/client'
 
 // TEMPORARY: Set to true to bypass dashboard auth checks
 // TODO: Set back to false when done testing
-const BYPASS_DASHBOARD_AUTH = true
+const BYPASS_DASHBOARD_AUTH = false
 
 // Mock user for bypass mode
 const BYPASS_USER: { name: string; email: string; role: UserRole } = {
@@ -18,11 +18,7 @@ const BYPASS_USER: { name: string; email: string; role: UserRole } = {
   role: 'WEB_STEWARD',
 }
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   let user = BYPASS_USER
 
   if (!BYPASS_DASHBOARD_AUTH) {
@@ -56,11 +52,7 @@ export default async function DashboardLayout({
           <Sidebar userRole={user.role} />
         </div>
         <div className="flex-1 flex flex-col">
-          <DashboardHeader
-            userName={user.name}
-            userEmail={user.email}
-            userRole={user.role}
-          />
+          <DashboardHeader userName={user.name} userEmail={user.email} userRole={user.role} />
           <main className="flex-1 p-4 sm:p-6 bg-sand-50">
             <Breadcrumbs />
             {children}
