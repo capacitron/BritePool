@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth'
 
-// TEMPORARY: Set to true to bypass all authentication checks
-// TODO: Set back to false when done testing
-const BYPASS_AUTH = true
+// Set to true to bypass all authentication checks (for testing only)
+const BYPASS_AUTH = false
 
 const publicRoutes = [
   '/',
