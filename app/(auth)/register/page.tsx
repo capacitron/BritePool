@@ -79,9 +79,7 @@ export default function RegisterPage() {
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle>Join BRITE POOL</CardTitle>
-        <CardDescription className="text-red-600 font-bold">
-          Create your account to begin your journey
-        </CardDescription>
+        <CardDescription>Create your account to begin your journey</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
