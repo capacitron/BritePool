@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, BookOpen, Award, ArrowRight, Sparkles, Leaf, Sun, Shield, TrendingUp } from 'lucide-react'
+import { Users, BookOpen, Award, ArrowRight, Leaf, Sun, Shield, TrendingUp } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -22,12 +22,6 @@ export default function Home() {
         <div className="max-w-5xl w-full mx-auto text-center">
           {/* Hero Section */}
           <div className="text-center mb-12 md:mb-16">
-            {/* Decorative Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-forest-600/10 backdrop-blur-sm border border-forest-300 shadow-sm mb-6 md:mb-8">
-              <Sparkles className="w-4 h-4 text-earth-500" />
-              <span className="text-sm font-medium text-forest-700 font-body">Building Sovereign Futures</span>
-            </div>
-
             {/* Main Title */}
             <div className="relative inline-block">
               <div className="absolute -left-6 md:-left-12 top-1/2 -translate-y-1/2 w-4 md:w-8 h-px bg-gradient-to-r from-transparent to-forest-400 hidden sm:block" />

@@ -40,7 +40,8 @@
       "Bash(then grep -iE \"\\(AUTH|SECRET\\)\" /home/runner/workspace/.env)",
       "Bash(else echo \"No .env file found\")",
       "Bash(npx ts-node:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": []
   },
