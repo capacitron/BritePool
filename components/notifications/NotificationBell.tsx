@@ -109,6 +109,12 @@ export function NotificationBell() {
     try {
       const response = await fetch('/api/notifications?limit=10')
       if (!response.ok) {
+        // Silently handle auth errors - user not logged in
+        if (response.status === 401) {
+          setNotifications([])
+          setUnreadCount(0)
+          return
+        }
         throw new Error('Failed to fetch notifications')
       }
       const data: NotificationsResponse = await response.json()
