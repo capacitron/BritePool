@@ -6,7 +6,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card'
 import { registerSchema, type RegisterInput } from '@/lib/validations/auth'
 
 export default function RegisterPage() {
@@ -71,7 +78,7 @@ export default function RegisterPage() {
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle>Join BRITE POOL</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-red-600 font-bold">
           Create your account to begin your journey
         </CardDescription>
       </CardHeader>
@@ -134,7 +141,10 @@ export default function RegisterPage() {
           </Button>
           <p className="text-sm text-forest-600 text-center font-body">
             Already have an account?{' '}
-            <Link href="/login" className="text-forest-700 hover:text-forest-800 hover:underline font-medium">
+            <Link
+              href="/login"
+              className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
+            >
               Sign in
             </Link>
           </p>
