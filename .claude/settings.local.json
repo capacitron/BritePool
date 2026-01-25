@@ -44,7 +44,8 @@
       "Bash(npm ls:*)",
       "Bash(source .env)",
       "Bash(printenv:*)",
-      "Bash(openssl rand:*)"
+      "Bash(openssl rand:*)",
+      "Bash(claude install:*)"
     ],
     "deny": []
   },
