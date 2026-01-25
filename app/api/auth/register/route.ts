@@ -69,8 +69,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send verification email
-    await sendVerificationEmail(normalizedEmail, name, verificationToken)
+    // Send verification email (don't block registration on email failure)
+    sendVerificationEmail(normalizedEmail, name, verificationToken).catch((err) => {
+      console.error('Failed to send verification email:', err)
+    })
 
     return NextResponse.json(
       {

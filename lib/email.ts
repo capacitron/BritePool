@@ -4,11 +4,13 @@ import { Resend } from 'resend'
 let resendClient: Resend | null = null
 
 function getResendClient(): Resend | null {
-  if (!process.env.RESEND_API_KEY) {
+  const apiKey = process.env.RESEND_API_KEY
+  // Check if API key exists and is not a placeholder
+  if (!apiKey || apiKey.includes('your_api_key') || apiKey === 'undefined' || apiKey.length < 20) {
     return null
   }
   if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY)
+    resendClient = new Resend(apiKey)
   }
   return resendClient
 }
