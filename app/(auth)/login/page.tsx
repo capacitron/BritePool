@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2, CheckCircle2, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,8 +18,11 @@ import {
 } from '@/components/ui/card'
 import { loginSchema, type LoginInput } from '@/lib/validations/auth'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const justRegistered = searchParams.get('registered') === 'true'
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -56,7 +60,14 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        // Check for specific error messages
+        if (result.error.includes('verify') || result.error.includes('Verify')) {
+          setError(
+            'Please verify your email before signing in. Check your inbox for the verification link.'
+          )
+        } else {
+          setError('Invalid email or password')
+        }
       } else if (result?.ok) {
         // Check if user is admin and redirect accordingly
         const sessionRes = await fetch('/api/auth/session')
@@ -84,11 +95,28 @@ export default function LoginPage() {
       </CardHeader>
       <form onSubmit={onSubmit} suppressHydrationWarning>
         <CardContent className="space-y-4" suppressHydrationWarning>
+          {/* Success message after registration */}
+          {justRegistered && !error && (
+            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm font-body">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">Account created successfully!</p>
+                  <p className="mt-1">
+                    Please check your email and click the verification link before signing in.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error message */}
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
             </div>
           )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -128,7 +156,14 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </Button>
           <p className="text-sm text-forest-600 text-center font-body">
             Don't have an account?{' '}
@@ -142,5 +177,29 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <Card>
+      <CardHeader className="space-y-1">
+        <CardTitle>Welcome Back</CardTitle>
+        <CardDescription>Sign in to your BRITE POOL account</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LoginForm />
+    </Suspense>
   )
 }
