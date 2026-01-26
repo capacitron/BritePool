@@ -87,4 +87,3 @@ waitForPort = 5000
 [userenv]
 
 [userenv.shared]
-AUTH_SECRET = "gdvOnMR/Hrc+CQkaRaY1rvdvOs21FaidvSAJBBhsFZ8="
