@@ -46,7 +46,8 @@
       "Bash(printenv:*)",
       "Bash(openssl rand:*)",
       "Bash(claude install:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(npm run test:run:*)"
     ],
     "deny": []
   },
