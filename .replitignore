@@ -1,0 +1,31 @@
+# Dev/test files
+.local/
+.cache/
+.claude/
+.git/
+.config/
+docs-temp/
+tests/
+memory/
+hooks/
+coordination/
+scripts/
+playwright-report/
+test-results/
+coverage/
+attached_assets/
+
+# Config files not needed in prod
+*.md
+CLAUDE.md
+.env.example
+vitest.config.ts
+playwright.config.ts
+tsconfig.test.json
+eslint.config.mjs
+.prettierrc
+.prettierignore
+
+# Logs
+*.log
+npm-debug.log*
