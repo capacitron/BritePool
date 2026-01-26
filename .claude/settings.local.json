@@ -45,7 +45,8 @@
       "Bash(source .env)",
       "Bash(printenv:*)",
       "Bash(openssl rand:*)",
-      "Bash(claude install:*)"
+      "Bash(claude install:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   },
