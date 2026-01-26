@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, XCircle, Loader2, Mail, RefreshCw } from 'lucide-react'
 
-type VerificationState = 'loading' | 'success' | 'error' | 'no-token'
+type VerificationState = 'loading' | 'success' | 'error' | 'no-token' | 'already-verified'
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -63,7 +63,14 @@ function VerifyEmailContent() {
         body: JSON.stringify({ email: resendEmail }),
       })
       const data = await response.json()
-      setResendMessage(data.message || 'Verification email sent!')
+
+      // Check if email is already verified - transition to success-like state
+      if (data.message?.toLowerCase().includes('already verified')) {
+        setState('already-verified')
+        setMessage('Your email is already verified!')
+      } else {
+        setResendMessage(data.message || 'Verification email sent!')
+      }
     } catch (error) {
       setResendMessage('Failed to send verification email. Please try again.')
     } finally {
@@ -151,6 +158,29 @@ function VerifyEmailContent() {
           </div>
           <h1 className="text-2xl font-display font-bold text-forest-800">Email Verified!</h1>
           <p className="text-forest-600 mt-2 mb-6 font-body">{message}</p>
+          <Button
+            onClick={() => router.push('/login')}
+            className="w-full bg-forest-600 hover:bg-forest-700 text-white"
+          >
+            Continue to Login
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Already verified state (discovered during resend attempt)
+  if (state === 'already-verified') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-sand-50 to-cream flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-display font-bold text-forest-800">Already Verified!</h1>
+          <p className="text-forest-600 mt-2 mb-6 font-body">
+            Your email address is already verified. You can proceed to sign in.
+          </p>
           <Button
             onClick={() => router.push('/login')}
             className="w-full bg-forest-600 hover:bg-forest-700 text-white"

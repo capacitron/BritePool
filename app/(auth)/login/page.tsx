@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, CheckCircle2, Mail } from 'lucide-react'
+import { Loader2, CheckCircle2, Mail, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,11 +26,17 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [attemptedEmail, setAttemptedEmail] = useState<string>('')
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setFieldErrors({})
+    setNeedsVerification(false)
+    setResendSuccess(false)
 
     const formData = new FormData(e.currentTarget)
     const data = {
@@ -51,6 +57,7 @@ function LoginForm() {
     }
 
     setIsLoading(true)
+    setAttemptedEmail(data.email)
 
     try {
       const result = await signIn('credentials', {
@@ -60,11 +67,9 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        // Check for specific error messages
+        // Check for email verification error
         if (result.error.includes('verify') || result.error.includes('Verify')) {
-          setError(
-            'Please verify your email before signing in. Check your inbox for the verification link.'
-          )
+          setNeedsVerification(true)
         } else {
           setError('Invalid email or password')
         }
@@ -87,6 +92,33 @@ function LoginForm() {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!attemptedEmail || resendLoading) return
+
+    setResendLoading(true)
+    setResendSuccess(false)
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: attemptedEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setResendSuccess(true)
+      } else {
+        setError(data.error || 'Failed to resend verification email')
+      }
+    } catch (err) {
+      setError('Failed to resend verification email. Please try again.')
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -113,8 +145,58 @@ function LoginForm() {
             </div>
           )}
 
+          {/* Email verification required - prominent card */}
+          {needsVerification && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-800">Email verification required</h3>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Please verify your email address before signing in. We sent a verification link
+                    to:
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-amber-900">{attemptedEmail}</p>
+
+                  {resendSuccess ? (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Verification email sent! Check your inbox.</span>
+                    </div>
+                  ) : (
+                    <div className="mt-3">
+                      <p className="text-xs text-amber-600 mb-2">
+                        Didn't receive the email? Check your spam folder or request a new one.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResendVerification}
+                        disabled={resendLoading}
+                        className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                      >
+                        {resendLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="mr-2 h-3 w-3" />
+                            Resend verification email
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error message */}
-          {error && (
+          {error && !needsVerification && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
             </div>
