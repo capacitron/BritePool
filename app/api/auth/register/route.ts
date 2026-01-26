@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { randomUUID } from 'crypto'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create email verification token
-    const verificationToken = randomUUID()
-    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    // Create secure email verification token with high entropy (256 bits)
+    const verificationToken = randomBytes(32).toString('hex')
+    const tokenExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours (reduced for security)
 
     await prisma.emailVerificationToken.create({
       data: {
@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
           emailSent: false,
           message:
             'Account created but verification email could not be sent. Please use the resend option.',
-          userId: user.id,
         },
         { status: 201 }
       )
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
         success: true,
         emailSent: true,
         message: 'Account created successfully. Please check your email to verify your account.',
-        userId: user.id,
       },
       { status: 201 }
     )

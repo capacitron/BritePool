@@ -4,6 +4,13 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { loginSchema } from '@/lib/validations/auth'
 import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
+import {
+  LOCKOUT_CONFIG,
+  getLockoutExpiration,
+  shouldLockAccount,
+  isAccountLocked,
+  getLockoutErrorMessage,
+} from './lockout'
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -27,8 +34,8 @@ export const authConfig: NextAuthConfig = {
         if (!user) return null
 
         // Check if account is locked
-        if (user.lockedUntil && user.lockedUntil > new Date()) {
-          throw new Error('Account is temporarily locked. Try again later.')
+        if (isAccountLocked(user.lockedUntil)) {
+          throw new Error(getLockoutErrorMessage(user.lockedUntil))
         }
 
         // Check if account requires email verification
@@ -54,15 +61,22 @@ export const authConfig: NextAuthConfig = {
             loginAttempts: newAttempts,
           }
 
-          // Lock account after 5 failed attempts for 15 minutes
-          if (newAttempts >= 5) {
-            updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000)
+          // Lock account after configured max attempts
+          if (shouldLockAccount(newAttempts)) {
+            updateData.lockedUntil = getLockoutExpiration()
           }
 
           await prisma.user.update({
             where: { id: user.id },
             data: updateData,
           })
+
+          // Throw specific error if account is now locked
+          if (updateData.lockedUntil) {
+            throw new Error(
+              `Too many failed login attempts. Account locked for ${LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES} minutes.`
+            )
+          }
 
           return null
         }

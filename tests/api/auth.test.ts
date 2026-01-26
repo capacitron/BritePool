@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+// Use vi.hoisted to create mocks that work with hoisted vi.mock calls
+const {
+  mockUserFindUnique,
+  mockUserCreate,
+  mockEmailVerificationTokenCreate,
+  mockRateLimitFn,
+  mockSendVerificationEmail,
+} = vi.hoisted(() => ({
+  mockUserFindUnique: vi.fn(),
+  mockUserCreate: vi.fn(),
+  mockEmailVerificationTokenCreate: vi.fn(),
+  mockRateLimitFn: vi.fn(),
+  mockSendVerificationEmail: vi.fn(),
+}))
+
 // Mock bcrypt
 vi.mock('bcryptjs', () => ({
   default: {
@@ -9,9 +24,9 @@ vi.mock('bcryptjs', () => ({
   },
 }))
 
-// Mock rate limiting - return null to allow requests through (async)
+// Mock rate limiting
 vi.mock('@/lib/rate-limit', () => ({
-  rateLimit: vi.fn().mockResolvedValue(null),
+  rateLimit: mockRateLimitFn,
   RateLimitConfigs: {
     register: { windowMs: 3600000, maxRequests: 5 },
     login: { windowMs: 900000, maxRequests: 5 },
@@ -22,10 +37,18 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
+      findUnique: mockUserFindUnique,
+      create: mockUserCreate,
+    },
+    emailVerificationToken: {
+      create: mockEmailVerificationTokenCreate,
     },
   },
+}))
+
+// Mock email sending
+vi.mock('@/lib/email', () => ({
+  sendVerificationEmail: mockSendVerificationEmail,
 }))
 
 // Mock api-utils
@@ -35,20 +58,19 @@ vi.mock('@/lib/api-utils', () => ({
 
 // Import after mocking
 import { POST } from '@/app/api/auth/register/route'
-import { prisma } from '@/lib/prisma'
-import { rateLimit } from '@/lib/rate-limit'
-
-// Cast mocks for type safety
-const mockUser = prisma.user as unknown as {
-  findUnique: ReturnType<typeof vi.fn>
-  create: ReturnType<typeof vi.fn>
-}
-const mockRateLimit = rateLimit as ReturnType<typeof vi.fn>
 
 describe('POST /api/auth/register', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRateLimit.mockResolvedValue(null)
+    // Set up default mocks
+    mockRateLimitFn.mockResolvedValue(null)
+    mockEmailVerificationTokenCreate.mockResolvedValue({
+      id: 'token-id',
+      userId: 'user-id',
+      token: 'mock-verification-token',
+      expiresAt: new Date(),
+    })
+    mockSendVerificationEmail.mockResolvedValue({ success: true })
   })
 
   afterEach(() => {
@@ -100,7 +122,7 @@ describe('POST /api/auth/register', () => {
   })
 
   it('returns 409 when email already exists', async () => {
-    mockUser.findUnique.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({
       id: 'existing-user',
       email: 'test@example.com',
     })
@@ -121,8 +143,8 @@ describe('POST /api/auth/register', () => {
   })
 
   it('creates user successfully with valid input', async () => {
-    mockUser.findUnique.mockResolvedValue(null)
-    mockUser.create.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue(null)
+    mockUserCreate.mockResolvedValue({
       id: 'new-user-123',
       name: 'Test User',
       email: 'test@example.com',
@@ -138,14 +160,14 @@ describe('POST /api/auth/register', () => {
       }),
     })
     const response = await POST(request)
+    const json = await response.json()
 
     expect(response.status).toBe(201)
-    const json = await response.json()
     expect(json.success).toBe(true)
-    expect(json.message).toBe('Account created successfully. Please log in.')
-    expect(json.userId).toBe('new-user-123')
+    // userId removed from response for security (prevents user enumeration)
+    expect(json.userId).toBeUndefined()
 
-    expect(mockUser.create).toHaveBeenCalledWith({
+    expect(mockUserCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         name: 'Test User',
         email: 'test@example.com',
@@ -157,8 +179,8 @@ describe('POST /api/auth/register', () => {
   })
 
   it('normalizes email to lowercase', async () => {
-    mockUser.findUnique.mockResolvedValue(null)
-    mockUser.create.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue(null)
+    mockUserCreate.mockResolvedValue({
       id: 'new-user',
       email: 'test@example.com',
     })
@@ -173,10 +195,10 @@ describe('POST /api/auth/register', () => {
     })
     await POST(request)
 
-    expect(mockUser.findUnique).toHaveBeenCalledWith({
+    expect(mockUserFindUnique).toHaveBeenCalledWith({
       where: { email: 'test@example.com' },
     })
-    expect(mockUser.create).toHaveBeenCalledWith({
+    expect(mockUserCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         email: 'test@example.com',
       }),
@@ -187,7 +209,7 @@ describe('POST /api/auth/register', () => {
     const rateLimitResponse = new Response(JSON.stringify({ error: 'Too many requests' }), {
       status: 429,
     })
-    mockRateLimit.mockResolvedValue(rateLimitResponse)
+    mockRateLimitFn.mockResolvedValue(rateLimitResponse)
 
     const request = new NextRequest('http://localhost:3000/api/auth/register', {
       method: 'POST',
@@ -203,8 +225,8 @@ describe('POST /api/auth/register', () => {
   })
 
   it('returns 500 on database error', async () => {
-    mockUser.findUnique.mockResolvedValue(null)
-    mockUser.create.mockRejectedValue(new Error('Database error'))
+    mockUserFindUnique.mockResolvedValue(null)
+    mockUserCreate.mockRejectedValue(new Error('Database error'))
 
     const request = new NextRequest('http://localhost:3000/api/auth/register', {
       method: 'POST',

@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Generate new token
-      const token = crypto.randomUUID()
+      // Generate secure token with high entropy (256 bits)
+      const token = crypto.randomBytes(32).toString('hex')
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
       // Store token

@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordStrength } from '@/components/ui/password-strength'
 import {
   Card,
   CardHeader,
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [password, setPassword] = useState('')
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -125,13 +127,13 @@ export default function RegisterPage() {
               placeholder="••••••••"
               autoComplete="new-password"
               disabled={isLoading}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
             {fieldErrors.password && (
               <p className="text-sm text-earth-600 font-body">{fieldErrors.password}</p>
             )}
-            <p className="text-xs text-forest-500 font-body">
-              Must be at least 8 characters with uppercase, lowercase, and a number
-            </p>
+            <PasswordStrength password={password} className="mt-3" />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">

@@ -34,11 +34,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
         name: true,
         email: true,
         role: true,
+        onboardingCompleted: true,
       },
     })
 
     if (!dbUser) {
       redirect('/login')
+    }
+
+    // Redirect to onboarding if not completed (except for admins)
+    const isAdmin = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
+    if (!dbUser.onboardingCompleted && !isAdmin) {
+      redirect('/onboarding/welcome')
     }
 
     user = dbUser

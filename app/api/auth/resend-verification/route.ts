@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { sendVerificationEmail } from '@/lib/email'
 import { rateLimit } from '@/lib/rate-limit'
-import { randomUUID } from 'crypto'
+import { randomBytes } from 'crypto'
 
 const RESEND_RATE_LIMIT = {
   maxRequests: 3,
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
       data: { usedAt: new Date() },
     })
 
-    // Create new token
-    const token = randomUUID()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    // Create secure token with high entropy (256 bits)
+    const token = randomBytes(32).toString('hex')
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours (reduced for security)
 
     await prisma.emailVerificationToken.create({
       data: {

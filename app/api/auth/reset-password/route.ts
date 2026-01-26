@@ -55,13 +55,14 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password)
 
     // Update user password and mark token as used in a transaction
+    // Also clear any account lockout (see lib/auth/lockout.ts for lockout config)
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetToken.userId },
         data: {
           passwordHash,
-          loginAttempts: 0, // Reset login attempts
-          lockedUntil: null, // Unlock account if locked
+          loginAttempts: 0, // Clear failed login attempts
+          lockedUntil: null, // Clear lockout - allows immediate login after password reset
         },
       }),
       prisma.passwordResetToken.update({
