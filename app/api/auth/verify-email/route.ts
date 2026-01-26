@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
+import { rateLimit } from '@/lib/rate-limit'
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const token = searchParams.get('token')
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(request, 'verify-email', {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 10,
+    })
+    if (rateLimitResponse) return rateLimitResponse
+
+    const body = await request.json()
+    const token = body.token
 
     if (!token) {
       return NextResponse.json({ error: 'Verification token is required' }, { status: 400 })
@@ -17,24 +25,21 @@ export async function GET(request: NextRequest) {
       include: { user: true },
     })
 
+    // Use consistent error message for all token-related errors
+    const invalidTokenError = { error: 'Invalid or expired verification token' }
+
     if (!verificationToken) {
-      return NextResponse.json({ error: 'Invalid verification token' }, { status: 400 })
+      return NextResponse.json(invalidTokenError, { status: 400 })
     }
 
     // Check if token is expired
     if (verificationToken.expiresAt < new Date()) {
-      return NextResponse.json(
-        { error: 'Verification token has expired. Please request a new one.' },
-        { status: 400 }
-      )
+      return NextResponse.json(invalidTokenError, { status: 400 })
     }
 
     // Check if token was already used
     if (verificationToken.usedAt) {
-      return NextResponse.json(
-        { error: 'This verification link has already been used' },
-        { status: 400 }
-      )
+      return NextResponse.json(invalidTokenError, { status: 400 })
     }
 
     // Update user and mark token as used

@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { resetPasswordSchema } from '@/lib/validations/auth'
 import { hashPassword } from '@/lib/auth-utils'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(request, 'reset-password', {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 5,
+    })
+    if (rateLimitResponse) return rateLimitResponse
+
     const body = await request.json()
 
     // Validate input

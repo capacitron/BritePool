@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { ZodError, type ZodSchema } from 'zod'
-import { auth } from './auth'
+import { auth } from './auth/index'
 import type { UserRole } from '@prisma/client'
 
 // TEMPORARY: Set to true to bypass all API authentication checks
 // TODO: Set back to false when done testing
-const BYPASS_API_AUTH = true
+const BYPASS_API_AUTH = false
 
 // Mock admin user for bypass mode
 const BYPASS_USER = {
@@ -14,6 +14,12 @@ const BYPASS_USER = {
   name: 'Bypass Admin',
   role: 'WEB_STEWARD' as UserRole,
   status: 'ACTIVE',
+  emailVerified: new Date(),
+  covenantAcceptedAt: new Date(),
+  covenantVersion: '1.0.0',
+  subscriptionTier: 'PLATINUM' as const,
+  subscriptionStatus: 'ACTIVE' as const,
+  onboardingCompleted: true,
 }
 
 // Standard API response types
@@ -180,10 +186,16 @@ export function validateQuery<T>(
 interface AuthResult {
   user: {
     id: string
-    email: string
-    name: string
+    email?: string | null
+    name?: string | null
     role: UserRole
     status: string
+    emailVerified?: Date | null
+    covenantAcceptedAt?: Date | null
+    covenantVersion?: string | null
+    subscriptionTier?: string
+    subscriptionStatus?: string
+    onboardingCompleted?: boolean
   }
 }
 

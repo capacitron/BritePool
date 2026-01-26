@@ -74,6 +74,7 @@ export const authConfig: NextAuthConfig = {
           name: user.name,
           role: user.role,
           status: user.status,
+          emailVerified: user.emailVerified,
           covenantAcceptedAt: user.covenantAcceptedAt,
           covenantVersion: user.covenantVersion,
           subscriptionTier: user.subscriptionTier,
@@ -89,6 +90,7 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id
         token.role = user.role
         token.status = user.status
+        token.emailVerified = user.emailVerified
         token.covenantAcceptedAt = user.covenantAcceptedAt
         token.covenantVersion = user.covenantVersion
         token.subscriptionTier = user.subscriptionTier
@@ -122,6 +124,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string
         session.user.role = token.role as UserRole
         session.user.status = token.status as string
+        session.user.emailVerified = token.emailVerified as Date | null
         session.user.covenantAcceptedAt = token.covenantAcceptedAt as Date | null
         session.user.covenantVersion = token.covenantVersion as string | null
         session.user.subscriptionTier = token.subscriptionTier as SubscriptionTier

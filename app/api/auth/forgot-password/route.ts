@@ -88,6 +88,9 @@ export async function POST(request: NextRequest) {
       sendPasswordResetEmail(user.email, user.name, token).catch((err) => {
         console.error('Failed to send password reset email:', err)
       })
+    } else {
+      // Add artificial delay for non-existent users to prevent timing attacks
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     // Always return success (don't reveal if email exists)

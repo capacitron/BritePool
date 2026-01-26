@@ -69,6 +69,10 @@ function LoginForm() {
           setError('Invalid email or password')
         }
       } else if (result?.ok) {
+        // Refresh router and wait for session to propagate
+        router.refresh()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
         // Check if user is admin and redirect accordingly
         const sessionRes = await fetch('/api/auth/session')
         const session = await sessionRes.json()
@@ -78,7 +82,6 @@ function LoginForm() {
         } else {
           router.push('/dashboard')
         }
-        router.refresh()
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
