@@ -37,26 +37,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Check if token is valid
-    if (!resetToken) {
-      return NextResponse.json(
-        { error: 'Invalid or expired reset link. Please request a new one.' },
-        { status: 400 }
-      )
-    }
+    // Check if token is valid - use consistent error message to prevent token enumeration
+    const invalidTokenError = { error: 'Invalid or expired reset link. Please request a new one.' }
 
-    if (resetToken.usedAt) {
-      return NextResponse.json(
-        { error: 'This reset link has already been used. Please request a new one.' },
-        { status: 400 }
-      )
-    }
-
-    if (resetToken.expiresAt < new Date()) {
-      return NextResponse.json(
-        { error: 'This reset link has expired. Please request a new one.' },
-        { status: 400 }
-      )
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      return NextResponse.json(invalidTokenError, { status: 400 })
     }
 
     if (resetToken.user.status === 'SUSPENDED' || resetToken.user.status === 'LOCKED') {

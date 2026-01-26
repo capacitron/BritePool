@@ -112,7 +112,7 @@ export function RegisterForm() {
               minLength={8}
             />
             <p className="text-xs text-muted-foreground">
-              Must be 8+ characters with uppercase, lowercase, number, and special character
+              Must be at least 8 characters with uppercase, lowercase, and a number
             </p>
           </div>
           <div className="space-y-2">

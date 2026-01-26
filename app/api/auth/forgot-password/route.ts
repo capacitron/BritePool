@@ -2,45 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { forgotPasswordSchema } from '@/lib/validations/auth'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
-
-// Simple in-memory rate limiter (5 requests/hour per IP)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 5
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour in ms
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitMap.get(ip)
-
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-
-  if (record.count >= RATE_LIMIT) {
-    return false
-  }
-
-  record.count++
-  return true
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
-
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      )
-    }
+    // Apply rate limiting (5 requests per hour)
+    const rateLimitResponse = await rateLimit(request, 'forgot-password', {
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 5,
+    })
+    if (rateLimitResponse) return rateLimitResponse
 
     const body = await request.json()
 
