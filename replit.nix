@@ -4,6 +4,7 @@
     pkgs.nodePackages.typescript-language-server
     pkgs.postgresql
     pkgs.openssl
+    pkgs.gh
   ];
 
   env = {

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 
 const steps = [
   { id: 'welcome', name: 'Welcome', path: '/onboarding/welcome' },
+  { id: 'covenant', name: 'Covenant', path: '/onboarding/covenant' },
   { id: 'profile', name: 'Profile', path: '/onboarding/profile' },
   { id: 'interests', name: 'Interests', path: '/onboarding/interests' },
   { id: 'complete', name: 'Complete', path: '/onboarding/complete' },

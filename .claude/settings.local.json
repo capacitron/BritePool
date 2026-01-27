@@ -49,7 +49,14 @@
       "Bash(git fetch:*)",
       "Bash(npm run test:run:*)",
       "Bash(psql:*)",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "Bash(curl:*)",
+      "Bash(sudo dd:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(sudo tee:*)",
+      "Bash(sudo apt update:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(gh:*)"
     ],
     "deny": []
   },
