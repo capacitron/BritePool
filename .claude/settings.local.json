@@ -56,7 +56,9 @@
       "Bash(sudo tee:*)",
       "Bash(sudo apt update:*)",
       "Bash(sudo apt install:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(pg_isready:*)",
+      "Bash(export:*)"
     ],
     "deny": []
   },
