@@ -1,16 +1,10 @@
-import 'dotenv/config'
 import { Resend } from 'resend'
 
-// Lazy-initialize Resend client to avoid build-time errors
 let resendClient: Resend | null = null
 
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY
-  // Debug logging
-  console.log('[Email] RESEND_API_KEY status:', apiKey ? `SET (${apiKey.substring(0, 10)}...)` : 'NOT SET')
-  // Check if API key exists and is not a placeholder
   if (!apiKey || apiKey.includes('your_api_key') || apiKey === 'undefined' || apiKey.length < 20) {
-    console.log('[Email] Falling back to mock mode')
     return null
   }
   if (!resendClient) {
@@ -73,7 +67,7 @@ export async function sendEmail({
 }
 
 export async function sendWelcomeEmail(email: string, name: string, temporaryPassword?: string) {
-  const loginUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`
+  const loginUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/login`
 
   const html = `
     <!DOCTYPE html>
@@ -124,7 +118,7 @@ export async function sendWelcomeEmail(email: string, name: string, temporaryPas
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, resetToken: string) {
-  const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
+  const resetUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/reset-password?token=${resetToken}`
 
   const html = `
     <!DOCTYPE html>
@@ -208,7 +202,7 @@ export async function sendVerificationEmail(
   name: string,
   verificationToken: string
 ) {
-  const verifyUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+  const verifyUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/verify-email?token=${verificationToken}`
 
   const html = `
     <!DOCTYPE html>

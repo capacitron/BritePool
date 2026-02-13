@@ -7,49 +7,33 @@ import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 
-// TEMPORARY: Set to true to bypass dashboard auth checks
-// TODO: Set back to false when done testing
-const BYPASS_DASHBOARD_AUTH = false
-
-// Mock user for bypass mode
-const BYPASS_USER: { name: string; email: string; role: UserRole } = {
-  name: 'Bypass Admin',
-  email: 'admin@bypass.local',
-  role: 'WEB_STEWARD',
-}
-
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  let user = BYPASS_USER
+  const session = await auth()
 
-  if (!BYPASS_DASHBOARD_AUTH) {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      redirect('/login')
-    }
-
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        name: true,
-        email: true,
-        role: true,
-        onboardingCompleted: true,
-      },
-    })
-
-    if (!dbUser) {
-      redirect('/login')
-    }
-
-    // Redirect to onboarding if not completed (except for admins)
-    const isAdmin = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
-    if (!dbUser.onboardingCompleted && !isAdmin) {
-      redirect('/onboarding/welcome')
-    }
-
-    user = dbUser
+  if (!session?.user?.id) {
+    redirect('/login')
   }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      email: true,
+      role: true,
+      onboardingCompleted: true,
+    },
+  })
+
+  if (!dbUser) {
+    redirect('/login')
+  }
+
+  const isAdmin = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
+  if (!dbUser.onboardingCompleted && !isAdmin) {
+    redirect('/onboarding/welcome')
+  }
+
+  const user = dbUser
 
   return (
     <DashboardClientWrapper userRole={user.role}>

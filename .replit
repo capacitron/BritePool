@@ -110,3 +110,6 @@ waitForPort = 5000
 [userenv]
 
 [userenv.shared]
+FROM_EMAIL = "noreply@britepool.org"
+FROM_NAME = "BRITE POOL"
+AUTH_TRUST_HOST = "true"

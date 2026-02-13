@@ -5,8 +5,8 @@ export const securityHeaders = {
   // Prevent MIME type sniffing
   'X-Content-Type-Options': 'nosniff',
 
-  // Prevent clickjacking
-  'X-Frame-Options': 'DENY',
+  // Prevent clickjacking (SAMEORIGIN allows Replit iframe embedding)
+  'X-Frame-Options': 'SAMEORIGIN',
 
   // Enable XSS protection (legacy browsers)
   'X-XSS-Protection': '1; mode=block',
@@ -29,7 +29,7 @@ export const securityHeaders = {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self' https://*.replit.dev https://*.repl.co",
     'upgrade-insecure-requests',
   ].join('; '),
 }

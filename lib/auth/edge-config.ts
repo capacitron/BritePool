@@ -4,6 +4,7 @@ import type { UserRole, SubscriptionTier, SubscriptionStatus } from '@prisma/cli
 // Edge-safe auth config - NO Prisma, NO bcrypt imports
 // Used by middleware only for JWT session reading
 export const edgeAuthConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [],
   callbacks: {
     jwt({ token, user }) {

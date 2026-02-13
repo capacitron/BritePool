@@ -5,7 +5,7 @@ A comprehensive Next.js 15 web platform for the BRITE POOL private ministerial a
 - **Framework**: Next.js 15 (App Router)
 - **Database**: PostgreSQL with Prisma ORM (v5.22)
 - **Authentication**: NextAuth v5 with JWT
-- **Payments**: Stripe subscriptions
+- **Payments**: Stripe subscriptions (SDK v20.1.0, API 2025-12-15.clover)
 - **Styling**: Tailwind CSS with biophilic earth-tone design
 - **Language**: TypeScript
 
@@ -24,6 +24,11 @@ npm run dev -- -p 5000 -H 0.0.0.0
 - `npm run db:migrate` - Run migrations
 - `npm run db:studio` - Open Prisma Studio
 - `npx tsx prisma/seed.ts` - Seed database
+
+## Database Configuration
+- **Development**: Replit-provisioned PostgreSQL (via DATABASE_URL secret)
+- **Production**: Neon PostgreSQL (configure DATABASE_URL in production env)
+- Both databases share the same Prisma schema
 
 ## Project Structure
 ```
@@ -62,8 +67,15 @@ components/
 
 lib/
 ├── auth/               - NextAuth configuration
+│   ├── config.ts       - Full auth config (Credentials provider, Prisma)
+│   └── edge-config.ts  - Edge-safe auth config (middleware only)
+├── middleware/
+│   └── security-headers.ts - Security headers (CSP, frame-ancestors)
+├── email.ts            - Email service (Resend)
+├── notifications.ts    - Notification system
 ├── prisma.ts           - Prisma client
-└── stripe.ts           - Stripe initialization
+├── stripe.ts           - Stripe initialization
+└── logger.ts           - Pino logging (with conditional pino-pretty)
 
 prisma/
 ├── schema.prisma       - Database schema (30+ models)
@@ -131,12 +143,13 @@ prisma/
 8. PUBLIC - Public/unauthenticated
 
 ## Environment Variables Required
+
+### Replit Secrets (sensitive - set via Secrets tab)
 ```
 DATABASE_URL           - PostgreSQL connection string
-NEXTAUTH_SECRET        - JWT secret key
-NEXTAUTH_URL           - Application URL
-
-# Stripe (for payments)
+AUTH_SECRET            - NextAuth JWT secret
+NEXTAUTH_URL           - Application URL (https://...)
+RESEND_API_KEY         - Resend email API key
 STRIPE_SECRET_KEY      - Stripe secret API key
 STRIPE_PUBLISHABLE_KEY - Stripe publishable key
 STRIPE_WEBHOOK_SECRET  - Stripe webhook secret
@@ -145,7 +158,29 @@ STRIPE_PRICE_PREMIUM   - Price ID for Premium tier
 STRIPE_PRICE_PLATINUM  - Price ID for Platinum tier
 ```
 
+### Environment Variables (non-sensitive - set via env vars)
+```
+AUTH_TRUST_HOST=true    - Required for Replit proxy
+FROM_EMAIL             - Email sender address
+FROM_NAME              - Email sender name
+```
+
 ## Recent Changes
+- 2026-02-13: Comprehensive security and configuration audit
+  - Removed .env file with plaintext secrets (security fix)
+  - Added trustHost: true to both auth configs (edge + full)
+  - Set AUTH_TRUST_HOST=true env var
+  - Replaced all localhost URL fallbacks with Replit domain
+  - Fixed URL construction in payment routes (create-checkout, portal)
+  - Updated security headers: X-Frame-Options SAMEORIGIN, CSP frame-ancestors for Replit
+  - Fixed allowedDevOrigins in next.config.js for Replit proxy
+  - Removed BYPASS_DASHBOARD_AUTH constant from dashboard layout
+  - Made pino-pretty import conditional (prevents production crash)
+  - Removed API key logging from email.ts
+  - Removed dotenv/config manual import from email.ts
+  - Removed duplicate SessionProvider component
+  - Set FROM_EMAIL, FROM_NAME, AUTH_TRUST_HOST env vars
+
 - 2025-12-18: Complete platform implementation
   - Built all 27 features across 10 phases
   - Implemented authentication with 8 role levels
@@ -155,6 +190,10 @@ STRIPE_PRICE_PLATINUM  - Price ID for Platinum tier
   - Added media gallery, maps, and partners
   - Implemented admin panel and analytics
   - Created multi-step onboarding flow
+
+## Known Limitations
+- In-memory rate limiting, caching, and realtime (SSE) services won't persist across autoscale instances. Redis needed for production multi-instance deployment.
+- RESEND_API_KEY must be added to Replit Secrets for email functionality to work (currently in mock mode).
 
 ## Design System
 - **Colors**: Earth-tone palette (brown, sage, terracotta, stone)
