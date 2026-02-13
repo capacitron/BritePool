@@ -19,6 +19,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [sentMessage, setSentMessage] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -55,12 +56,14 @@ export default function ForgotPasswordPage() {
       const result = await response.json()
 
       if (!response.ok) {
+        // API returned an actual error (email failed, service down, etc.)
         setError(result.error || 'An error occurred. Please try again.')
       } else {
+        setSentMessage(result.message || '')
         setSuccess(true)
       }
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Unable to connect to the server. Please refresh the page and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -75,18 +78,22 @@ export default function ForgotPasswordPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-forest-50 border border-forest-200 text-forest-700 px-4 py-3 rounded-lg text-sm font-body">
-            If an account with that email exists, you'll receive an email with instructions to reset
-            your password. The link will expire in 1 hour.
+            {sentMessage || "If an account with that email exists, you'll receive an email with instructions to reset your password. The link will expire in 1 hour."}
           </div>
-          <p className="text-sm text-forest-600 font-body">
-            Didn't receive the email? Check your spam folder or{' '}
-            <button
-              onClick={() => setSuccess(false)}
-              className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
-            >
-              try again
-            </button>
-          </p>
+          <div className="text-sm text-forest-600 font-body space-y-2">
+            <p>
+              Didn't receive the email? Check your <strong>spam/junk folder</strong> first, then{' '}
+              <button
+                onClick={() => {
+                  setSuccess(false)
+                  setError(null)
+                }}
+                className="text-forest-700 hover:text-forest-800 hover:underline font-medium"
+              >
+                try again
+              </button>
+            </p>
+          </div>
         </CardContent>
         <CardFooter>
           <Link href="/login" className="w-full">

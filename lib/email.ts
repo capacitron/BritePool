@@ -17,6 +17,13 @@ function getResendClient(): Resend | null {
 export const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@britepool.org'
 export const FROM_NAME = process.env.FROM_NAME || 'BRITE POOL'
 
+/** Get the base URL for email links — uses NEXTAUTH_URL, falls back to Replit domain */
+function getBaseUrl(): string {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`
+  return 'https://britepool.org'
+}
+
 export interface SendEmailOptions {
   to: string | string[]
   subject: string
@@ -55,9 +62,11 @@ export async function sendEmail({
     })
 
     if (error) {
-      console.error('Failed to send email:', error)
+      console.error('[Email] Failed to send:', { to, subject, error })
       return { success: false, error }
     }
+
+    console.log('[Email] Sent successfully:', { to, subject, id: data })
 
     return { success: true, data }
   } catch (error) {
@@ -67,7 +76,7 @@ export async function sendEmail({
 }
 
 export async function sendWelcomeEmail(email: string, name: string, temporaryPassword?: string) {
-  const loginUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/login`
+  const loginUrl = `${getBaseUrl()}/login`
 
   const html = `
     <!DOCTYPE html>
@@ -118,7 +127,7 @@ export async function sendWelcomeEmail(email: string, name: string, temporaryPas
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, resetToken: string) {
-  const resetUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/reset-password?token=${resetToken}`
+  const resetUrl = `${getBaseUrl()}/reset-password?token=${resetToken}`
 
   const html = `
     <!DOCTYPE html>
@@ -202,7 +211,7 @@ export async function sendVerificationEmail(
   name: string,
   verificationToken: string
 ) {
-  const verifyUrl = `${process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`}/verify-email?token=${verificationToken}`
+  const verifyUrl = `${getBaseUrl()}/verify-email?token=${verificationToken}`
 
   const html = `
     <!DOCTYPE html>

@@ -24,6 +24,7 @@ function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showRequestNew, setShowRequestNew] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // No token provided
@@ -91,7 +92,10 @@ function ResetPasswordForm() {
           })
           setFieldErrors(errors)
         } else {
+          // Show the specific error from the API (expired, already used, etc.)
+          // and include a link back to forgot-password for convenience
           setError(result.error || 'An error occurred. Please try again.')
+          setShowRequestNew(true)
         }
       } else {
         setSuccess(true)
@@ -101,7 +105,7 @@ function ResetPasswordForm() {
         }, 3000)
       }
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Unable to connect to the server. Please refresh the page and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -139,7 +143,14 @@ function ResetPasswordForm() {
         <CardContent className="space-y-4">
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
-              {error}
+              <p>{error}</p>
+              {showRequestNew && (
+                <p className="mt-2">
+                  <Link href="/forgot-password" className="text-forest-700 hover:text-forest-800 underline font-medium">
+                    Request a new reset link
+                  </Link>
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-2">

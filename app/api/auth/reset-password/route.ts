@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { resetPasswordSchema } from '@/lib/validations/auth'
-import { hashPassword } from '@/lib/auth-utils'
 import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
     const rateLimitResponse = await rateLimit(request, 'reset-password', {
       windowMs: 15 * 60 * 1000,
       maxRequests: 5,
@@ -15,7 +14,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    // Validate input
     const parsed = resetPasswordSchema.safeParse(body)
     if (!parsed.success) {
       const errors = parsed.error.issues.map((issue) => ({
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const { token, password } = parsed.data
 
-    // Find valid token
+    // Look up the token
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
       include: {
@@ -37,13 +35,31 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Check if token is valid - use consistent error message to prevent token enumeration
-    const invalidTokenError = { error: 'Invalid or expired reset link. Please request a new one.' }
-
-    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
-      return NextResponse.json(invalidTokenError, { status: 400 })
+    // Token doesn't exist at all
+    if (!resetToken) {
+      return NextResponse.json(
+        { error: 'This reset link is invalid. Please request a new password reset.' },
+        { status: 400 }
+      )
     }
 
+    // Token was already used (either by user or invalidated by a newer request)
+    if (resetToken.usedAt) {
+      return NextResponse.json(
+        { error: 'This reset link has already been used. Please request a new password reset.' },
+        { status: 400 }
+      )
+    }
+
+    // Token has expired
+    if (resetToken.expiresAt < new Date()) {
+      return NextResponse.json(
+        { error: 'This reset link has expired. Please request a new password reset.' },
+        { status: 400 }
+      )
+    }
+
+    // Account is suspended or locked
     if (resetToken.user.status === 'SUSPENDED' || resetToken.user.status === 'LOCKED') {
       return NextResponse.json(
         { error: 'Your account is not active. Please contact support.' },
@@ -52,17 +68,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash the new password
-    const passwordHash = await hashPassword(password)
+    const passwordHash = await bcrypt.hash(password, 12)
 
-    // Update user password and mark token as used in a transaction
-    // Also clear any account lockout (see lib/auth/lockout.ts for lockout config)
+    // Update password, clear lockout, mark token used — all in one transaction
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetToken.userId },
         data: {
           passwordHash,
-          loginAttempts: 0, // Clear failed login attempts
-          lockedUntil: null, // Clear lockout - allows immediate login after password reset
+          loginAttempts: 0,
+          lockedUntil: null,
+          // If account was pending verification, password reset proves email ownership
+          ...(resetToken.user.status === 'PENDING_VERIFICATION' && {
+            emailVerified: new Date(),
+            status: 'ACTIVE' as const,
+          }),
         },
       }),
       prisma.passwordResetToken.update({
@@ -72,6 +92,7 @@ export async function POST(request: NextRequest) {
     ])
 
     return NextResponse.json({
+      success: true,
       message: 'Your password has been reset successfully. You can now sign in.',
     })
   } catch (error) {

@@ -48,6 +48,10 @@ export const authConfig: NextAuthConfig = {
           throw new Error('Account has been locked. Please contact support.')
         }
 
+        if (user.status === 'PENDING_VERIFICATION') {
+          throw new Error('Please verify your email address before signing in.')
+        }
+
         const passwordMatch = await bcrypt.compare(password, user.passwordHash)
 
         if (!passwordMatch) {
