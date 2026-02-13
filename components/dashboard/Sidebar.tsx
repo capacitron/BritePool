@@ -36,6 +36,7 @@ interface NavItem {
   href: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  locked?: boolean
 }
 
 interface NavGroup {
@@ -56,35 +57,35 @@ const navGroups: NavGroup[] = [
   {
     title: 'Community',
     items: [
-      { href: '/dashboard/committees', label: 'Committees', icon: Users },
+      { href: '/dashboard/committees', label: 'Committees', icon: Users, locked: true },
       { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare },
       { href: '/dashboard/wgo', label: 'WGO', icon: Globe },
-      { href: '/dashboard/stakeholder', label: 'Stakeholder', icon: PieChart },
+      { href: '/dashboard/stakeholder', label: 'Stakeholder', icon: PieChart, locked: true },
     ],
   },
   {
     title: 'Finance',
     items: [
-      { href: '/dashboard/pools', label: 'Pools', icon: Wallet },
-      { href: '/dashboard/participation', label: 'Participation', icon: Clock },
-      { href: '/dashboard/subscription', label: 'Memberships', icon: CreditCard },
-      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
+      { href: '/dashboard/pools', label: 'Pools', icon: Wallet, locked: true },
+      { href: '/dashboard/participation', label: 'Participation', icon: Clock, locked: true },
+      { href: '/dashboard/subscription', label: 'Memberships', icon: CreditCard, locked: true },
+      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye, locked: true },
     ],
   },
   {
     title: 'Resources',
     items: [
-      { href: '/dashboard/courses', label: 'Courses', icon: BookOpen },
-      { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-      { href: '/dashboard/media', label: 'Media', icon: Image },
+      { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, locked: true },
+      { href: '/dashboard/documents', label: 'Documents', icon: FileText, locked: true },
+      { href: '/dashboard/media', label: 'Media', icon: Image, locked: true },
     ],
   },
   {
     title: 'Other',
     items: [
-      { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench },
-      { href: '/dashboard/map', label: 'Map', icon: Map },
-      { href: '/dashboard/partners', label: 'Partners', icon: Handshake },
+      { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench, locked: true },
+      { href: '/dashboard/map', label: 'Map', icon: Map, locked: true },
+      { href: '/dashboard/partners', label: 'Partners', icon: Handshake, locked: true },
     ],
   },
 ]
@@ -160,7 +161,11 @@ export function Sidebar({ userRole }: SidebarProps) {
   }
 
   return (
-    <aside className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col" role="complementary" aria-label="Main navigation sidebar">
+    <aside
+      className="w-64 bg-forest-900 h-screen sticky top-0 flex flex-col"
+      role="complementary"
+      aria-label="Main navigation sidebar"
+    >
       <div className="p-6 border-b border-forest-700">
         <Link href="/dashboard" className="block" aria-label="Go to dashboard home">
           <h1 className="text-xl font-display font-bold text-sand-100">BRITE POOL</h1>
@@ -168,7 +173,11 @@ export function Sidebar({ userRole }: SidebarProps) {
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none" role="navigation" aria-label="Main navigation">
+      <nav
+        className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-none"
+        role="navigation"
+        aria-label="Main navigation"
+      >
         {isAdmin && (
           <>
             <button
@@ -263,6 +272,22 @@ export function Sidebar({ userRole }: SidebarProps) {
                     pathname === item.href ||
                     (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
                   const Icon = item.icon
+                  const isLocked = item.locked && !isAdmin
+
+                  if (isLocked) {
+                    return (
+                      <span
+                        key={item.href}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium font-body opacity-40 cursor-not-allowed text-sand-200"
+                      >
+                        <Icon className="h-5 w-5" />
+                        {item.label}
+                        <span className="ml-auto text-[10px] uppercase tracking-wider text-sand-400">
+                          Soon
+                        </span>
+                      </span>
+                    )
+                  }
 
                   return (
                     <Link
