@@ -86,7 +86,11 @@ function LoginForm() {
         window.location.href = destination
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+      // Server may be restarting or experiencing issues
+      const message = err instanceof Error && err.message
+        ? err.message
+        : 'Unable to connect to the authentication service. Please refresh the page and try again.'
+      setError(message)
     } finally {
       setIsLoading(false)
     }

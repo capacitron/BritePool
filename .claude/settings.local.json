@@ -60,7 +60,8 @@
       "Bash(pg_isready:*)",
       "Bash(export:*)",
       "Bash(test:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(fuser:*)"
     ],
     "deny": []
   },
