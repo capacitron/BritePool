@@ -100,6 +100,13 @@ interface FinancialScreeningData {
   createdAt: string
 }
 
+interface ReferralUser {
+  id: string
+  name: string
+  email: string
+  createdAt?: string
+}
+
 interface UserData {
   id: string
   email: string
@@ -115,6 +122,8 @@ interface UserData {
   lastLoginAt: string | null
   profile: UserProfile | null
   financialScreening: FinancialScreeningData | null
+  referredBy: ReferralUser | null
+  referrals: ReferralUser[]
   committees: CommitteeMembership[]
   participationLogs: ParticipationLog[]
   tasks: TaskItem[]
@@ -162,11 +171,12 @@ export default function AdminUserDetailPage({
       const res = await fetch(`/api/admin/users/${userId}`)
       if (res.ok) {
         const data = await res.json()
-        setUser(data)
-        setEditedRole(data.role)
-        setEditedTier(data.subscriptionTier)
-        setEditedStatus(data.subscriptionStatus)
-        setEditedName(data.name)
+        const userData = data.user || data
+        setUser(userData)
+        setEditedRole(userData.role)
+        setEditedTier(userData.subscriptionTier)
+        setEditedStatus(userData.subscriptionStatus)
+        setEditedName(userData.name)
       } else if (res.status === 404) {
         router.push('/dashboard/admin/users')
       }
@@ -530,6 +540,51 @@ export default function AdminUserDetailPage({
                   <p className="text-xs text-earth-brown-light">Completed</p>
                   <p className="text-sm">{new Date(user.financialScreening.createdAt).toLocaleDateString()}</p>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {(user.referredBy || user.referrals.length > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Referral Network
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {user.referredBy && (
+                  <div>
+                    <p className="text-xs text-earth-brown-light">Introduced By</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-8 h-8 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs">
+                        {user.referredBy.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{user.referredBy.name}</p>
+                        <p className="text-xs text-earth-brown-light">{user.referredBy.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {user.referrals.length > 0 && (
+                  <div>
+                    <p className="text-xs text-earth-brown-light">People They Introduced ({user.referrals.length})</p>
+                    <div className="space-y-2 mt-2">
+                      {user.referrals.map((ref: ReferralUser) => (
+                        <div key={ref.id} className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-earth-100 flex items-center justify-center text-earth-600 font-bold text-xs">
+                            {ref.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="text-sm">{ref.name}</p>
+                            <p className="text-xs text-earth-brown-light">{ref.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

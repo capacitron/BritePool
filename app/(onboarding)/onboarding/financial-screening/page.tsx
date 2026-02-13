@@ -1,10 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { ArrowLeft, ArrowRight, DollarSign, Target, Clock, Shield, Compass, HelpCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, DollarSign, Target, Clock, Shield, Compass, HelpCircle, UserPlus, Search, X } from 'lucide-react'
 
 const questions = [
   {
@@ -84,6 +84,12 @@ const questions = [
   },
 ]
 
+interface MemberResult {
+  id: string
+  name: string
+  role: string
+}
+
 export default function FinancialScreeningPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -91,6 +97,63 @@ export default function FinancialScreeningPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({
     primaryIntentions: [],
   })
+
+  const [referralQuery, setReferralQuery] = useState('')
+  const [referralResults, setReferralResults] = useState<MemberResult[]>([])
+  const [selectedReferrer, setSelectedReferrer] = useState<MemberResult | null>(null)
+  const [referralSearching, setReferralSearching] = useState(false)
+  const [showReferralDropdown, setShowReferralDropdown] = useState(false)
+  const referralRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  const searchMembers = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setReferralResults([])
+      setShowReferralDropdown(false)
+      return
+    }
+    setReferralSearching(true)
+    try {
+      const res = await fetch(`/api/members/search?q=${encodeURIComponent(query)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setReferralResults(data.members || [])
+        setShowReferralDropdown(true)
+      }
+    } catch {
+      setReferralResults([])
+    } finally {
+      setReferralSearching(false)
+    }
+  }, [])
+
+  const handleReferralInput = (value: string) => {
+    setReferralQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => searchMembers(value), 300)
+  }
+
+  const selectReferrer = (member: MemberResult) => {
+    setSelectedReferrer(member)
+    setReferralQuery('')
+    setShowReferralDropdown(false)
+    setReferralResults([])
+  }
+
+  const clearReferrer = () => {
+    setSelectedReferrer(null)
+    setReferralQuery('')
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (referralRef.current && !referralRef.current.contains(e.target as Node)) {
+        setShowReferralDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleRadioChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -134,7 +197,10 @@ export default function FinancialScreeningPage() {
       const response = await fetch('/api/onboarding/financial-screening', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(answers),
+        body: JSON.stringify({
+          ...answers,
+          ...(selectedReferrer ? { referredById: selectedReferrer.id } : {}),
+        }),
       })
 
       if (!response.ok) {
@@ -282,6 +348,95 @@ export default function FinancialScreeningPage() {
           )
         })}
       </div>
+
+      <Card className="border-0 shadow-lg overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-400 to-earth-300" />
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${selectedReferrer ? 'bg-forest-100' : 'bg-sand-100'}`}>
+              <UserPlus className={`w-6 h-6 ${selectedReferrer ? 'text-forest-600' : 'text-sand-500'}`} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-sand-500 uppercase tracking-wider font-body">Connection</span>
+                <span className="text-xs font-medium text-sand-400 bg-sand-50 px-2 py-0.5 rounded-full font-body">Optional</span>
+              </div>
+              <h3 className="font-display font-semibold text-forest-800 text-lg mt-1">Who Introduced You?</h3>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-forest-700 font-medium mb-4 font-body">
+            If a current member introduced you to Brite Pool, search for them below. This connects you for networking within our Wealth Generation Opportunities.
+          </p>
+          <div ref={referralRef} className="relative">
+            {selectedReferrer ? (
+              <div className="flex items-center justify-between p-4 rounded-xl border-2 border-earth-400 bg-earth-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-forest-600 flex items-center justify-center text-white font-bold text-sm">
+                    {selectedReferrer.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="font-medium text-forest-800 font-body">{selectedReferrer.name}</p>
+                    <p className="text-xs text-forest-500 font-body">{selectedReferrer.role}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={clearReferrer}
+                  className="p-1.5 rounded-lg hover:bg-earth-200 transition-colors"
+                >
+                  <X className="w-4 h-4 text-forest-600" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-sand-400" />
+                  <input
+                    type="text"
+                    value={referralQuery}
+                    onChange={(e) => handleReferralInput(e.target.value)}
+                    placeholder="Search by member name..."
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-sand-200 focus:border-earth-400 focus:ring-0 outline-none text-forest-800 placeholder:text-sand-400 font-body transition-colors"
+                  />
+                  {referralSearching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <svg className="w-5 h-5 animate-spin text-sand-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {showReferralDropdown && referralResults.length > 0 && (
+                  <div className="absolute z-10 mt-2 w-full bg-white rounded-xl shadow-xl border border-sand-200 max-h-60 overflow-auto">
+                    {referralResults.map((member) => (
+                      <button
+                        key={member.id}
+                        onClick={() => selectReferrer(member)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-sand-50 transition-colors text-left first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs">
+                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-forest-800 text-sm font-body">{member.name}</p>
+                          <p className="text-xs text-forest-500 font-body">{member.role}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showReferralDropdown && referralQuery.length >= 2 && referralResults.length === 0 && !referralSearching && (
+                  <div className="absolute z-10 mt-2 w-full bg-white rounded-xl shadow-xl border border-sand-200 p-4 text-center">
+                    <p className="text-sm text-sand-500 font-body">No members found matching &quot;{referralQuery}&quot;</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">

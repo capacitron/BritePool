@@ -166,6 +166,15 @@ FROM_NAME              - Email sender name
 ```
 
 ## Recent Changes
+- 2026-02-13: Referral/Introducer system
+  - Added referredById self-relation on User model for affiliate tracking
+  - Member search API (/api/members/search) for name-based lookup (no email exposure)
+  - "Who Introduced You?" section in financial screening with debounced search
+  - Referral connection saved during onboarding, optional field
+  - Admin user detail shows Referral Network card (introducer + people introduced)
+  - Financial screening questionnaire with 6 questions + referral (onboarding step 4)
+  - Server-side scoring, tier assignment, red flag detection
+
 - 2026-02-13: Comprehensive security and configuration audit
   - Removed .env file with plaintext secrets (security fix)
   - Added trustHost: true to both auth configs (edge + full)

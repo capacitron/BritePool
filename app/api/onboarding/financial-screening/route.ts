@@ -50,17 +50,17 @@ function calculateScore(data: {
   primaryIntentions: string[]
   guidancePreference: string
 }) {
-  const q1 = SCORE_MAP.financialRhythm[data.financialRhythm] || 1
-  const q2 = SCORE_MAP.opportunityApproach[data.opportunityApproach] || 1
-  const q3 = SCORE_MAP.timelineAlignment[data.timelineAlignment] || 1
-  const q4 = SCORE_MAP.responseToDelays[data.responseToDelays] || 1
+  const q1 = SCORE_MAP['financialRhythm']?.[data.financialRhythm] ?? 1
+  const q2 = SCORE_MAP['opportunityApproach']?.[data.opportunityApproach] ?? 1
+  const q3 = SCORE_MAP['timelineAlignment']?.[data.timelineAlignment] ?? 1
+  const q4 = SCORE_MAP['responseToDelays']?.[data.responseToDelays] ?? 1
 
   const intentionScores = data.primaryIntentions.map(
-    (i) => SCORE_MAP.primaryIntentions[i] || 2
+    (i) => SCORE_MAP['primaryIntentions']?.[i] ?? 2
   )
   const q5 = Math.max(...intentionScores, 2)
 
-  const q6 = SCORE_MAP.guidancePreference[data.guidancePreference] || 2
+  const q6 = SCORE_MAP['guidancePreference']?.[data.guidancePreference] ?? 2
 
   const totalScore = q1 + q2 + q3 + q4 + q5 + q6
 
@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
       responseToDelays,
       primaryIntentions,
       guidancePreference,
+      referredById,
     } = body
 
     if (
@@ -173,6 +174,19 @@ export async function POST(request: NextRequest) {
         internalReviewRequired: scoring.internalReviewRequired,
       },
     })
+
+    if (referredById && typeof referredById === 'string') {
+      const referrer = await prisma.user.findUnique({
+        where: { id: referredById },
+        select: { id: true },
+      })
+      if (referrer) {
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { referredById: referrer.id },
+        })
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

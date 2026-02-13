@@ -38,6 +38,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         updatedAt: true,
         lastLoginAt: true,
         profile: true,
+        referredBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        referrals: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' as const },
+        },
         financialScreening: {
           select: {
             totalScore: true,
