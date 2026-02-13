@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
-import { sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   // Rate limit registration attempts
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         passwordHash,
         role: 'STEWARD',
-        status: 'PENDING_VERIFICATION',
+        status: 'ACTIVE',
         subscriptionTier: 'FREE',
         subscriptionStatus: 'INACTIVE',
         profile: {
@@ -57,41 +55,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create secure email verification token with high entropy (256 bits)
-    const verificationToken = randomBytes(32).toString('hex')
-    const tokenExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours (reduced for security)
-
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt: tokenExpiresAt,
-      },
-    })
-
-    // Send verification email
-    const emailResult = await sendVerificationEmail(normalizedEmail, name, verificationToken)
-    if (!emailResult.success) {
-      console.error(
-        '[Registration] Verification email failed:',
-        emailResult.error || 'Unknown error'
-      )
-      return NextResponse.json(
-        {
-          success: true,
-          emailSent: false,
-          message:
-            'Account created but verification email could not be sent. Please use the resend option.',
-        },
-        { status: 201 }
-      )
-    }
-
     return NextResponse.json(
       {
         success: true,
-        emailSent: true,
-        message: 'Account created successfully. Please check your email to verify your account.',
+        message: 'Account created successfully. You can now sign in.',
       },
       { status: 201 }
     )

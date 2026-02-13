@@ -38,11 +38,6 @@ export const authConfig: NextAuthConfig = {
           throw new Error(getLockoutErrorMessage(user.lockedUntil))
         }
 
-        // Check if account requires email verification
-        if (user.status === 'PENDING_VERIFICATION') {
-          throw new Error('Please verify your email before signing in')
-        }
-
         // Check if account is suspended or locked
         if (user.status === 'SUSPENDED') {
           throw new Error('Account has been suspended')
