@@ -61,7 +61,8 @@
       "Bash(export:*)",
       "Bash(test:*)",
       "Bash(kill:*)",
-      "Bash(fuser:*)"
+      "Bash(fuser:*)",
+      "Bash(git status:*)"
     ],
     "deny": []
   },
