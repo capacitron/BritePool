@@ -66,9 +66,14 @@ model User {
   documentsUploaded Document[] @relation("DocumentsUploaded")
   financialScreening FinancialScreening?
 
+  referredById  String?
+  referredBy    User?   @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals     User[]  @relation("UserReferrals")
+
   @@index([email])
   @@index([role])
   @@index([deletedAt])
+  @@index([referredById])
 }
 
 model UserProfile {
