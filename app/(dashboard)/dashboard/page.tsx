@@ -142,7 +142,7 @@ export default async function DashboardPage({
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sand-500 to-sand-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-forest-600 font-body">
-              Subscription
+              Membership
             </CardTitle>
             <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center group-hover:bg-sand-200 transition-colors">
               <CreditCard className="h-5 w-5 text-sand-700" />
@@ -266,7 +266,7 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        <Card className="group border border-sand-200 shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden">
+        <Card className="group border border-sand-200 shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden opacity-75">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sand-500 via-sand-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-4">
             <div className="w-14 h-14 rounded-2xl bg-sand-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -276,16 +276,9 @@ export default async function DashboardPage({
             <CardDescription>Courses and educational resources</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              asChild
-              variant="ghost"
-              className="w-full justify-between group-hover:bg-sand-100 transition-colors"
-            >
-              <Link href="/dashboard/courses">
-                Browse Courses
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
+            <div className="w-full text-center py-2 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 font-medium">
+              Coming Soon
+            </div>
           </CardContent>
         </Card>
       </div>

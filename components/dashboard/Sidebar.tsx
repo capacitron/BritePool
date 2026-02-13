@@ -67,7 +67,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard/pools', label: 'Pools', icon: Wallet },
       { href: '/dashboard/participation', label: 'Participation', icon: Clock },
-      { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
+      { href: '/dashboard/subscription', label: 'Memberships', icon: CreditCard },
       { href: '/dashboard/transparency', label: 'Transparency', icon: Eye },
     ],
   },
