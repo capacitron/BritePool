@@ -4,15 +4,8 @@ import { edgeAuthConfig } from '@/lib/auth/edge-config'
 
 const { auth } = NextAuth(edgeAuthConfig)
 
-const publicRoutes = [
-  '/',
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-]
-const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
+const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password']
+const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
 
 export default auth((req) => {
   const { nextUrl } = req

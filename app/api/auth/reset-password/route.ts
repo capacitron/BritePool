@@ -78,11 +78,6 @@ export async function POST(request: NextRequest) {
           passwordHash,
           loginAttempts: 0,
           lockedUntil: null,
-          // If account was pending verification, password reset proves email ownership
-          ...(resetToken.user.status === 'PENDING_VERIFICATION' && {
-            emailVerified: new Date(),
-            status: 'ACTIVE' as const,
-          }),
         },
       }),
       prisma.passwordResetToken.update({
