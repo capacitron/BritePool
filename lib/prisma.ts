@@ -7,9 +7,16 @@ declare global {
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
-    // Remove 'query' logging to prevent SELECT 1 spam in dev
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    datasourceUrl: process.env.DATABASE_URL,
   })
+}
+
+// Eagerly initialize connection in production to avoid cold start delays
+if (process.env.NODE_ENV === 'production') {
+  const client = globalThis.prisma ?? prismaClientSingleton()
+  client.$connect().catch(() => {})
+  globalThis.prisma = client
 }
 
 export const prisma = globalThis.prisma ?? prismaClientSingleton()

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   allowedDevOrigins: ['*', '*.replit.dev', '*.worf.replit.dev'],
   async headers() {
     return [

@@ -58,7 +58,9 @@
       "Bash(sudo apt install:*)",
       "Bash(gh:*)",
       "Bash(pg_isready:*)",
-      "Bash(export:*)"
+      "Bash(export:*)",
+      "Bash(test:*)",
+      "Bash(kill:*)"
     ],
     "deny": []
   },
