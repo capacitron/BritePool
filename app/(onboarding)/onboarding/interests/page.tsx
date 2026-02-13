@@ -100,7 +100,7 @@ export default function InterestsPage() {
           },
         }),
       })
-      router.push('/onboarding/complete')
+      router.push('/onboarding/financial-screening')
     } catch (error) {
       console.error('Error saving interests:', error)
     } finally {

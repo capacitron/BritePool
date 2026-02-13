@@ -64,6 +64,7 @@ model User {
   maintenanceAssigned MaintenanceRequest[] @relation("MaintenanceRequestsAssigned")
   maintenanceResolved MaintenanceRequest[] @relation("MaintenanceRequestsResolved")
   documentsUploaded Document[] @relation("DocumentsUploaded")
+  financialScreening FinancialScreening?
 
   @@index([email])
   @@index([role])
@@ -87,6 +88,33 @@ model UserProfile {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model FinancialScreening {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  financialRhythm       String
+  opportunityApproach   String
+  timelineAlignment     String
+  responseToDelays      String
+  primaryIntentions     String[]
+  guidancePreference    String
+
+  totalScore            Int?
+  tier                  String?
+  flagLevel             String?
+  suggestedEntryCap     String?
+  adminOverride         String?
+  adminNotes            String?
+  internalReviewRequired Boolean @default(false)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tier])
+  @@index([flagLevel])
 }
 
 model Session {

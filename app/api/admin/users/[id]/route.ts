@@ -38,6 +38,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         updatedAt: true,
         lastLoginAt: true,
         profile: true,
+        financialScreening: {
+          select: {
+            totalScore: true,
+            tier: true,
+            flagLevel: true,
+            suggestedEntryCap: true,
+            adminOverride: true,
+            adminNotes: true,
+            internalReviewRequired: true,
+            financialRhythm: true,
+            opportunityApproach: true,
+            timelineAlignment: true,
+            responseToDelays: true,
+            primaryIntentions: true,
+            guidancePreference: true,
+            createdAt: true,
+          },
+        },
       },
     })
 

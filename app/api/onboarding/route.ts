@@ -144,7 +144,7 @@ export async function PATCH() {
       where: { id: session.user.id },
       data: {
         onboardingCompleted: true,
-        onboardingStep: 4,
+        onboardingStep: 5,
       },
     })
 

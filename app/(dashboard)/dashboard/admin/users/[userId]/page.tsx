@@ -83,6 +83,23 @@ interface CourseProgressItem {
   }
 }
 
+interface FinancialScreeningData {
+  totalScore: number
+  tier: string
+  flagLevel: string | null
+  suggestedEntryCap: number | null
+  adminOverride: boolean
+  adminNotes: string | null
+  internalReviewRequired: boolean
+  financialRhythm: string
+  opportunityApproach: string
+  timelineAlignment: string
+  responseToDelays: string
+  primaryIntentions: string[]
+  guidancePreference: string
+  createdAt: string
+}
+
 interface UserData {
   id: string
   email: string
@@ -97,6 +114,7 @@ interface UserData {
   updatedAt: string
   lastLoginAt: string | null
   profile: UserProfile | null
+  financialScreening: FinancialScreeningData | null
   committees: CommitteeMembership[]
   participationLogs: ParticipationLog[]
   tasks: TaskItem[]
@@ -457,6 +475,64 @@ export default function AdminUserDetailPage({
               )}
             </CardContent>
           </Card>
+
+          {user.financialScreening && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Financial Screening
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-earth-brown-light">Assigned Tier</p>
+                    <p className="text-sm font-bold">{user.financialScreening.tier.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-earth-brown-light">Score</p>
+                    <p className="text-sm font-bold">{user.financialScreening.totalScore}/24</p>
+                  </div>
+                </div>
+                {user.financialScreening.flagLevel && (
+                  <div>
+                    <p className="text-xs text-earth-brown-light">Flag Level</p>
+                    <p className={`text-sm font-medium ${
+                      user.financialScreening.flagLevel === 'HARD_STOP' ? 'text-red-600' :
+                      user.financialScreening.flagLevel === 'MODERATE' ? 'text-yellow-600' :
+                      'text-blue-600'
+                    }`}>
+                      {user.financialScreening.flagLevel.replace(/_/g, ' ')}
+                    </p>
+                  </div>
+                )}
+                {user.financialScreening.internalReviewRequired && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                    <p className="text-xs font-medium text-yellow-800">Review Required</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-earth-brown-light">Guidance Preference</p>
+                  <p className="text-sm">{user.financialScreening.guidancePreference.replace(/_/g, ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-earth-brown-light">Primary Intentions</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {user.financialScreening.primaryIntentions.map((intent: string) => (
+                      <span key={intent} className="text-xs bg-sand-100 text-forest-700 px-2 py-1 rounded-full">
+                        {intent.replace(/_/g, ' ')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-earth-brown-light">Completed</p>
+                  <p className="text-sm">{new Date(user.financialScreening.createdAt).toLocaleDateString()}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
