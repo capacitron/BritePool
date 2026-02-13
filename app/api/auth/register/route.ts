@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations/auth'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
-import { sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
-  // Rate limit registration attempts
   const rateLimitResult = await rateLimit(request, 'register', RateLimitConfigs.register)
   if (rateLimitResult) return rateLimitResult
 
@@ -39,13 +36,14 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         email: normalizedEmail,
         passwordHash,
         role: 'STEWARD',
-        status: 'PENDING_VERIFICATION',
+        status: 'ACTIVE',
+        emailVerified: new Date(),
         subscriptionTier: 'FREE',
         subscriptionStatus: 'INACTIVE',
         profile: {
@@ -57,27 +55,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create email verification token and send verification email
-    const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-      },
-    })
-
-    sendVerificationEmail(normalizedEmail, name, token).catch((err) => {
-      console.error('Failed to send verification email:', err)
-    })
-
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Account created. Please check your email to verify your account.',
-      },
+      { success: true, message: 'Account created successfully.' },
       { status: 201 }
     )
   } catch (error) {
