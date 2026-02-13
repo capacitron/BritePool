@@ -61,7 +61,7 @@ export const updateUserSchema = z.object({
   name: nameSchema.optional(),
   email: emailSchema.optional(),
   role: z.enum(userRoles).optional(),
-  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED', 'PENDING_VERIFICATION']).optional(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']).optional(),
 })
 
 export const userIdSchema = z.object({
@@ -90,7 +90,7 @@ export const paginationSchema = z.object({
 export const userQuerySchema = paginationSchema.extend({
   search: z.string().max(100).optional(),
   role: z.enum(userRoles).optional(),
-  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED', 'PENDING_VERIFICATION']).optional(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']).optional(),
   sortBy: z.enum(['name', 'email', 'createdAt', 'lastLoginAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })

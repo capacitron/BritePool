@@ -5,8 +5,7 @@ import { test, expect, Page } from '@playwright/test'
  *
  * Test Coverage:
  * 1. Registration Flow - Valid/invalid inputs, duplicates, redirects
- * 2. Email Verification Flow - Token handling, expired/invalid tokens
- * 3. Login Flow - Verified/unverified accounts, password reset, lockout
+ * 2. Login Flow - Password reset, lockout
  *
  * @test Account Creation Flow
  * @description Validates the complete user account creation lifecycle
@@ -69,9 +68,8 @@ test.describe('Registration Flow', () => {
       // Should redirect to login with registered flag
       await expect(page).toHaveURL(/login\?registered=true/, { timeout: 10000 })
 
-      // Should show success message about email verification
+      // Should show success message
       await expect(page.getByText(/account created successfully/i)).toBeVisible()
-      await expect(page.getByText(/check your email/i)).toBeVisible()
     })
 
     test('should show loading state during registration', async ({ page }) => {
@@ -313,242 +311,13 @@ test.describe('Registration Flow', () => {
 })
 
 /* =============================================================================
- * EMAIL VERIFICATION FLOW TESTS
- * ============================================================================= */
-
-test.describe('Email Verification Flow', () => {
-  test.describe('Verification Page - No Token', () => {
-    test('should display resend form when no token provided', async ({ page }) => {
-      await page.goto('/verify-email')
-
-      // Should show the email input form
-      await expect(page.getByRole('heading', { name: /email verification/i })).toBeVisible()
-      await expect(page.getByPlaceholder(/enter your email/i)).toBeVisible()
-      await expect(page.getByRole('button', { name: /send verification email/i })).toBeVisible()
-    })
-
-    test('should have link back to login', async ({ page }) => {
-      await page.goto('/verify-email')
-
-      await expect(page.getByRole('link', { name: /back to login/i })).toBeVisible()
-      await page.getByRole('link', { name: /back to login/i }).click()
-      await expect(page).toHaveURL(/login/)
-    })
-
-    test('should disable send button when email is empty', async ({ page }) => {
-      await page.goto('/verify-email')
-
-      const sendButton = page.getByRole('button', { name: /send verification email/i })
-      await expect(sendButton).toBeDisabled()
-    })
-
-    test('should enable send button when email is entered', async ({ page }) => {
-      await page.goto('/verify-email')
-
-      await page.getByPlaceholder(/enter your email/i).fill('test@example.com')
-
-      const sendButton = page.getByRole('button', { name: /send verification email/i })
-      await expect(sendButton).toBeEnabled()
-    })
-
-    test('should show loading state when sending verification email', async ({ page }) => {
-      await page.goto('/verify-email')
-
-      await page.getByPlaceholder(/enter your email/i).fill('test@example.com')
-      await page.getByRole('button', { name: /send verification email/i }).click()
-
-      // Should show loading indicator
-      await expect(page.getByText(/sending/i)).toBeVisible()
-    })
-  })
-
-  test.describe('Verification Page - Invalid Token', () => {
-    test('should show error for invalid token', async ({ page }) => {
-      await page.goto('/verify-email?token=invalid-token-12345')
-
-      // Wait for verification attempt
-      await page.waitForLoadState('networkidle')
-
-      // Should show error state
-      await expect(page.getByRole('heading', { name: /verification failed/i })).toBeVisible({
-        timeout: 10000,
-      })
-      await expect(page.getByText(/invalid or expired/i)).toBeVisible()
-    })
-
-    test('should allow requesting new verification from error state', async ({ page }) => {
-      await page.goto('/verify-email?token=invalid-token-12345')
-
-      await page.waitForLoadState('networkidle')
-      await expect(page.getByRole('heading', { name: /verification failed/i })).toBeVisible({
-        timeout: 10000,
-      })
-
-      // Should show email input for requesting new token
-      await expect(page.getByPlaceholder(/enter your email/i)).toBeVisible()
-      await expect(page.getByRole('button', { name: /send new verification email/i })).toBeVisible()
-    })
-  })
-
-  test.describe('Verification Page - Expired Token', () => {
-    test('should show error for expired token', async ({ page }) => {
-      // We use an obviously fake token that would be treated as invalid/expired
-      await page.goto('/verify-email?token=expired-test-token-000')
-
-      await page.waitForLoadState('networkidle')
-
-      // Should show error state (expired tokens show same error as invalid)
-      await expect(page.getByRole('heading', { name: /verification failed/i })).toBeVisible({
-        timeout: 10000,
-      })
-      await expect(page.getByText(/invalid or expired/i)).toBeVisible()
-    })
-  })
-
-  test.describe('Verification Page - Loading State', () => {
-    test('should show loading state while verifying', async ({ page }) => {
-      // Navigate with a token to trigger verification
-      await page.goto('/verify-email?token=test-loading-state-token')
-
-      // Should show loading state initially
-      await expect(page.getByText(/verifying your email/i)).toBeVisible()
-    })
-  })
-
-  test.describe('Resend Verification - Already Verified', () => {
-    test('should show already verified message and redirect option', async ({ page, request }) => {
-      // First register and then verify a user via API
-      const testEmail = generateTestEmail()
-
-      // Register user
-      const registerRes = await request.post('/api/auth/register', {
-        data: {
-          name: validName,
-          email: testEmail,
-          password: validPassword,
-        },
-      })
-      const registerData = await registerRes.json()
-      expect(registerRes.status()).toBe(201)
-
-      // We would need to verify the user in DB, but for this test we'll check the UI behavior
-      // when the API returns "already verified" response
-      await page.goto('/verify-email')
-
-      await page.getByPlaceholder(/enter your email/i).fill(testEmail)
-      await page.getByRole('button', { name: /send verification email/i }).click()
-
-      // Should show success message (API returns success regardless of user existence for security)
-      await page.waitForLoadState('networkidle')
-      await expect(page.getByText(/verification/i)).toBeVisible()
-    })
-  })
-})
-
-/* =============================================================================
- * LOGIN FLOW AFTER VERIFICATION TESTS
+ * LOGIN FLOW TESTS
  * ============================================================================= */
 
 test.describe('Login Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login')
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible()
-  })
-
-  test.describe('Login with Unverified Account', () => {
-    test('should show verification required message for unverified account', async ({
-      page,
-      request,
-    }) => {
-      const testEmail = generateTestEmail()
-
-      // Register user (unverified by default)
-      await request.post('/api/auth/register', {
-        data: {
-          name: validName,
-          email: testEmail,
-          password: validPassword,
-        },
-      })
-
-      // Try to login
-      await fillLoginForm(page, {
-        email: testEmail,
-        password: validPassword,
-      })
-
-      await page.getByRole('button', { name: /sign in/i }).click()
-
-      // Should show verification required message
-      await expect(page.getByText(/email verification required/i)).toBeVisible({ timeout: 10000 })
-      await expect(page.getByText(/verify your email/i)).toBeVisible()
-    })
-
-    test('should show resend verification button for unverified account', async ({
-      page,
-      request,
-    }) => {
-      const testEmail = generateTestEmail()
-
-      // Register user
-      await request.post('/api/auth/register', {
-        data: {
-          name: validName,
-          email: testEmail,
-          password: validPassword,
-        },
-      })
-
-      // Try to login
-      await fillLoginForm(page, {
-        email: testEmail,
-        password: validPassword,
-      })
-
-      await page.getByRole('button', { name: /sign in/i }).click()
-
-      // Wait for verification required message
-      await expect(page.getByText(/email verification required/i)).toBeVisible({ timeout: 10000 })
-
-      // Should have resend button
-      await expect(page.getByRole('button', { name: /resend verification email/i })).toBeVisible()
-    })
-
-    test('should be able to resend verification email from login page', async ({
-      page,
-      request,
-    }) => {
-      const testEmail = generateTestEmail()
-
-      // Register user
-      await request.post('/api/auth/register', {
-        data: {
-          name: validName,
-          email: testEmail,
-          password: validPassword,
-        },
-      })
-
-      // Try to login
-      await fillLoginForm(page, {
-        email: testEmail,
-        password: validPassword,
-      })
-
-      await page.getByRole('button', { name: /sign in/i }).click()
-
-      // Wait for verification required state
-      await expect(page.getByText(/email verification required/i)).toBeVisible({ timeout: 10000 })
-
-      // Click resend button
-      await page.getByRole('button', { name: /resend verification email/i }).click()
-
-      // Should show sending state
-      await expect(page.getByText(/sending/i)).toBeVisible()
-
-      // Should show success message after sending
-      await expect(page.getByText(/verification email sent/i)).toBeVisible({ timeout: 10000 })
-    })
   })
 
   test.describe('Login Validation Errors', () => {
@@ -672,7 +441,7 @@ test.describe('Login Flow', () => {
       await page.goto('/login?registered=true')
 
       await expect(page.getByText(/account created successfully/i)).toBeVisible()
-      await expect(page.getByText(/check your email.*verification/i)).toBeVisible()
+      await expect(page.getByText(/sign in with your email and password/i)).toBeVisible()
     })
   })
 })

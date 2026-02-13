@@ -3,10 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 // Real admin emails to preserve
-const PRESERVE_EMAILS = [
-  'jon@capacitron.com',
-  'rebecca@whiterabbit.academy',
-]
+const PRESERVE_EMAILS = ['jon@capacitron.com', 'rebecca@whiterabbit.academy']
 
 async function main() {
   console.log('🧹 Starting test user cleanup...')
@@ -50,12 +47,6 @@ async function main() {
     where: { userId: { in: userIds } },
   })
   console.log(`  - Password reset tokens: ${passwordTokens.count}`)
-
-  // Delete email verification tokens
-  const emailTokens = await prisma.emailVerificationToken.deleteMany({
-    where: { userId: { in: userIds } },
-  })
-  console.log(`  - Email verification tokens: ${emailTokens.count}`)
 
   // Delete user profiles
   const profiles = await prisma.userProfile.deleteMany({

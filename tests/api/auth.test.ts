@@ -2,18 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 // Use vi.hoisted to create mocks that work with hoisted vi.mock calls
-const {
-  mockUserFindUnique,
-  mockUserCreate,
-  mockEmailVerificationTokenCreate,
-  mockRateLimitFn,
-  mockSendVerificationEmail,
-} = vi.hoisted(() => ({
+const { mockUserFindUnique, mockUserCreate, mockRateLimitFn } = vi.hoisted(() => ({
   mockUserFindUnique: vi.fn(),
   mockUserCreate: vi.fn(),
-  mockEmailVerificationTokenCreate: vi.fn(),
   mockRateLimitFn: vi.fn(),
-  mockSendVerificationEmail: vi.fn(),
 }))
 
 // Mock bcrypt
@@ -40,15 +32,7 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: mockUserFindUnique,
       create: mockUserCreate,
     },
-    emailVerificationToken: {
-      create: mockEmailVerificationTokenCreate,
-    },
   },
-}))
-
-// Mock email sending
-vi.mock('@/lib/email', () => ({
-  sendVerificationEmail: mockSendVerificationEmail,
 }))
 
 // Mock api-utils
@@ -64,13 +48,6 @@ describe('POST /api/auth/register', () => {
     vi.clearAllMocks()
     // Set up default mocks
     mockRateLimitFn.mockResolvedValue(null)
-    mockEmailVerificationTokenCreate.mockResolvedValue({
-      id: 'token-id',
-      userId: 'user-id',
-      token: 'mock-verification-token',
-      expiresAt: new Date(),
-    })
-    mockSendVerificationEmail.mockResolvedValue({ success: true })
   })
 
   afterEach(() => {
