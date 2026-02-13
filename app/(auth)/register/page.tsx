@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -69,7 +70,18 @@ export default function RegisterPage() {
         return
       }
 
-      router.push('/login?registered=true')
+      const signInResult = await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        router.push('/login?registered=true')
+        return
+      }
+
+      router.push('/dashboard')
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
     } finally {
