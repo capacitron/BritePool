@@ -142,7 +142,7 @@ async function main() {
   console.log('Starting seed...')
 
   const existingContract = await prisma.contractVersion.findFirst({
-    where: { isActive: true }
+    where: { isActive: true },
   })
 
   if (!existingContract) {
@@ -151,59 +151,82 @@ async function main() {
         version: '1.0.0',
         content: contractContent,
         isActive: true,
-      }
+      },
     })
     console.log('Created initial contract version 1.0.0')
   } else {
     console.log('Active contract already exists, skipping...')
   }
 
-  const existingAdmin = await prisma.user.findFirst({
-    where: { role: 'WEB_STEWARD' }
-  })
+  // Ensure admin users exist in every environment (dev + production)
+  const admins = [
+    {
+      email: 'jr@capacitron.com',
+      name: 'Jonathan',
+      password: '4-Honor',
+    },
+    {
+      email: 'rebecca@whiterabbit.academy',
+      name: 'Rebecca',
+      password: 'Admin123!',
+    },
+  ]
 
-  if (!existingAdmin) {
-    const passwordHash = await bcrypt.hash('Admin123!', 12)
-    const now = new Date()
-    await prisma.user.create({
-      data: {
-        name: 'Web Steward',
-        email: 'admin@britepool.org',
+  for (const admin of admins) {
+    const passwordHash = await bcrypt.hash(admin.password, 12)
+    await prisma.user.upsert({
+      where: { email: admin.email },
+      update: {
+        role: 'WEB_STEWARD',
+        status: 'ACTIVE',
+        onboardingCompleted: true,
+        emailVerified: new Date(),
+      },
+      create: {
+        email: admin.email,
+        name: admin.name,
         passwordHash,
         role: 'WEB_STEWARD',
-        subscriptionTier: 'PLATINUM',
-        subscriptionStatus: 'ACTIVE',
-        covenantAcceptedAt: now,
+        status: 'ACTIVE',
         onboardingCompleted: true,
-        profile: {
-          create: {
-            bio: 'Platform administrator',
-            totalEquityUnits: 100,
-            totalHoursLogged: 50,
-          }
-        }
-      }
+        emailVerified: new Date(),
+        covenantAcceptedAt: new Date(),
+      },
     })
-    console.log('Created admin user: admin@britepool.org / Admin123!')
-    console.log('Admin has covenant pre-accepted and onboarding completed for demo purposes')
-  } else {
-    // Update existing admin to ensure covenant is accepted for demo
-    await prisma.user.update({
-      where: { id: existingAdmin.id },
-      data: {
-        covenantAcceptedAt: existingAdmin.covenantAcceptedAt || new Date(),
-        onboardingCompleted: true,
-      }
-    })
-    console.log('Admin user exists - ensured covenant accepted and onboarding complete')
+    console.log(`✓ Admin user ensured: ${admin.email}`)
   }
 
   const committees = [
-    { name: 'Board of Directors', slug: 'board-of-directors', type: 'GOVERNANCE' as const, description: 'Oversees organizational strategy and governance' },
-    { name: 'Operations Committee', slug: 'operations-committee', type: 'OPERATIONS' as const, description: 'Manages day-to-day operations' },
-    { name: 'Wealth Building Committee', slug: 'wealth-building', type: 'WEALTH' as const, description: 'Develops wealth building opportunities' },
-    { name: 'Health & Wellness Committee', slug: 'health-wellness', type: 'HEALTH' as const, description: 'Promotes health and wellness initiatives' },
-    { name: 'Education Committee', slug: 'education-committee', type: 'EDUCATION' as const, description: 'Develops educational programs' },
+    {
+      name: 'Board of Directors',
+      slug: 'board-of-directors',
+      type: 'GOVERNANCE' as const,
+      description: 'Oversees organizational strategy and governance',
+    },
+    {
+      name: 'Operations Committee',
+      slug: 'operations-committee',
+      type: 'OPERATIONS' as const,
+      description: 'Manages day-to-day operations',
+    },
+    {
+      name: 'Wealth Building Committee',
+      slug: 'wealth-building',
+      type: 'WEALTH' as const,
+      description: 'Develops wealth building opportunities',
+    },
+    {
+      name: 'Health & Wellness Committee',
+      slug: 'health-wellness',
+      type: 'HEALTH' as const,
+      description: 'Promotes health and wellness initiatives',
+    },
+    {
+      name: 'Education Committee',
+      slug: 'education-committee',
+      type: 'EDUCATION' as const,
+      description: 'Develops educational programs',
+    },
   ]
 
   for (const committee of committees) {
@@ -224,11 +247,12 @@ async function main() {
   ]
 
   for (const category of categories) {
-    await prisma.forumCategory.upsert({
-      where: { slug: category.slug },
-      update: {},
-      create: category,
+    const existing = await prisma.forumCategory.findFirst({
+      where: { OR: [{ slug: category.slug }, { name: category.name }] },
     })
+    if (!existing) {
+      await prisma.forumCategory.create({ data: category })
+    }
   }
   console.log('✓ Forum categories seeded')
 
