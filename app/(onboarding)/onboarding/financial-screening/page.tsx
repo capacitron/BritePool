@@ -421,8 +421,8 @@ export default function FinancialScreeningPage() {
         })}
       </div>
 
-      <Card className="border-0 shadow-lg overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-400 to-earth-300" />
+      <Card className="border-0 shadow-lg overflow-visible">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-earth-400 to-earth-300 rounded-l-lg" />
         <CardHeader className="pb-4">
           <div className="flex items-center gap-4">
             <div
