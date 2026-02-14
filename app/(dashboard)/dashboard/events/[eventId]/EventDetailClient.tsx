@@ -96,7 +96,7 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
       const response = await fetch(`/api/events/${event.id}/register`, {
         method: 'POST',
       })
-      
+
       if (response.ok) {
         setIsRegistered(true)
         setAttendeeCount(prev => prev + 1)
@@ -115,13 +115,13 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
 
   const handleCancelRegistration = async () => {
     if (!confirm('Are you sure you want to cancel your registration?')) return
-    
+
     setIsLoading(true)
     try {
       const response = await fetch(`/api/events/${event.id}/register`, {
         method: 'DELETE',
       })
-      
+
       if (response.ok) {
         setIsRegistered(false)
         setAttendeeCount(prev => prev - 1)
@@ -142,14 +142,14 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
     <div className="space-y-6">
       <Link
         href="/dashboard/events"
-        className="inline-flex items-center gap-2 text-earth-brown-light hover:text-earth-brown transition-colors"
+        className="inline-flex items-center gap-2 text-forest-500 hover:text-forest-700 transition-colors font-body"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Events
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="flex flex-col gap-6">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
@@ -172,41 +172,41 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-stone-warm">
-                  <Calendar className="h-5 w-5 text-earth-brown" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-sand-100">
+                  <Calendar className="h-5 w-5 text-forest-500" />
                   <div>
-                    <p className="text-xs text-earth-brown-light">Date</p>
-                    <p className="font-medium text-earth-dark">{formatDate(event.startTime)}</p>
+                    <p className="text-xs text-forest-500 font-body">Date</p>
+                    <p className="font-medium text-forest-800 font-body">{formatDate(event.startTime)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-stone-warm">
-                  <Clock className="h-5 w-5 text-earth-brown" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-sand-100">
+                  <Clock className="h-5 w-5 text-forest-500" />
                   <div>
-                    <p className="text-xs text-earth-brown-light">Time</p>
-                    <p className="font-medium text-earth-dark">
+                    <p className="text-xs text-forest-500 font-body">Time</p>
+                    <p className="font-medium text-forest-800 font-body">
                       {formatTime(event.startTime)} - {formatTime(event.endTime)}
                     </p>
                   </div>
                 </div>
                 {event.location && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-stone-warm">
-                    <MapPin className="h-5 w-5 text-earth-brown" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-sand-100">
+                    <MapPin className="h-5 w-5 text-forest-500" />
                     <div>
-                      <p className="text-xs text-earth-brown-light">Location</p>
-                      <p className="font-medium text-earth-dark">{event.location}</p>
+                      <p className="text-xs text-forest-500 font-body">Location</p>
+                      <p className="font-medium text-forest-800 font-body">{event.location}</p>
                     </div>
                   </div>
                 )}
                 {event.virtualLink && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-stone-warm">
-                    <Video className="h-5 w-5 text-earth-brown" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-sand-100">
+                    <Video className="h-5 w-5 text-forest-500" />
                     <div>
-                      <p className="text-xs text-earth-brown-light">Virtual</p>
+                      <p className="text-xs text-forest-500 font-body">Virtual</p>
                       <a
                         href={event.virtualLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-blue-600 hover:underline"
+                        className="font-medium text-blue-600 hover:underline font-body"
                       >
                         Join Online
                       </a>
@@ -217,15 +217,15 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
 
               {event.description && (
                 <div>
-                  <h3 className="font-semibold text-earth-dark mb-2">Description</h3>
-                  <p className="text-earth-brown-light whitespace-pre-wrap">{event.description}</p>
+                  <h3 className="font-semibold text-forest-800 mb-2 font-body">Description</h3>
+                  <p className="text-forest-600 whitespace-pre-wrap font-body">{event.description}</p>
                 </div>
               )}
 
               {event.committee && (
                 <div>
-                  <h3 className="font-semibold text-earth-dark mb-2">Organized by</h3>
-                  <p className="text-earth-brown-light">{event.committee.name} Committee</p>
+                  <h3 className="font-semibold text-forest-800 mb-2 font-body">Organized by</h3>
+                  <p className="text-forest-600 font-body">{event.committee.name} Committee</p>
                 </div>
               )}
             </CardContent>
@@ -239,13 +239,13 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-earth-brown" />
+                <Users className="h-5 w-5 text-forest-500" />
                 <div>
-                  <p className="font-medium text-earth-dark">
+                  <p className="font-medium text-forest-800 font-body">
                     {attendeeCount} {event.capacity ? `/ ${event.capacity}` : ''} Attendees
                   </p>
                   {event.capacity && (
-                    <p className="text-xs text-earth-brown-light">
+                    <p className="text-xs text-forest-500 font-body">
                       {event.capacity - attendeeCount} spots remaining
                     </p>
                   )}
@@ -253,15 +253,15 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
               </div>
 
               {isPastEvent ? (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-100 text-gray-600">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-sand-100 text-forest-500">
                   <AlertCircle className="h-5 w-5" />
-                  <span className="text-sm">This event has already passed</span>
+                  <span className="text-sm font-body">This event has already passed</span>
                 </div>
               ) : isRegistered ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 text-green-700">
                     <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm">You are registered for this event</span>
+                    <span className="text-sm font-body">You are registered for this event</span>
                   </div>
                   <Button
                     variant="outline"
@@ -275,11 +275,11 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
               ) : isAtCapacity ? (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50 text-yellow-700">
                   <AlertCircle className="h-5 w-5" />
-                  <span className="text-sm">This event is at capacity</span>
+                  <span className="text-sm font-body">This event is at capacity</span>
                 </div>
               ) : (
                 <Button
-                  className="w-full"
+                  className="w-full bg-forest-600 hover:bg-forest-700 text-white"
                   onClick={handleRegister}
                   disabled={isLoading}
                 >
@@ -295,29 +295,29 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
             </CardHeader>
             <CardContent>
               {event.attendees.length === 0 ? (
-                <p className="text-earth-brown-light text-sm">No attendees yet</p>
+                <p className="text-forest-500 text-sm font-body">No attendees yet</p>
               ) : (
                 <div className="space-y-2">
                   {event.attendees.slice(0, 10).map(attendee => (
                     <div
                       key={attendee.id}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-warm"
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-sand-100"
                     >
-                      <div className="h-8 w-8 rounded-full bg-earth-brown/10 flex items-center justify-center">
-                        <User className="h-4 w-4 text-earth-brown" />
+                      <div className="h-8 w-8 rounded-full bg-forest-100 flex items-center justify-center">
+                        <User className="h-4 w-4 text-forest-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-earth-dark truncate">
+                        <p className="text-sm font-medium text-forest-800 truncate font-body">
                           {attendee.name}
                         </p>
                         {attendee.status === 'WAITLISTED' && (
-                          <span className="text-xs text-yellow-600">Waitlisted</span>
+                          <span className="text-xs text-yellow-600 font-body">Waitlisted</span>
                         )}
                       </div>
                     </div>
                   ))}
                   {event.attendees.length > 10 && (
-                    <p className="text-sm text-earth-brown-light text-center pt-2">
+                    <p className="text-sm text-forest-500 text-center pt-2 font-body">
                       +{event.attendees.length - 10} more attendees
                     </p>
                   )}
