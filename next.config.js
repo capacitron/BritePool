@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  env: {
+    AUTH_URL: process.env.AUTH_URL || process.env.NEXTAUTH_URL,
+  },
   allowedDevOrigins: ['*.replit.dev', '*.worf.replit.dev', '*.repl.co'],
   async headers() {
     return [
