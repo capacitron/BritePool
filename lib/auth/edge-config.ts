@@ -24,6 +24,7 @@ export const edgeAuthConfig: NextAuthConfig = {
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.email = token.email as string
         session.user.role = token.role as UserRole
         session.user.status = token.status as string
         session.user.emailVerified = token.emailVerified as Date | null

@@ -1083,7 +1083,7 @@ function EditWGOModal({
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-forest-700 mb-1">
-                  Affiliate Link
+                  Add Your Affiliate Link
                 </label>
                 <input
                   type="url"
