@@ -2,23 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Users,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  UserCog,
-} from 'lucide-react'
+import { Users, Search, ChevronLeft, ChevronRight, Eye, UserCog } from 'lucide-react'
 import Link from 'next/link'
 
 interface User {
@@ -26,6 +13,7 @@ interface User {
   email: string
   name: string
   role: string
+  status: string
   subscriptionTier: string
   subscriptionStatus: string
   covenantAcceptedAt: string | null
@@ -53,11 +41,12 @@ const roles = [
 
 const subscriptionTiers = ['FREE', 'BASIC', 'PREMIUM', 'PLATINUM']
 const subscriptionStatuses = ['ACTIVE', 'INACTIVE', 'PAST_DUE', 'CANCELLED']
+const accountStatuses = ['ACTIVE', 'SUSPENDED', 'LOCKED']
 
 export default function AdminUsersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   const [users, setUsers] = useState<User[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,11 +55,12 @@ export default function AdminUsersPage() {
   const [tierFilter, setTierFilter] = useState(searchParams.get('subscriptionTier') || '')
   const [statusFilter, setStatusFilter] = useState(searchParams.get('subscriptionStatus') || '')
   const [covenantFilter, setCovenantFilter] = useState(searchParams.get('covenantStatus') || '')
+  const [accountStatusFilter, setAccountStatusFilter] = useState(searchParams.get('status') || '')
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
 
   useEffect(() => {
     fetchUsers()
-  }, [page, roleFilter, tierFilter, statusFilter, covenantFilter])
+  }, [page, roleFilter, tierFilter, statusFilter, covenantFilter, accountStatusFilter])
 
   async function fetchUsers() {
     setLoading(true)
@@ -80,6 +70,7 @@ export default function AdminUsersPage() {
     if (roleFilter) params.set('role', roleFilter)
     if (tierFilter) params.set('subscriptionTier', tierFilter)
     if (statusFilter) params.set('subscriptionStatus', statusFilter)
+    if (accountStatusFilter) params.set('status', accountStatusFilter)
     if (covenantFilter) params.set('covenantStatus', covenantFilter)
 
     try {
@@ -155,12 +146,8 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
-            User Management
-          </h1>
-          <p className="text-earth-brown-light mt-1">
-            View and manage all platform users
-          </p>
+          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">User Management</h1>
+          <p className="text-earth-brown-light mt-1">View and manage all platform users</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/dashboard/admin">
@@ -197,7 +184,10 @@ export default function AdminUsersPage() {
               </div>
               <select
                 value={roleFilter}
-                onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value)
+                  setPage(1)
+                }}
                 className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
               >
                 <option value="">All Roles</option>
@@ -209,7 +199,10 @@ export default function AdminUsersPage() {
               </select>
               <select
                 value={tierFilter}
-                onChange={(e) => { setTierFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setTierFilter(e.target.value)
+                  setPage(1)
+                }}
                 className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
               >
                 <option value="">All Tiers</option>
@@ -220,8 +213,26 @@ export default function AdminUsersPage() {
                 ))}
               </select>
               <select
+                value={accountStatusFilter}
+                onChange={(e) => {
+                  setAccountStatusFilter(e.target.value)
+                  setPage(1)
+                }}
+                className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
+              >
+                <option value="">All Statuses</option>
+                {accountStatuses.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <select
                 value={covenantFilter}
-                onChange={(e) => { setCovenantFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setCovenantFilter(e.target.value)
+                  setPage(1)
+                }}
                 className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
               >
                 <option value="">Agreement Status</option>
@@ -233,29 +244,39 @@ export default function AdminUsersPage() {
           </form>
 
           {loading ? (
-            <div className="text-center py-8 text-earth-brown-light">
-              Loading users...
-            </div>
+            <div className="text-center py-8 text-earth-brown-light">Loading users...</div>
           ) : users.length === 0 ? (
-            <div className="text-center py-8 text-earth-brown-light">
-              No users found
-            </div>
+            <div className="text-center py-8 text-earth-brown-light">No users found</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-stone">
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
+                      Email
+                    </th>
                     <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Role</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Subscription</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Agreement</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Actions</th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
+                      Subscription
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
+                      Agreement
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} className="border-b border-stone hover:bg-stone-warm">
+                    <tr
+                      key={user.id}
+                      className={`border-b border-stone hover:bg-stone-warm ${user.status === 'SUSPENDED' ? 'opacity-50' : user.status === 'LOCKED' ? 'opacity-40 bg-red-50' : ''}`}
+                    >
                       <td className="py-3 px-4">
                         <p className="font-medium text-earth-dark">{user.name}</p>
                         <p className="text-xs text-earth-brown-light">
@@ -293,6 +314,19 @@ export default function AdminUsersPage() {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`text-xs px-2 py-1 rounded font-medium ${
+                            user.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : user.status === 'SUSPENDED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {user.status}
+                        </span>
                       </td>
                       <td className="py-3 px-4">
                         {user.covenantAcceptedAt ? (

@@ -50,6 +50,11 @@ export async function GET(request: NextRequest) {
       where.subscriptionStatus = subscriptionStatus
     }
 
+    const accountStatus = searchParams.get('status') || ''
+    if (accountStatus) {
+      where.status = accountStatus
+    }
+
     if (covenantStatus === 'accepted') {
       where.covenantAcceptedAt = { not: null }
     } else if (covenantStatus === 'pending') {
@@ -67,6 +72,7 @@ export async function GET(request: NextRequest) {
           email: true,
           name: true,
           role: true,
+          status: true,
           subscriptionTier: true,
           subscriptionStatus: true,
           covenantAcceptedAt: true,

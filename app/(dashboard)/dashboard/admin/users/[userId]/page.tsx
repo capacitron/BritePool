@@ -2,13 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -145,18 +139,14 @@ const roles = [
 const subscriptionTiers = ['FREE', 'BASIC', 'PREMIUM', 'PLATINUM']
 const subscriptionStatuses = ['ACTIVE', 'INACTIVE', 'PAST_DUE', 'CANCELLED']
 
-export default function AdminUserDetailPage({
-  params,
-}: {
-  params: Promise<{ userId: string }>
-}) {
+export default function AdminUserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params)
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  
+
   const [editedRole, setEditedRole] = useState('')
   const [editedTier, setEditedTier] = useState('')
   const [editedStatus, setEditedStatus] = useState('')
@@ -211,7 +201,9 @@ export default function AdminUserDetailPage({
   }
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (
+      !confirm('Are you sure you want to suspend this user? They will no longer be able to log in.')
+    ) {
       return
     }
     setDeleting(true)
@@ -221,9 +213,13 @@ export default function AdminUserDetailPage({
       })
       if (res.ok) {
         router.push('/dashboard/admin/users')
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete user')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
+      alert('Failed to delete user. Please try again.')
     } finally {
       setDeleting(false)
     }
@@ -254,12 +250,8 @@ export default function AdminUserDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
-            User Details
-          </h1>
-          <p className="text-earth-brown-light mt-1">
-            {user.email}
-          </p>
+          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">User Details</h1>
+          <p className="text-earth-brown-light mt-1">{user.email}</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -283,9 +275,7 @@ export default function AdminUserDetailPage({
                 <User className="h-5 w-5" />
                 Edit User
               </CardTitle>
-              <CardDescription>
-                Update user role, subscription, and basic info
-              </CardDescription>
+              <CardDescription>Update user role, subscription, and basic info</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -299,12 +289,7 @@ export default function AdminUserDetailPage({
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    value={user.email}
-                    disabled
-                    className="bg-stone-warm"
-                  />
+                  <Input id="email" value={user.email} disabled className="bg-stone-warm" />
                 </div>
               </div>
 
@@ -467,7 +452,9 @@ export default function AdminUserDetailPage({
             <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-earth-brown-light">Status</p>
-                <p className={`text-sm font-medium ${user.covenantAcceptedAt ? 'text-sage' : 'text-terracotta'}`}>
+                <p
+                  className={`text-sm font-medium ${user.covenantAcceptedAt ? 'text-sage' : 'text-terracotta'}`}
+                >
                   {user.covenantAcceptedAt ? 'Accepted' : 'Pending'}
                 </p>
               </div>
@@ -498,7 +485,9 @@ export default function AdminUserDetailPage({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-earth-brown-light">Assigned Tier</p>
-                    <p className="text-sm font-bold">{user.financialScreening.tier.replace(/_/g, ' ')}</p>
+                    <p className="text-sm font-bold">
+                      {user.financialScreening.tier.replace(/_/g, ' ')}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-earth-brown-light">Score</p>
@@ -508,11 +497,15 @@ export default function AdminUserDetailPage({
                 {user.financialScreening.flagLevel && (
                   <div>
                     <p className="text-xs text-earth-brown-light">Flag Level</p>
-                    <p className={`text-sm font-medium ${
-                      user.financialScreening.flagLevel === 'HARD_STOP' ? 'text-red-600' :
-                      user.financialScreening.flagLevel === 'MODERATE' ? 'text-yellow-600' :
-                      'text-blue-600'
-                    }`}>
+                    <p
+                      className={`text-sm font-medium ${
+                        user.financialScreening.flagLevel === 'HARD_STOP'
+                          ? 'text-red-600'
+                          : user.financialScreening.flagLevel === 'MODERATE'
+                            ? 'text-yellow-600'
+                            : 'text-blue-600'
+                      }`}
+                    >
                       {user.financialScreening.flagLevel.replace(/_/g, ' ')}
                     </p>
                   </div>
@@ -524,13 +517,18 @@ export default function AdminUserDetailPage({
                 )}
                 <div>
                   <p className="text-xs text-earth-brown-light">Guidance Preference</p>
-                  <p className="text-sm">{user.financialScreening.guidancePreference.replace(/_/g, ' ')}</p>
+                  <p className="text-sm">
+                    {user.financialScreening.guidancePreference.replace(/_/g, ' ')}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-earth-brown-light">Primary Intentions</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {user.financialScreening.primaryIntentions.map((intent: string) => (
-                      <span key={intent} className="text-xs bg-sand-100 text-forest-700 px-2 py-1 rounded-full">
+                      <span
+                        key={intent}
+                        className="text-xs bg-sand-100 text-forest-700 px-2 py-1 rounded-full"
+                      >
                         {intent.replace(/_/g, ' ')}
                       </span>
                     ))}
@@ -538,7 +536,9 @@ export default function AdminUserDetailPage({
                 </div>
                 <div>
                   <p className="text-xs text-earth-brown-light">Completed</p>
-                  <p className="text-sm">{new Date(user.financialScreening.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm">
+                    {new Date(user.financialScreening.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -558,7 +558,12 @@ export default function AdminUserDetailPage({
                     <p className="text-xs text-earth-brown-light">Introduced By</p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-8 h-8 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs">
-                        {user.referredBy.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                        {user.referredBy.name
+                          .split(' ')
+                          .map((n: string) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
                       </div>
                       <div>
                         <p className="text-sm font-medium">{user.referredBy.name}</p>
@@ -569,12 +574,19 @@ export default function AdminUserDetailPage({
                 )}
                 {user.referrals.length > 0 && (
                   <div>
-                    <p className="text-xs text-earth-brown-light">People They Introduced ({user.referrals.length})</p>
+                    <p className="text-xs text-earth-brown-light">
+                      People They Introduced ({user.referrals.length})
+                    </p>
                     <div className="space-y-2 mt-2">
                       {user.referrals.map((ref: ReferralUser) => (
                         <div key={ref.id} className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-earth-100 flex items-center justify-center text-earth-600 font-bold text-xs">
-                            {ref.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                            {ref.name
+                              .split(' ')
+                              .map((n: string) => n[0])
+                              .join('')
+                              .toUpperCase()
+                              .slice(0, 2)}
                           </div>
                           <div>
                             <p className="text-sm">{ref.name}</p>
