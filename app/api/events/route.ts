@@ -4,6 +4,11 @@ import { auth } from '@/lib/auth'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
+const recurrenceSchema = z.object({
+  frequency: z.enum(['WEEKLY', 'BIWEEKLY', 'MONTHLY']),
+  until: z.string(), // YYYY-MM-DD
+})
+
 const createEventSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
@@ -13,8 +18,46 @@ const createEventSchema = z.object({
   location: z.string().max(500).optional(),
   virtualLink: z.string().url().optional(),
   capacity: z.number().int().positive().optional(),
-  committeeId: z.string().optional(), // Optional: associate with a committee
+  committeeId: z.string().optional(),
+  recurrence: recurrenceSchema.optional(),
 })
+
+function generateRecurrenceDates(
+  startTime: Date,
+  endTime: Date,
+  frequency: string,
+  until: string
+): Array<{ startTime: Date; endTime: Date }> {
+  const dates: Array<{ startTime: Date; endTime: Date }> = []
+  const untilDate = new Date(until + 'T23:59:59')
+  const durationMs = endTime.getTime() - startTime.getTime()
+  const maxOccurrences = 52
+
+  let current = new Date(startTime)
+
+  // Skip the first occurrence (it's the original event)
+  for (let i = 0; i < maxOccurrences; i++) {
+    // Advance to next occurrence
+    if (frequency === 'WEEKLY') {
+      current = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000)
+    } else if (frequency === 'BIWEEKLY') {
+      current = new Date(current.getTime() + 14 * 24 * 60 * 60 * 1000)
+    } else if (frequency === 'MONTHLY') {
+      const next = new Date(current)
+      next.setMonth(next.getMonth() + 1)
+      current = next
+    }
+
+    if (current > untilDate) break
+
+    dates.push({
+      startTime: new Date(current),
+      endTime: new Date(current.getTime() + durationMs),
+    })
+  }
+
+  return dates
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -100,6 +143,7 @@ export async function POST(request: NextRequest) {
       virtualLink,
       capacity,
       committeeId,
+      recurrence,
     } = parsed.data
 
     // Validate committee exists if provided
@@ -114,18 +158,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create the event
+    const startDate = new Date(startTime)
+    const endDate = new Date(endTime)
+
+    const baseEventData = {
+      title,
+      description: description || null,
+      type,
+      location: location || null,
+      virtualLink: virtualLink || null,
+      capacity: capacity || null,
+      committeeId: committeeId || null,
+    }
+
+    // If recurring, create all events in a transaction
+    if (recurrence) {
+      const additionalDates = generateRecurrenceDates(
+        startDate,
+        endDate,
+        recurrence.frequency,
+        recurrence.until
+      )
+
+      const events = await prisma.$transaction(
+        [
+          // First event (the original)
+          prisma.event.create({
+            data: {
+              ...baseEventData,
+              startTime: startDate,
+              endTime: endDate,
+            },
+          }),
+          // All recurring instances
+          ...additionalDates.map((dates) =>
+            prisma.event.create({
+              data: {
+                ...baseEventData,
+                startTime: dates.startTime,
+                endTime: dates.endTime,
+              },
+            })
+          ),
+        ]
+      )
+
+      return NextResponse.json(
+        { events, count: events.length },
+        { status: 201 }
+      )
+    }
+
+    // Single event creation
     const event = await prisma.event.create({
       data: {
-        title,
-        description: description || null,
-        type,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        location: location || null,
-        virtualLink: virtualLink || null,
-        capacity: capacity || null,
-        committeeId: committeeId || null,
+        ...baseEventData,
+        startTime: startDate,
+        endTime: endDate,
       },
       include: {
         committee: {

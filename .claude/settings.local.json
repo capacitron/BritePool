@@ -74,7 +74,9 @@
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" node:*)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" node -e:*)",
       "Bash(pgrep:*)",
-      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma migrate status:*)"
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma migrate status:*)",
+      "Bash(via [Name] 's Link\" button is displayed, opening the affiliate link in a new tab.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx next build:*)"
     ],
     "deny": []
   },

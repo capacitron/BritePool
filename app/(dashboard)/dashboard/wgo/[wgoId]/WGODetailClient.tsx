@@ -760,10 +760,9 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 </>
               ) : (
                 <>
-                  <h3 className="font-medium text-forest-800">Get Involved</h3>
+                  <h3 className="font-medium text-forest-800">Join the Discussion</h3>
                   <p className="text-sm text-forest-600">
-                    Join this Wealth Generation Opportunity (WGO) to participate and access the
-                    forum.
+                    Join this WGO group to access the forum and collaborate with other members.
                   </p>
                   {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
                     <Button
@@ -776,7 +775,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                       ) : (
                         <UserPlus className="h-4 w-4 mr-2" />
                       )}
-                      Join as Participant
+                      Join Discussion Group
                     </Button>
                   )}
                 </>

@@ -1,12 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Calendar, Clock, MapPin, Video, Users, Tag } from 'lucide-react'
+import { useState } from 'react'
+import { X, Calendar, Clock, MapPin, Video, Users, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { EVENT_CATEGORIES_BY_COMMITTEE, CATEGORY_LABELS } from '@/lib/events/categories'
-import { CommitteeType } from '@prisma/client'
 
 interface UserCommittee {
   id: string
@@ -30,6 +27,13 @@ const EVENT_TYPES = [
   { value: 'VIRTUAL_WEBINAR', label: 'Virtual Webinar' },
 ]
 
+const RECURRENCE_OPTIONS = [
+  { value: '', label: 'Does not repeat' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'BIWEEKLY', label: 'Every 2 weeks' },
+  { value: 'MONTHLY', label: 'Monthly' },
+]
+
 export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, userRole }: CreateEventModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +42,6 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState('COMMITTEE_MEETING')
-  const [category, setCategory] = useState('')
   const [startDate, setStartDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -46,42 +49,9 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
   const [location, setLocation] = useState('')
   const [virtualLink, setVirtualLink] = useState('')
   const [capacity, setCapacity] = useState('')
-  const [selectedCommitteeIds, setSelectedCommitteeIds] = useState<string[]>([])
-
-  const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(userRole)
-
-  // Get available categories based on selected committees
-  const availableCategories = selectedCommitteeIds.length > 0
-    ? [...new Set(
-        selectedCommitteeIds
-          .map(id => userCommittees.find(c => c.id === id))
-          .filter(Boolean)
-          .flatMap(c => EVENT_CATEGORIES_BY_COMMITTEE[c!.type as CommitteeType] || [])
-      )]
-    : []
-
-  // Reset category when committees change
-  useEffect(() => {
-    if (category && !availableCategories.includes(category)) {
-      setCategory('')
-    }
-  }, [selectedCommitteeIds, category, availableCategories])
-
-  // Check if user is a leader in all selected committees
-  const isLeaderInAllSelected = selectedCommitteeIds.every(id => {
-    const committee = userCommittees.find(c => c.id === id)
-    return committee?.role === 'LEADER'
-  })
-
-  const willAutoApprove = isAdmin || isLeaderInAllSelected
-
-  const handleCommitteeToggle = (committeeId: string) => {
-    setSelectedCommitteeIds(prev =>
-      prev.includes(committeeId)
-        ? prev.filter(id => id !== committeeId)
-        : [...prev, committeeId]
-    )
-  }
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState('')
+  const [recurrence, setRecurrence] = useState('')
+  const [recurrenceUntil, setRecurrenceUntil] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +63,6 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
       if (!title.trim()) throw new Error('Title is required')
       if (!startDate || !startTime) throw new Error('Start date and time are required')
       if (!endDate || !endTime) throw new Error('End date and time are required')
-      if (selectedCommitteeIds.length === 0) throw new Error('At least one committee must be selected')
 
       const startDateTime = new Date(`${startDate}T${startTime}`)
       const endDateTime = new Date(`${endDate}T${endTime}`)
@@ -102,21 +71,33 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
         throw new Error('End time must be after start time')
       }
 
+      if (recurrence && !recurrenceUntil) {
+        throw new Error('Please select an end date for recurring events')
+      }
+
+      const payload: Record<string, unknown> = {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        type,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        location: location.trim() || undefined,
+        virtualLink: virtualLink.trim() || undefined,
+        capacity: capacity ? parseInt(capacity, 10) : undefined,
+        committeeId: selectedCommitteeId || undefined,
+      }
+
+      if (recurrence && recurrenceUntil) {
+        payload.recurrence = {
+          frequency: recurrence,
+          until: recurrenceUntil,
+        }
+      }
+
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          type,
-          category: category || undefined,
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
-          location: location.trim() || undefined,
-          virtualLink: virtualLink.trim() || undefined,
-          capacity: capacity ? parseInt(capacity, 10) : undefined,
-          committeeIds: selectedCommitteeIds,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -180,72 +161,44 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
               />
             </div>
 
-            {/* Committees */}
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-2">
-                <Users className="inline h-4 w-4 mr-1" />
-                Select Committee(s) *
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {userCommittees.map(committee => (
-                  <button
-                    key={committee.id}
-                    type="button"
-                    onClick={() => handleCommitteeToggle(committee.id)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-                      selectedCommitteeIds.includes(committee.id)
-                        ? 'bg-forest-600 text-white border-forest-600'
-                        : 'bg-white text-forest-700 border-sand-300 hover:bg-sand-50'
-                    )}
-                  >
-                    {committee.name}
-                    {committee.role === 'LEADER' && (
-                      <span className="ml-1 text-xs opacity-75">(Leader)</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              {selectedCommitteeIds.length === 0 && (
-                <p className="text-sm text-forest-500 mt-1">Select at least one committee</p>
-              )}
-            </div>
-
-            {/* Event Type */}
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1">
-                Event Type *
-              </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
-              >
-                {EVENT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Category */}
-            {availableCategories.length > 0 && (
+            {/* Committee & Event Type row */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Committee */}
               <div>
                 <label className="block text-sm font-medium text-forest-700 mb-1">
-                  <Tag className="inline h-4 w-4 mr-1" />
-                  Category
+                  <Users className="inline h-4 w-4 mr-1" />
+                  Committee
                 </label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={selectedCommitteeId}
+                  onChange={(e) => setSelectedCommitteeId(e.target.value)}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 >
-                  <option value="">Select a category (optional)</option>
-                  {availableCategories.map(cat => (
-                    <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
+                  <option value="">No committee</option>
+                  {userCommittees.map(committee => (
+                    <option key={committee.id} value={committee.id}>
+                      {committee.name}
+                    </option>
                   ))}
                 </select>
               </div>
-            )}
+
+              {/* Event Type */}
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Event Type *
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                >
+                  {EVENT_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-4">
@@ -305,6 +258,49 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
               </div>
             </div>
 
+            {/* Recurrence */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  <Repeat className="inline h-4 w-4 mr-1" />
+                  Repeat
+                </label>
+                <select
+                  value={recurrence}
+                  onChange={(e) => setRecurrence(e.target.value)}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                >
+                  {RECURRENCE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              {recurrence && (
+                <div>
+                  <label className="block text-sm font-medium text-forest-700 mb-1">
+                    Repeat Until *
+                  </label>
+                  <input
+                    type="date"
+                    value={recurrenceUntil}
+                    onChange={(e) => setRecurrenceUntil(e.target.value)}
+                    min={startDate}
+                    className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            {recurrence && recurrenceUntil && startDate && (
+              <p className="text-sm text-forest-600 bg-forest-50 rounded-lg px-3 py-2">
+                <Repeat className="inline h-3.5 w-3.5 mr-1" />
+                This will create multiple events repeating{' '}
+                {recurrence === 'WEEKLY' ? 'every week' : recurrence === 'BIWEEKLY' ? 'every 2 weeks' : 'every month'}{' '}
+                until {new Date(recurrenceUntil + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+              </p>
+            )}
+
             {/* Location */}
             <div>
               <label className="block text-sm font-medium text-forest-700 mb-1">
@@ -351,26 +347,6 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
               />
             </div>
 
-            {/* Approval Notice */}
-            <div className={cn(
-              'p-3 rounded-lg text-sm',
-              willAutoApprove ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-            )}>
-              {willAutoApprove ? (
-                <>
-                  <strong>Auto-approved:</strong> This event will be immediately visible on the calendar.
-                </>
-              ) : (
-                <>
-                  <strong>Pending approval:</strong> This event will be submitted for approval by committee leader(s).
-                  You will be notified when it is approved or rejected.
-                  {selectedCommitteeIds.length > 1 && (
-                    <> All committee leaders must approve for multi-committee events.</>
-                  )}
-                </>
-              )}
-            </div>
-
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t border-sand-200">
               <Button
@@ -384,9 +360,9 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
               <Button
                 type="submit"
                 className="bg-forest-600 hover:bg-forest-700 text-white"
-                disabled={loading || selectedCommitteeIds.length === 0}
+                disabled={loading}
               >
-                {loading ? 'Creating...' : willAutoApprove ? 'Create Event' : 'Submit for Approval'}
+                {loading ? 'Creating...' : recurrence ? 'Create Recurring Events' : 'Create Event'}
               </Button>
             </div>
           </form>
