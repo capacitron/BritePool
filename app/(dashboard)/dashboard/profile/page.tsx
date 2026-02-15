@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Link2,
+  Copy,
 } from 'lucide-react'
 import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
 import { PageHeader } from '@/components/PageHeader'
@@ -30,6 +32,7 @@ interface UserProfile {
   id: string
   email: string
   name: string
+  username: string | null
   role: string
   covenantAcceptedAt: string | null
   subscriptionTier: string
@@ -72,11 +75,13 @@ export default function ProfilePage() {
 
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     bio: '',
     phone: '',
     location: '',
     timezone: 'UTC',
   })
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -105,6 +110,7 @@ export default function ProfilePage() {
       setProfile(data)
       setFormData({
         name: data.name || '',
+        username: data.username || '',
         bio: data.profile?.bio || '',
         phone: data.profile?.phone || '',
         location: data.profile?.location || '',
@@ -398,6 +404,80 @@ export default function ProfilePage() {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-sand-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <Link2 className="h-5 w-5 text-forest-500" />
+            Referral Link
+          </CardTitle>
+          <CardDescription className="text-forest-500 font-body">
+            Create your unique BritePool username to generate a shareable referral link
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-forest-700 font-body">
+              Username
+            </Label>
+            <Input
+              id="username"
+              value={formData.username}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  username: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                })
+              }
+              placeholder="your-username"
+              className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
+              maxLength={30}
+            />
+            <p className="text-xs text-forest-400 font-body">
+              Lowercase letters, numbers, and hyphens only. 3-30 characters.
+            </p>
+          </div>
+
+          {profile?.username && (
+            <div className="space-y-2">
+              <Label className="text-forest-700 font-body">Your Shareable Referral Link</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={`https://britepool.org/${profile.username}`}
+                  readOnly
+                  className="border-sand-300 bg-sand-50 text-forest-700"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0 border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`https://britepool.org/${profile.username}`)
+                    setLinkCopied(true)
+                    setTimeout(() => setLinkCopied(false), 2000)
+                  }}
+                >
+                  {linkCopied ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-forest-400 font-body">
+                Share this link with prospective members. When they register, they will be
+                automatically linked to you.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

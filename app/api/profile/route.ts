@@ -3,9 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
+import { usernameSchema } from '@/lib/validations/username'
 
 const updateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
+  username: usernameSchema.optional(),
   bio: z.string().max(500).optional().nullable(),
   phone: z.string().max(20).optional().nullable(),
   location: z.string().max(100).optional().nullable(),
@@ -27,6 +29,7 @@ export async function GET() {
         id: true,
         email: true,
         name: true,
+        username: true,
         role: true,
         covenantAcceptedAt: true,
         covenantVersion: true,
@@ -78,10 +81,21 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { name, bio, phone, location, timezone, language } = parsed.data
+    const { name, username, bio, phone, location, timezone, language } = parsed.data
 
     const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
+    if (username !== undefined) {
+      const lowerUsername = username.toLowerCase()
+      const existing = await prisma.user.findUnique({
+        where: { username: lowerUsername },
+        select: { id: true },
+      })
+      if (existing && existing.id !== session.user.id) {
+        return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+      }
+      updateData.username = lowerUsername
+    }
 
     const profileUpdateData: Record<string, unknown> = {}
     if (bio !== undefined) profileUpdateData.bio = bio
@@ -105,6 +119,7 @@ export async function PATCH(request: NextRequest) {
         id: true,
         email: true,
         name: true,
+        username: true,
         role: true,
         profile: {
           select: {

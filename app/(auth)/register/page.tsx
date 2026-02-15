@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,8 +19,10 @@ import {
 } from '@/components/ui/card'
 import { registerSchema, type RegisterInput } from '@/lib/validations/auth'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const referrer = searchParams.get('ref')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -67,7 +69,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, referrer: referrer || undefined }),
       })
 
       const result = await response.json()
@@ -108,6 +110,16 @@ export default function RegisterPage() {
       </CardHeader>
       <form onSubmit={onSubmit} suppressHydrationWarning>
         <CardContent className="space-y-4" suppressHydrationWarning>
+          {referrer && (
+            <div className="bg-forest-50 border border-forest-200 text-forest-700 px-4 py-3 rounded-lg text-sm font-body">
+              <div className="flex items-start gap-3">
+                <UserPlus className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p>
+                  You've been invited by <strong>@{referrer}</strong>
+                </p>
+              </div>
+            </div>
+          )}
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
@@ -220,5 +232,27 @@ export default function RegisterPage() {
         </CardFooter>
       </form>
     </Card>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle>Join BRITE POOL</CardTitle>
+            <CardDescription>Create your account to begin your journey</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
+            </div>
+          </CardContent>
+        </Card>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   )
 }

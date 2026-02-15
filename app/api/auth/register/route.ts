@@ -11,6 +11,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+
+    // Extract referrer separately (not in registerSchema)
+    const referrer = typeof body.referrer === 'string' ? body.referrer : undefined
+
     const parsed = registerSchema.safeParse(body)
 
     if (!parsed.success) {
@@ -34,6 +38,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Look up referrer by username
+    let referredById: string | undefined
+    if (referrer) {
+      const referrerUser = await prisma.user.findUnique({
+        where: { username: referrer.toLowerCase() },
+        select: { id: true },
+      })
+      if (referrerUser) {
+        referredById = referrerUser.id
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 12)
 
     await prisma.user.create({
@@ -43,6 +59,7 @@ export async function POST(request: NextRequest) {
         passwordHash,
         role: 'STEWARD',
         status: 'ACTIVE',
+        referredById: referredById || undefined,
         emailVerified: new Date(),
         subscriptionTier: 'FREE',
         subscriptionStatus: 'INACTIVE',
