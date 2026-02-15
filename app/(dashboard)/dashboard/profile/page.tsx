@@ -20,6 +20,8 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
 import { PageHeader } from '@/components/PageHeader'
@@ -63,7 +65,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,6 +83,9 @@ export default function ProfilePage() {
     newPassword: '',
     confirmPassword: '',
   })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(true)
+  const [showNewPassword, setShowNewPassword] = useState(true)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(true)
 
   useEffect(() => {
     fetchProfile()
@@ -130,7 +138,10 @@ export default function ProfilePage() {
       setMessage({ type: 'success', text: 'Profile updated successfully' })
       fetchProfile()
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update profile' })
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to update profile',
+      })
     } finally {
       setSaving(false)
     }
@@ -162,7 +173,10 @@ export default function ProfilePage() {
       setPasswordMessage({ type: 'success', text: 'Password changed successfully' })
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     } catch (error) {
-      setPasswordMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to change password' })
+      setPasswordMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to change password',
+      })
     } finally {
       setChangingPassword(false)
     }
@@ -213,7 +227,9 @@ export default function ProfilePage() {
 
       <div>
         <h1 className="text-3xl font-display font-bold text-forest-800">Profile Settings</h1>
-        <p className="text-forest-500 mt-1 font-body">Manage your account information and preferences</p>
+        <p className="text-forest-500 mt-1 font-body">
+          Manage your account information and preferences
+        </p>
       </div>
 
       <Card className="border-sand-200">
@@ -255,7 +271,9 @@ export default function ProfilePage() {
             <User className="h-5 w-5 text-forest-500" />
             Profile Information
           </CardTitle>
-          <CardDescription className="text-forest-500 font-body">Update your personal information</CardDescription>
+          <CardDescription className="text-forest-500 font-body">
+            Update your personal information
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -263,7 +281,9 @@ export default function ProfilePage() {
               <div
                 className={cn(
                   'flex items-center gap-2 p-3 rounded-lg text-sm font-body',
-                  message.type === 'success' ? 'bg-forest-50 text-forest-700' : 'bg-earth-50 text-earth-700'
+                  message.type === 'success'
+                    ? 'bg-forest-50 text-forest-700'
+                    : 'bg-earth-50 text-earth-700'
                 )}
               >
                 {message.type === 'success' ? (
@@ -277,7 +297,9 @@ export default function ProfilePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-forest-700 font-body">Full Name</Label>
+                <Label htmlFor="name" className="text-forest-700 font-body">
+                  Full Name
+                </Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -288,7 +310,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-forest-700 font-body">Phone Number</Label>
+                <Label htmlFor="phone" className="text-forest-700 font-body">
+                  Phone Number
+                </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <Input
@@ -302,7 +326,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location" className="text-forest-700 font-body">Location</Label>
+                <Label htmlFor="location" className="text-forest-700 font-body">
+                  Location
+                </Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <Input
@@ -316,7 +342,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="timezone" className="text-forest-700 font-body">Timezone</Label>
+                <Label htmlFor="timezone" className="text-forest-700 font-body">
+                  Timezone
+                </Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-forest-400" />
                   <select
@@ -336,7 +364,9 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio" className="text-forest-700 font-body">Bio</Label>
+              <Label htmlFor="bio" className="text-forest-700 font-body">
+                Bio
+              </Label>
               <textarea
                 id="bio"
                 className="w-full px-4 py-2 rounded-lg border border-sand-300 bg-white text-forest-700 focus:outline-none focus:ring-2 focus:ring-forest-500 min-h-[100px] font-body"
@@ -345,10 +375,16 @@ export default function ProfilePage() {
                 placeholder="Tell us about yourself..."
                 maxLength={500}
               />
-              <p className="text-xs text-forest-400 font-body">{formData.bio.length}/500 characters</p>
+              <p className="text-xs text-forest-400 font-body">
+                {formData.bio.length}/500 characters
+              </p>
             </div>
 
-            <Button type="submit" disabled={saving} className="bg-forest-600 hover:bg-forest-700 text-white">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="bg-forest-600 hover:bg-forest-700 text-white"
+            >
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -371,7 +407,9 @@ export default function ProfilePage() {
             <Lock className="h-5 w-5 text-earth-500" />
             Change Password
           </CardTitle>
-          <CardDescription className="text-forest-500 font-body">Update your password to keep your account secure</CardDescription>
+          <CardDescription className="text-forest-500 font-body">
+            Update your password to keep your account secure
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
@@ -379,7 +417,9 @@ export default function ProfilePage() {
               <div
                 className={cn(
                   'flex items-center gap-2 p-3 rounded-lg text-sm font-body',
-                  passwordMessage.type === 'success' ? 'bg-forest-50 text-forest-700' : 'bg-earth-50 text-earth-700'
+                  passwordMessage.type === 'success'
+                    ? 'bg-forest-50 text-forest-700'
+                    : 'bg-earth-50 text-earth-700'
                 )}
               >
                 {passwordMessage.type === 'success' ? (
@@ -393,39 +433,89 @@ export default function ProfilePage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-forest-700 font-body">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  placeholder="••••••••"
-                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
-                />
+                <Label htmlFor="currentPassword" className="text-forest-700 font-body">
+                  Current Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                    }
+                    placeholder="Enter current password"
+                    className="border-sand-300 focus:border-forest-500 focus:ring-forest-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showCurrentPassword ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword" className="text-forest-700 font-body">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  placeholder="••••••••"
-                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
-                />
+                <Label htmlFor="newPassword" className="text-forest-700 font-body">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, newPassword: e.target.value })
+                    }
+                    placeholder="Enter new password"
+                    className="border-sand-300 focus:border-forest-500 focus:ring-forest-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-forest-700 font-body">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  placeholder="••••••••"
-                  className="border-sand-300 focus:border-forest-500 focus:ring-forest-500"
-                />
+                <Label htmlFor="confirmPassword" className="text-forest-700 font-body">
+                  Confirm New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                    }
+                    placeholder="Confirm new password"
+                    className="border-sand-300 focus:border-forest-500 focus:ring-forest-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -433,7 +523,12 @@ export default function ProfilePage() {
               Password must be at least 8 characters long
             </p>
 
-            <Button type="submit" variant="outline" disabled={changingPassword} className="border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white">
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={changingPassword}
+              className="border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white"
+            >
               {changingPassword ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -456,14 +551,18 @@ export default function ProfilePage() {
             <Bell className="h-5 w-5 text-sand-600" />
             Notification Preferences
           </CardTitle>
-          <CardDescription className="text-forest-500 font-body">Manage how you receive notifications</CardDescription>
+          <CardDescription className="text-forest-500 font-body">
+            Manage how you receive notifications
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-forest-700 font-body">Email Notifications</p>
-                <p className="text-sm text-forest-500 font-body">Receive updates about events and announcements</p>
+                <p className="text-sm text-forest-500 font-body">
+                  Receive updates about events and announcements
+                </p>
               </div>
               <input
                 type="checkbox"
@@ -474,7 +573,9 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-forest-700 font-body">Task Reminders</p>
-                <p className="text-sm text-forest-500 font-body">Get notified about upcoming task deadlines</p>
+                <p className="text-sm text-forest-500 font-body">
+                  Get notified about upcoming task deadlines
+                </p>
               </div>
               <input
                 type="checkbox"
@@ -485,7 +586,9 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-forest-700 font-body">Committee Updates</p>
-                <p className="text-sm text-forest-500 font-body">Notifications about your committee activities</p>
+                <p className="text-sm text-forest-500 font-body">
+                  Notifications about your committee activities
+                </p>
               </div>
               <input
                 type="checkbox"
