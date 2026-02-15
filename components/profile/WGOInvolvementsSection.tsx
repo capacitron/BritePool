@@ -101,7 +101,7 @@ export function WGOInvolvementsSection() {
         const data = await invRes.json()
         setInvolvements(data)
         const links: Record<string, string> = {}
-        for (const inv of (Array.isArray(data) ? data : [])) {
+        for (const inv of Array.isArray(data) ? data : []) {
           links[inv.wgoId] = inv.affiliateLink || ''
         }
         setAffiliateLinks(links)
@@ -133,7 +133,9 @@ export function WGOInvolvementsSection() {
           proofUrl: newInvolvement.proofUrl || null,
           proofImageUrl: newInvolvement.proofImageUrl || null,
           notes: newInvolvement.notes || null,
-          investedAmount: newInvolvement.investedAmount ? parseFloat(newInvolvement.investedAmount) : null,
+          investedAmount: newInvolvement.investedAmount
+            ? parseFloat(newInvolvement.investedAmount)
+            : null,
           joinedDate: newInvolvement.joinedDate || null,
         }),
       })
@@ -156,7 +158,10 @@ export function WGOInvolvementsSection() {
       })
       fetchData()
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'An error occurred' })
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'An error occurred',
+      })
     } finally {
       setAdding(false)
     }
@@ -181,7 +186,7 @@ export function WGOInvolvementsSection() {
   }
 
   async function handleSaveAffiliateLink(wgoId: string) {
-    setAffiliateSaving(prev => ({ ...prev, [wgoId]: true }))
+    setAffiliateSaving((prev) => ({ ...prev, [wgoId]: true }))
     try {
       const response = await fetch('/api/wgo/involvement', {
         method: 'PUT',
@@ -203,7 +208,7 @@ export function WGOInvolvementsSection() {
       console.error('Error saving affiliate link:', error)
       setMessage({ type: 'error', text: 'Failed to save affiliate link' })
     } finally {
-      setAffiliateSaving(prev => ({ ...prev, [wgoId]: false }))
+      setAffiliateSaving((prev) => ({ ...prev, [wgoId]: false }))
     }
   }
 
@@ -212,8 +217,8 @@ export function WGOInvolvementsSection() {
   const safeAvailableWGOs = Array.isArray(availableWGOs) ? availableWGOs : []
 
   // Filter out already-involved WGOs
-  const involvedWgoIds = safeInvolvements.map(i => i.wgoId)
-  const availableToAdd = safeAvailableWGOs.filter(w => !involvedWgoIds.includes(w.id))
+  const involvedWgoIds = safeInvolvements.map((i) => i.wgoId)
+  const availableToAdd = safeAvailableWGOs.filter((w) => !involvedWgoIds.includes(w.id))
 
   if (loading) {
     return (
@@ -324,33 +329,46 @@ export function WGOInvolvementsSection() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
-                            <Link href={`/dashboard/wgo/${involvement.wgoId}`} className="hover:underline">
+                            <Link
+                              href={`/dashboard/wgo/${involvement.wgoId}`}
+                              className="hover:underline"
+                            >
                               <h4 className="font-semibold text-forest-800">{wgoName}</h4>
                             </Link>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className={cn(
-                                'px-2 py-0.5 rounded-full text-xs font-medium',
-                                WGO_CATEGORY_COLORS[involvement.wgo.category]
-                              )}>
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 rounded-full text-xs font-medium',
+                                  WGO_CATEGORY_COLORS[involvement.wgo.category]
+                                )}
+                              >
                                 {WGO_CATEGORY_LABELS[involvement.wgo.category]}
                               </span>
                               {involvement.wgo.riskTolerance !== undefined && (
                                 <RiskBadge value={involvement.wgo.riskTolerance} />
                               )}
-                              <span className={cn(
-                                'px-2 py-0.5 rounded-full text-xs font-medium',
-                                wgoStatus === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                                wgoStatus === 'PAUSED' ? 'bg-amber-100 text-amber-700' :
-                                wgoStatus === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
-                                'bg-gray-100 text-gray-700'
-                              )}>
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 rounded-full text-xs font-medium',
+                                  wgoStatus === 'ACTIVE'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : wgoStatus === 'PAUSED'
+                                      ? 'bg-amber-100 text-amber-700'
+                                      : wgoStatus === 'COMPLETED'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                )}
+                              >
                                 {wgoStatus}
                               </span>
-                              <span className={cn(
-                                'px-2 py-0.5 rounded-full text-xs font-medium',
-                                involvement.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                                'bg-gray-100 text-gray-700'
-                              )}>
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 rounded-full text-xs font-medium',
+                                  involvement.status === 'ACTIVE'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                )}
+                              >
                                 {involvement.role || involvement.status}
                               </span>
                             </div>
@@ -402,26 +420,34 @@ export function WGOInvolvementsSection() {
                         </div>
 
                         {involvement.notes && (
-                          <p className="text-sm text-forest-500 mt-2 italic">&ldquo;{involvement.notes}&rdquo;</p>
+                          <p className="text-sm text-forest-500 mt-2 italic">
+                            &ldquo;{involvement.notes}&rdquo;
+                          </p>
                         )}
                       </div>
                     </div>
 
                     {/* Affiliate Link */}
                     <div className="mt-3 pt-3 border-t border-forest-100">
-                      <label className="flex items-center gap-1.5 text-xs font-medium text-forest-600 mb-1.5">
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-forest-600 mb-1">
                         <Link2 className="h-3.5 w-3.5" />
                         My Affiliate Link
                       </label>
+                      <p className="text-xs text-forest-500 mb-1.5">
+                        Add your personal affiliate or referral link for this opportunity. This link
+                        will be shared with members you invite.
+                      </p>
                       <div className="flex items-center gap-2">
                         <input
                           type="url"
                           value={affiliateLinks[involvement.wgoId] || ''}
-                          onChange={(e) => setAffiliateLinks(prev => ({
-                            ...prev,
-                            [involvement.wgoId]: e.target.value,
-                          }))}
-                          placeholder="https://your-affiliate-link.com/ref/..."
+                          onChange={(e) =>
+                            setAffiliateLinks((prev) => ({
+                              ...prev,
+                              [involvement.wgoId]: e.target.value,
+                            }))
+                          }
+                          placeholder="https://example.com/ref/your-id"
                           className="flex-1 px-3 py-1.5 text-sm border border-sand-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                         />
                         <Button
@@ -480,7 +506,9 @@ export function WGOInvolvementsSection() {
                   <select
                     required
                     value={newInvolvement.wgoId}
-                    onChange={(e) => setNewInvolvement(prev => ({ ...prev, wgoId: e.target.value }))}
+                    onChange={(e) =>
+                      setNewInvolvement((prev) => ({ ...prev, wgoId: e.target.value }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                   >
                     <option value="">Choose a WGO...</option>
@@ -498,7 +526,12 @@ export function WGOInvolvementsSection() {
                   </label>
                   <select
                     value={newInvolvement.proofType}
-                    onChange={(e) => setNewInvolvement(prev => ({ ...prev, proofType: e.target.value as 'LINK' | 'IMAGE' | 'BOTH' }))}
+                    onChange={(e) =>
+                      setNewInvolvement((prev) => ({
+                        ...prev,
+                        proofType: e.target.value as 'LINK' | 'IMAGE' | 'BOTH',
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                   >
                     <option value="LINK">Link/URL</option>
@@ -515,7 +548,9 @@ export function WGOInvolvementsSection() {
                     <input
                       type="url"
                       value={newInvolvement.proofUrl}
-                      onChange={(e) => setNewInvolvement(prev => ({ ...prev, proofUrl: e.target.value }))}
+                      onChange={(e) =>
+                        setNewInvolvement((prev) => ({ ...prev, proofUrl: e.target.value }))
+                      }
                       placeholder="https://..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                     />
@@ -530,7 +565,9 @@ export function WGOInvolvementsSection() {
                     <input
                       type="url"
                       value={newInvolvement.proofImageUrl}
-                      onChange={(e) => setNewInvolvement(prev => ({ ...prev, proofImageUrl: e.target.value }))}
+                      onChange={(e) =>
+                        setNewInvolvement((prev) => ({ ...prev, proofImageUrl: e.target.value }))
+                      }
                       placeholder="https://..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                     />
@@ -543,7 +580,9 @@ export function WGOInvolvementsSection() {
                   </label>
                   <textarea
                     value={newInvolvement.notes}
-                    onChange={(e) => setNewInvolvement(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) =>
+                      setNewInvolvement((prev) => ({ ...prev, notes: e.target.value }))
+                    }
                     placeholder="Optional notes about your involvement..."
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
@@ -559,7 +598,9 @@ export function WGOInvolvementsSection() {
                       type="number"
                       step="0.01"
                       value={newInvolvement.investedAmount}
-                      onChange={(e) => setNewInvolvement(prev => ({ ...prev, investedAmount: e.target.value }))}
+                      onChange={(e) =>
+                        setNewInvolvement((prev) => ({ ...prev, investedAmount: e.target.value }))
+                      }
                       placeholder="0.00"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                     />
@@ -571,7 +612,9 @@ export function WGOInvolvementsSection() {
                     <input
                       type="date"
                       value={newInvolvement.joinedDate}
-                      onChange={(e) => setNewInvolvement(prev => ({ ...prev, joinedDate: e.target.value }))}
+                      onChange={(e) =>
+                        setNewInvolvement((prev) => ({ ...prev, joinedDate: e.target.value }))
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
                     />
                   </div>

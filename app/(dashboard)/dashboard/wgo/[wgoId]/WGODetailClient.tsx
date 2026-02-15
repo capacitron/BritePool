@@ -794,7 +794,8 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-xs text-forest-500">
-                  Paste your personal affiliate link for this opportunity.
+                  Add your personal affiliate or referral link for this opportunity. This link will
+                  be shared with members you invite.
                 </p>
                 <input
                   type="url"
@@ -803,7 +804,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                     setAffiliateLink(e.target.value)
                     setAffiliateSaved(false)
                   }}
-                  placeholder="https://your-affiliate-link.com/ref/..."
+                  placeholder="https://example.com/ref/your-id"
                   className="w-full px-3 py-2 text-sm border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
                 <div className="flex items-center gap-2">
@@ -1008,7 +1009,7 @@ function EditWGOModal({
     currentAmount: wgo.currentAmount.toString(),
     startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
     endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
-    affiliateLink: wgo.affiliateLink || '',
+    affiliateLink: wgo.userInvolvement?.affiliateLink || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1023,7 +1024,6 @@ function EditWGOModal({
         category: formData.category,
         status: formData.status,
         currentAmount: parseFloat(formData.currentAmount) || 0,
-        affiliateLink: formData.affiliateLink.trim() || null,
       }
 
       if (formData.targetAmount) {
@@ -1053,6 +1053,23 @@ function EditWGOModal({
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Failed to update')
+      }
+
+      // Save affiliate link to the user's involvement record (same as sidebar and profile)
+      if (wgo.isInvolved) {
+        const affiliateRes = await fetch('/api/wgo/involvement', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wgoId: wgo.id,
+            affiliateLink: formData.affiliateLink.trim() || null,
+          }),
+        })
+
+        if (!affiliateRes.ok) {
+          const data = await affiliateRes.json()
+          throw new Error(data.error || 'Failed to save affiliate link')
+        }
       }
 
       onSuccess()
@@ -1105,18 +1122,24 @@ function EditWGOModal({
                 />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-forest-700 mb-1">
-                  Add Your Affiliate Link
-                </label>
-                <input
-                  type="url"
-                  value={formData.affiliateLink}
-                  onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
-                  placeholder="https://affiliate-link.com/ref/..."
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
+              {wgo.isInvolved && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-forest-700 mb-1">
+                    My Affiliate Link
+                  </label>
+                  <p className="text-xs text-forest-500 mb-1.5">
+                    Add your personal affiliate or referral link for this opportunity. This link
+                    will be shared with members you invite.
+                  </p>
+                  <input
+                    type="url"
+                    value={formData.affiliateLink}
+                    onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
+                    placeholder="https://example.com/ref/your-id"
+                    className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-forest-700 mb-1">Category</label>
