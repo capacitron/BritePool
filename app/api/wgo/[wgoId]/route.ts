@@ -56,6 +56,29 @@ export async function GET(
 
     const userInvolvement = wgo.involvements.find((inv) => inv.userId === session.user.id)
 
+    // Look up the current user's referrer's affiliate link for this WGO
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { referredById: true },
+    })
+
+    let referrerAffiliateLink: string | null = null
+    let referrerName: string | null = null
+
+    if (currentUser?.referredById) {
+      const referrerInvolvement = wgo.involvements.find(
+        (inv) => inv.userId === currentUser.referredById && inv.affiliateLink
+      )
+      if (referrerInvolvement) {
+        const referrer = await prisma.user.findUnique({
+          where: { id: currentUser.referredById },
+          select: { name: true },
+        })
+        referrerAffiliateLink = referrerInvolvement.affiliateLink
+        referrerName = referrer?.name || null
+      }
+    }
+
     return NextResponse.json({
       ...wgo,
       involvementCount: wgo._count.involvements,
@@ -65,6 +88,8 @@ export async function GET(
       isCreator: wgo.creatorId === session.user.id,
       isLeader: userInvolvement?.role === 'LEADER',
       isCoordinator: userInvolvement?.role === 'COORDINATOR',
+      referrerAffiliateLink,
+      referrerName,
     })
   } catch (error) {
     logError(error, { action: 'fetch_wgo' })

@@ -122,6 +122,8 @@ interface WGO {
   isCreator: boolean
   isLeader: boolean
   isCoordinator: boolean
+  referrerAffiliateLink: string | null
+  referrerName: string | null
 }
 
 interface RelatedEvent {
@@ -227,10 +229,13 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
         if (res.ok) {
           const data = await res.json()
           const events = Array.isArray(data) ? data : data.data || []
-          const titleWords = wgo!.title.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+          const titleWords = wgo!.title
+            .toLowerCase()
+            .split(/\s+/)
+            .filter((w) => w.length > 2)
           const matched = events.filter((evt: RelatedEvent) => {
             const evtTitle = evt.title.toLowerCase()
-            return titleWords.some(word => evtTitle.includes(word))
+            return titleWords.some((word) => evtTitle.includes(word))
           })
           setRelatedEvents(matched)
         }
@@ -496,8 +501,19 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 About This Opportunity
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
+              {wgo.referrerAffiliateLink && (
+                <a
+                  href={wgo.referrerAffiliateLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Sign Up{wgo.referrerName ? ` via ${wgo.referrerName}'s Link` : ''}
+                </a>
+              )}
             </CardContent>
           </Card>
 
@@ -537,9 +553,17 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-forest-800 truncate">{evt.title}</p>
                         <p className="text-xs text-forest-500">
-                          {evtDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {evtDate.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
                           {' - '}
-                          {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {endDate.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
                           {evt.location && ` · ${evt.location}`}
                         </p>
                       </div>
@@ -738,7 +762,8 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 <>
                   <h3 className="font-medium text-forest-800">Get Involved</h3>
                   <p className="text-sm text-forest-600">
-                    Join this Wealth Generation Opportunity (WGO) to participate and access the forum.
+                    Join this Wealth Generation Opportunity (WGO) to participate and access the
+                    forum.
                   </p>
                   {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
                     <Button
