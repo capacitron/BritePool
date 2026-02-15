@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { hasPermission, canAssignRole } from '@/lib/auth-utils'
 import { logError } from '@/lib/api-utils'
 import { logUserUpdated, logUserSuspended } from '@/lib/audit'
-import type { UserRole, UserStatus } from '@prisma/client'
+import type { UserRole, UserStatus, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -72,6 +72,59 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             createdAt: true,
           },
         },
+        committees: {
+          select: {
+            id: true,
+            role: true,
+            committee: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+          },
+        },
+        tasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            priority: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' as const },
+          take: 10,
+        },
+        eventRegistrations: {
+          select: {
+            id: true,
+            event: {
+              select: {
+                id: true,
+                title: true,
+                startTime: true,
+                type: true,
+              },
+            },
+          },
+          orderBy: { registeredAt: 'desc' as const },
+          take: 10,
+        },
+        courseProgress: {
+          select: {
+            id: true,
+            progress: true,
+            isCompleted: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                category: true,
+              },
+            },
+          },
+        },
       },
     })
 
@@ -112,7 +165,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const body = await request.json()
-    const { name, role: newRole, status: newStatus } = body
+    const {
+      name,
+      role: newRole,
+      status: newStatus,
+      subscriptionTier: newTier,
+      subscriptionStatus: newSubStatus,
+    } = body
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
@@ -122,7 +181,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const updateData: { name?: string; role?: UserRole; status?: UserStatus } = {}
+    const updateData: {
+      name?: string
+      role?: UserRole
+      status?: UserStatus
+      subscriptionTier?: SubscriptionTier
+      subscriptionStatus?: SubscriptionStatus
+    } = {}
 
     if (name) {
       updateData.name = name
@@ -142,6 +207,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: 'You cannot change user status' }, { status: 403 })
       }
       updateData.status = newStatus as UserStatus
+    }
+
+    if (newTier && newTier !== existingUser.subscriptionTier) {
+      updateData.subscriptionTier = newTier as SubscriptionTier
+    }
+
+    if (newSubStatus && newSubStatus !== existingUser.subscriptionStatus) {
+      updateData.subscriptionStatus = newSubStatus as SubscriptionStatus
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -171,6 +244,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     if (updateData.status) {
       changes.status = { old: existingUser.status, new: updateData.status }
+    }
+    if (updateData.subscriptionTier) {
+      changes.subscriptionTier = {
+        old: existingUser.subscriptionTier,
+        new: updateData.subscriptionTier,
+      }
+    }
+    if (updateData.subscriptionStatus) {
+      changes.subscriptionStatus = {
+        old: existingUser.subscriptionStatus,
+        new: updateData.subscriptionStatus,
+      }
     }
 
     await logUserUpdated(currentUserId, userRole, id, existingUser.email, changes, request)

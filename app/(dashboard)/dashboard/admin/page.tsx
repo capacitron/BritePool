@@ -10,33 +10,26 @@ import { PageHeader } from '@/components/PageHeader'
 import { Users, UserCheck, CreditCard, FileCheck, Megaphone, ArrowRight, Clock } from 'lucide-react'
 import Link from 'next/link'
 
-// TEMPORARY: Set to true to bypass admin auth checks
-// TODO: Set back to false when done testing
-const BYPASS_ADMIN_AUTH = true
-
 export default async function AdminDashboardPage() {
-  // TEMPORARY: Skip auth checks when bypass is enabled
-  if (!BYPASS_ADMIN_AUTH) {
-    const session = await auth()
+  const session = await auth()
 
-    if (!session?.user?.email) {
-      redirect('/login')
-    }
+  if (!session?.user?.email) {
+    redirect('/login')
+  }
 
-    // Query user directly from database by email to avoid session issues
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, role: true },
-    })
+  // Query user directly from database by email to avoid session issues
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, role: true },
+  })
 
-    if (!dbUser) {
-      redirect('/login')
-    }
+  if (!dbUser) {
+    redirect('/login')
+  }
 
-    const userRole = dbUser.role as UserRole
-    if (!isAdminRole(userRole)) {
-      redirect('/dashboard')
-    }
+  const userRole = dbUser.role as UserRole
+  if (!isAdminRole(userRole)) {
+    redirect('/dashboard')
   }
 
   const [totalUsers, pendingCovenant, activeSubscriptions, recentUsers, announcementsCount] =

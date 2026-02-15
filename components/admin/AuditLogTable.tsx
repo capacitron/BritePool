@@ -21,13 +21,9 @@ interface AuditLog {
   oldValue: Record<string, unknown> | null
   newValue: Record<string, unknown> | null
   ipAddress: string
-  timestamp: string
-  user?: {
-    id: string
-    name: string
-    email: string
-  } | null
-  userRole?: UserRole | null
+  createdAt: string
+  userId: string
+  userRole: UserRole
 }
 
 interface AuditLogTableProps {
@@ -92,12 +88,16 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
           {logs.map((log) => (
             <TableRow key={log.id}>
               <TableCell className="whitespace-nowrap text-sm">
-                {formatDate(log.timestamp)}
+                {formatDate(log.createdAt)}
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium text-sm">{log.user?.name ?? 'System'}</p>
-                  <p className="text-xs text-muted-foreground">{log.userRole?.replace(/_/g, ' ') ?? 'N/A'}</p>
+                  <p className="font-medium text-sm font-mono text-xs">
+                    {log.userId.substring(0, 8)}...
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {log.userRole?.replace(/_/g, ' ') ?? 'N/A'}
+                  </p>
                 </div>
               </TableCell>
               <TableCell>

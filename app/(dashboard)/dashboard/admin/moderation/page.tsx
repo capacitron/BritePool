@@ -36,7 +36,8 @@ export default function ModerationPage() {
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
-      const type = activeTab === 'all' ? '' : activeTab
+      const typeMap: Record<string, string> = { all: 'all', forum: 'forum_post', media: 'media' }
+      const type = typeMap[activeTab] || 'all'
       const response = await fetch(`/api/admin/moderation?type=${type}&status=PENDING`)
       const data = await response.json()
 

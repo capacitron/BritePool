@@ -23,12 +23,8 @@ interface AuditLog {
   oldValue: Record<string, unknown> | null
   newValue: Record<string, unknown> | null
   ipAddress: string
-  timestamp: string
-  user: {
-    id: string
-    name: string
-    email: string
-  }
+  createdAt: string
+  userId: string
   userRole: UserRole
 }
 
