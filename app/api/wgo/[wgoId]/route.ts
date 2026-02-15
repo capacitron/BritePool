@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
@@ -132,9 +133,9 @@ export async function PATCH(
     const isCreator = existingWGO.creatorId === session.user.id
     const isLeaderOrCoordinator =
       userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!isCreator && !isLeaderOrCoordinator && !isAdmin) {
+    if (!isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to update this WGO' },
         { status: 403 }
@@ -206,9 +207,9 @@ export async function DELETE(
     }
 
     const isCreator = existingWGO.creatorId === session.user.id
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!isCreator && !isAdmin) {
+    if (!isCreator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to delete this WGO' },
         { status: 403 }

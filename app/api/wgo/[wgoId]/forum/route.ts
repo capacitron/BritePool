@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
@@ -59,9 +60,9 @@ export async function GET(
 
     // Check if user is involved or is admin
     const isInvolved = wgo.involvements.length > 0
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!isInvolved && !isAdmin) {
+    if (!isInvolved && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You must be involved in this WGO to view forum posts' },
         { status: 403 }
@@ -162,9 +163,9 @@ export async function POST(
     }
 
     const userInvolvement = wgo.involvements[0]
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
-    if (!userInvolvement && !isAdmin) {
+    if (!userInvolvement && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You must be involved in this WGO to post' },
         { status: 403 }
@@ -172,7 +173,7 @@ export async function POST(
     }
 
     // Observers cannot post
-    if (userInvolvement?.role === 'OBSERVER' && !isAdmin) {
+    if (userInvolvement?.role === 'OBSERVER' && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: Observers cannot create posts' },
         { status: 403 }
@@ -193,7 +194,7 @@ export async function POST(
 
     // Only leaders, coordinators, and admins can pin posts
     const canPin =
-      isAdmin || userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
+      userIsAdmin || userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
     const finalIsPinned = canPin ? isPinned : false
 
     const post = await prisma.wGOForumPost.create({
@@ -263,10 +264,10 @@ export async function PATCH(
     const isAuthor = post.authorId === session.user.id
     const isLeaderOrCoordinator =
       userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
     // Check edit permissions
-    if (!isAuthor && !isLeaderOrCoordinator && !isAdmin) {
+    if (!isAuthor && !isLeaderOrCoordinator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to edit this post' },
         { status: 403 }
@@ -274,7 +275,7 @@ export async function PATCH(
     }
 
     // Only leaders, coordinators, and admins can change pin status
-    const canPin = isAdmin || isLeaderOrCoordinator
+    const canPin = userIsAdmin || isLeaderOrCoordinator
 
     const updateData: Record<string, unknown> = {}
     if (content !== undefined) updateData.content = content
@@ -343,10 +344,10 @@ export async function DELETE(
     const isAuthor = post.authorId === session.user.id
     const isLeaderOrCoordinator =
       userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
 
     // Check delete permissions
-    if (!isAuthor && !isLeaderOrCoordinator && !isAdmin) {
+    if (!isAuthor && !isLeaderOrCoordinator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to delete this post' },
         { status: 403 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canManageCommittees } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -21,8 +22,7 @@ export async function PATCH(
     }
 
     // Only committee leaders, board chairs, and web stewards can approve
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
-    if (!adminRoles.includes(session.user.role)) {
+    if (!canManageCommittees(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -72,7 +72,10 @@ export async function PATCH(
       })
 
       if (!isLeader) {
-        return NextResponse.json({ error: 'You can only approve members for committees you lead' }, { status: 403 })
+        return NextResponse.json(
+          { error: 'You can only approve members for committees you lead' },
+          { status: 403 }
+        )
       }
     }
 
@@ -91,9 +94,10 @@ export async function PATCH(
 
     return NextResponse.json({
       ...updated,
-      message: action === 'approve'
-        ? `${updated.user.name} has been approved to join ${updated.committee.name}`
-        : `${updated.user.name}'s request to join ${updated.committee.name} has been rejected`,
+      message:
+        action === 'approve'
+          ? `${updated.user.name} has been approved to join ${updated.committee.name}`
+          : `${updated.user.name}'s request to join ${updated.committee.name} has been rejected`,
     })
   } catch (error) {
     logError(error, { action: 'approve_committee_member' })
@@ -113,8 +117,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
-    if (!adminRoles.includes(session.user.role)) {
+    if (!canManageCommittees(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

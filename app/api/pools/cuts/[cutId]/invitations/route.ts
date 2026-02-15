@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canManageCommittees } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
+import type { UserRole } from '@prisma/client'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { randomUUID } from 'crypto'
-
-// Admin roles that can manage pool invitations
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
 
 // Helper to check if user can manage invitations for a cut
 async function canManageInvitations(
@@ -15,7 +14,7 @@ async function canManageInvitations(
   cutId: string
 ): Promise<boolean> {
   // Admins can always manage
-  if (ADMIN_ROLES.includes(userRole)) {
+  if (canManageCommittees(userRole as UserRole)) {
     return true
   }
 

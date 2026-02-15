@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
@@ -46,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     // Only admins can view other users' involvements
     if (userId && userId !== session.user.id) {
-      const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
-      if (!isAdmin) {
+      const userIsAdmin = isAdmin(session.user.role)
+      if (!userIsAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       where.userId = userId
@@ -214,11 +215,11 @@ export async function PATCH(request: NextRequest) {
     const isCreator = involvement.wgo.creatorId === session.user.id
     const isLeaderOrCoordinator =
       userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
-    const isAdmin = ['WEB_STEWARD', 'BOARD_CHAIR'].includes(session.user.role)
+    const userIsAdmin = isAdmin(session.user.role)
     const isOwnInvolvement = involvement.userId === session.user.id
 
     // Users can only update their own status to INACTIVE (leaving)
-    if (isOwnInvolvement && !isCreator && !isLeaderOrCoordinator && !isAdmin) {
+    if (isOwnInvolvement && !isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
       if (role || (status && status !== 'INACTIVE')) {
         return NextResponse.json(
           { error: 'Forbidden: You can only update your own status to leave' },
@@ -228,7 +229,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Only leaders, coordinators, and admins can change roles
-    if (role && !isCreator && !isLeaderOrCoordinator && !isAdmin) {
+    if (role && !isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: Only leaders and coordinators can change roles' },
         { status: 403 }
@@ -256,7 +257,8 @@ export async function PATCH(request: NextRequest) {
     const updateData: Record<string, unknown> = {}
     if (role) updateData.role = role
     if (status) updateData.status = status
-    if (parsed.data.affiliateLink !== undefined) updateData.affiliateLink = parsed.data.affiliateLink
+    if (parsed.data.affiliateLink !== undefined)
+      updateData.affiliateLink = parsed.data.affiliateLink
 
     const updatedInvolvement = await prisma.userWGOInvolvement.update({
       where: { id: involvementId },

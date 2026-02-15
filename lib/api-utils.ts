@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError, type ZodSchema } from 'zod'
 import { auth } from './auth/index'
+import { isAdmin as checkIsAdmin } from './auth/roles'
 import type { UserRole } from '@prisma/client'
 
 // Standard API response types
@@ -209,11 +210,16 @@ export async function requireRole(
   return { auth: authResult, error: null }
 }
 
-// Admin role check
+// Admin role check (WEB_STEWARD or BOARD_CHAIR)
 export async function requireAdmin(): Promise<
   { auth: AuthResult; error: null } | { auth: null; error: NextResponse<ApiErrorResponse> }
 > {
-  return requireRole(['WEB_STEWARD', 'BOARD_CHAIR'])
+  const { auth: authResult, error } = await requireAuth()
+  if (error) return { auth: null, error }
+  if (!checkIsAdmin(authResult.user.role)) {
+    return { auth: null, error: forbiddenError() }
+  }
+  return { auth: authResult, error: null }
 }
 
 // Moderator role check (includes admins)

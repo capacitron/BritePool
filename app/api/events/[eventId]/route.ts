@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canManageCommittees } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -15,8 +16,6 @@ const updateEventSchema = z.object({
   capacity: z.number().int().positive().optional(),
   committeeId: z.string().optional().nullable(),
 })
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
 
 export async function GET(
   request: NextRequest,
@@ -78,7 +77,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!ADMIN_ROLES.includes(session.user.role)) {
+    if (!canManageCommittees(session.user.role)) {
       return NextResponse.json({ error: 'Only administrators can update events' }, { status: 403 })
     }
 
@@ -145,7 +144,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!ADMIN_ROLES.includes(session.user.role)) {
+    if (!canManageCommittees(session.user.role)) {
       return NextResponse.json({ error: 'Only administrators can delete events' }, { status: 403 })
     }
 

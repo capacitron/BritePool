@@ -12,6 +12,7 @@ import {
   HttpStatus,
 } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { isAdmin } from '@/lib/auth/roles'
 
 const replySchema = z.object({
   content: z.string().min(1).max(10000),
@@ -22,12 +23,7 @@ const updateSchema = z.object({
   content: z.string().min(1).max(10000).optional(),
 })
 
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const rateLimitResult = await rateLimit(request, 'forums', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
@@ -36,20 +32,17 @@ export async function GET(
     if (authError) return authError
 
     const { id } = await params
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     const post = await prisma.forumPost.findFirst({
       where: {
         id,
         deletedAt: null,
         parentId: null,
-        ...(isAdmin
+        ...(userIsAdmin
           ? {}
           : {
-              OR: [
-                { status: 'APPROVED' },
-                { status: 'PENDING', authorId: auth.user.id },
-              ],
+              OR: [{ status: 'APPROVED' }, { status: 'PENDING', authorId: auth.user.id }],
             }),
       },
       include: {
@@ -71,13 +64,10 @@ export async function GET(
       where: {
         parentId: id,
         deletedAt: null,
-        ...(isAdmin
+        ...(userIsAdmin
           ? {}
           : {
-              OR: [
-                { status: 'APPROVED' },
-                { status: 'PENDING', authorId: auth.user.id },
-              ],
+              OR: [{ status: 'APPROVED' }, { status: 'PENDING', authorId: auth.user.id }],
             }),
       },
       orderBy: { createdAt: 'asc' },
@@ -115,10 +105,7 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const rateLimitResult = await rateLimit(request, 'forums-reply', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
@@ -127,7 +114,7 @@ export async function POST(
     if (authError) return authError
 
     const { id } = await params
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     // Verify parent post exists
     const parentPost = await prisma.forumPost.findFirst({
@@ -147,7 +134,7 @@ export async function POST(
         parentId: id,
         categoryId: parentPost.categoryId,
         authorId: auth.user.id,
-        status: isAdmin ? 'APPROVED' : 'PENDING',
+        status: userIsAdmin ? 'APPROVED' : 'PENDING',
       },
       include: {
         author: {
@@ -174,10 +161,7 @@ export async function POST(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const rateLimitResult = await rateLimit(request, 'forums-edit', RateLimitConfigs.moderate)
     if (rateLimitResult) return rateLimitResult
@@ -186,7 +170,7 @@ export async function PATCH(
     if (authError) return authError
 
     const { id } = await params
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     const post = await prisma.forumPost.findFirst({
       where: { id, deletedAt: null },
@@ -196,7 +180,7 @@ export async function PATCH(
       return notFoundError('Forum post')
     }
 
-    if (post.authorId !== auth.user.id && !isAdmin) {
+    if (post.authorId !== auth.user.id && !userIsAdmin) {
       return forbiddenError('You can only edit your own posts')
     }
 
@@ -243,7 +227,7 @@ export async function DELETE(
     if (authError) return authError
 
     const { id } = await params
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     const post = await prisma.forumPost.findFirst({
       where: { id, deletedAt: null },
@@ -253,7 +237,7 @@ export async function DELETE(
       return notFoundError('Forum post')
     }
 
-    if (post.authorId !== auth.user.id && !isAdmin) {
+    if (post.authorId !== auth.user.id && !userIsAdmin) {
       return forbiddenError('You can only delete your own posts')
     }
 

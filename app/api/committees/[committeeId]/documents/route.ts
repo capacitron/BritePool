@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -21,12 +22,6 @@ async function isCommitteeMember(userId: string, committeeId: string): Promise<b
     },
   })
   return !!membership
-}
-
-// Helper to check if user is admin
-function isAdmin(role: string): boolean {
-  const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
-  return adminRoles.includes(role)
 }
 
 // GET: List documents for a committee
