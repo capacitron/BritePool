@@ -363,6 +363,7 @@ export default function WGOPage() {
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false)
+            setStatusFilter('all')
             fetchOpportunities()
           }}
         />
@@ -380,7 +381,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     title: '',
     description: '',
     category: 'INVESTMENT',
-    status: 'DRAFT',
+    status: 'ACTIVE',
     targetAmount: '',
     startDate: '',
     endDate: '',

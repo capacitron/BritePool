@@ -13,7 +13,7 @@ const createWGOSchema = z.object({
   status: z
     .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
     .optional()
-    .default('DRAFT'),
+    .default('ACTIVE'),
   targetAmount: z.number().positive().optional().nullable(),
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),
