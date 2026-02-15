@@ -62,7 +62,13 @@
       "Bash(test:*)",
       "Bash(kill:*)",
       "Bash(fuser:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(pg_dump:*)",
+      "Bash(NEON_URL='postgresql://neondb_owner:npg_VSu0WX8oiynU@ep-long-pine-ai08dkjk-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require')",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_VSu0WX8oiynU@ep-long-pine-ai08dkjk-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require' npx prisma db push:*)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_VSu0WX8oiynU@ep-long-pine-ai08dkjk-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require' npx tsx:*)",
+      "Bash(env -i HOME=$HOME PATH=$PATH bash -lc 'echo $DATABASE_URL')",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_VSu0WX8oiynU@ep-long-pine-ai08dkjk-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require' npm run build:*)"
     ],
     "deny": []
   },
