@@ -51,6 +51,7 @@ const navGroups: NavGroup[] = [
     title: 'Main',
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/dashboard/profile', label: 'Profile', icon: UserCircle },
       { href: '/dashboard/events', label: 'Events', icon: Calendar },
       { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
       { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
