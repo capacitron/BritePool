@@ -20,6 +20,10 @@ import {
   AlertCircle,
   CheckCircle,
   X,
+  Link2,
+  ExternalLink,
+  Save,
+  Video,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -77,6 +81,7 @@ interface Involvement {
   userId: string
   role: string
   status: string
+  affiliateLink: string | null
   joinedAt: string
 }
 
@@ -104,6 +109,7 @@ interface WGO {
   currentAmount: number
   startDate: string | null
   endDate: string | null
+  affiliateLink: string | null
   creatorId: string
   createdAt: string
   updatedAt: string
@@ -116,6 +122,16 @@ interface WGO {
   isCreator: boolean
   isLeader: boolean
   isCoordinator: boolean
+}
+
+interface RelatedEvent {
+  id: string
+  title: string
+  type: string
+  startTime: string
+  endTime: string
+  location: string | null
+  virtualLink: string | null
 }
 
 interface WGODetailClientProps {
@@ -137,6 +153,10 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [actionLoading, setActionLoading] = useState(false)
   const [newPostContent, setNewPostContent] = useState('')
   const [postingLoading, setPostingLoading] = useState(false)
+  const [affiliateLink, setAffiliateLink] = useState('')
+  const [affiliateSaving, setAffiliateSaving] = useState(false)
+  const [affiliateSaved, setAffiliateSaved] = useState(false)
+  const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([])
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -149,7 +169,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
 
       if (!res.ok) {
         if (res.status === 404) {
-          setError('Wealth Generation Opportunity not found')
+          setError('Wealth Generation Opportunity (WGO) not found')
         } else if (res.status === 401) {
           setError('You must be logged in to view this page')
         } else {
@@ -162,6 +182,9 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
       const data = await res.json()
       setWgo(data)
       setForumPosts(data.forumPosts || [])
+      if (data.userInvolvement?.affiliateLink) {
+        setAffiliateLink(data.userInvolvement.affiliateLink)
+      }
     } catch (err) {
       console.error('Error fetching WGO:', err)
       setError('Failed to load WGO details. Please try again.')
@@ -193,6 +216,31 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
       fetchForumPosts()
     }
   }, [wgo?.isInvolved, isAdmin, fetchForumPosts])
+
+  // Fetch upcoming events that match this WGO's title
+  useEffect(() => {
+    if (!wgo?.title) return
+
+    async function fetchRelatedEvents() {
+      try {
+        const res = await fetch('/api/events?upcoming=true')
+        if (res.ok) {
+          const data = await res.json()
+          const events = Array.isArray(data) ? data : data.data || []
+          const titleWords = wgo!.title.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+          const matched = events.filter((evt: RelatedEvent) => {
+            const evtTitle = evt.title.toLowerCase()
+            return titleWords.some(word => evtTitle.includes(word))
+          })
+          setRelatedEvents(matched)
+        }
+      } catch (err) {
+        console.error('Error fetching related events:', err)
+      }
+    }
+
+    fetchRelatedEvents()
+  }, [wgo?.title])
 
   const handleJoin = async () => {
     setActionLoading(true)
@@ -258,6 +306,34 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     } finally {
       setActionLoading(false)
       setShowDeleteConfirm(false)
+    }
+  }
+
+  const handleSaveAffiliateLink = async () => {
+    setAffiliateSaving(true)
+    setAffiliateSaved(false)
+    try {
+      const res = await fetch('/api/wgo/involvement', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wgoId,
+          affiliateLink: affiliateLink.trim() || null,
+        }),
+      })
+
+      if (res.ok) {
+        setAffiliateSaved(true)
+        setTimeout(() => setAffiliateSaved(false), 3000)
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to save affiliate link')
+      }
+    } catch (err) {
+      console.error('Error saving affiliate link:', err)
+      alert('Failed to save affiliate link')
+    } finally {
+      setAffiliateSaving(false)
     }
   }
 
@@ -330,7 +406,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
             <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-yellow-800 mb-4">WGO Not Found</h1>
             <p className="text-yellow-700 mb-6">
-              The Wealth Generation Opportunity could not be found.
+              The Wealth Generation Opportunity (WGO) could not be found.
             </p>
             <Link
               href="/dashboard/wgo"
@@ -424,6 +500,64 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
             </CardContent>
           </Card>
+
+          {/* Scheduled Meetings & Presentations */}
+          {relatedEvents.length > 0 && (
+            <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50 to-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-emerald-600" />
+                  Scheduled Meetings & Presentations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {relatedEvents.map((evt) => {
+                  const evtDate = new Date(evt.startTime)
+                  const endDate = new Date(evt.endTime)
+                  const isPast = evtDate < new Date()
+                  return (
+                    <Link
+                      key={evt.id}
+                      href={`/dashboard/events/${evt.id}`}
+                      className={cn(
+                        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+                        isPast
+                          ? 'border-sand-200 bg-sand-50 opacity-60'
+                          : 'border-emerald-200 bg-white hover:bg-emerald-50'
+                      )}
+                    >
+                      <div className="flex-shrink-0 text-center bg-emerald-100 rounded-lg px-3 py-1.5">
+                        <div className="text-xs font-medium text-emerald-700">
+                          {evtDate.toLocaleDateString('en-US', { month: 'short' })}
+                        </div>
+                        <div className="text-lg font-bold text-emerald-800">
+                          {evtDate.getDate()}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-forest-800 truncate">{evt.title}</p>
+                        <p className="text-xs text-forest-500">
+                          {evtDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {' - '}
+                          {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {evt.location && ` · ${evt.location}`}
+                        </p>
+                      </div>
+                      {evt.virtualLink && (
+                        <Video className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      )}
+                    </Link>
+                  )
+                })}
+                <Link
+                  href="/dashboard/events"
+                  className="block text-center text-sm text-emerald-600 hover:text-emerald-700 pt-1"
+                >
+                  View all events
+                </Link>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Financial Details */}
           <Card className="border-sand-200">
@@ -604,7 +738,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 <>
                   <h3 className="font-medium text-forest-800">Get Involved</h3>
                   <p className="text-sm text-forest-600">
-                    Join this Wealth Generation Opportunity to participate and access the forum.
+                    Join this Wealth Generation Opportunity (WGO) to participate and access the forum.
                   </p>
                   {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
                     <Button
@@ -624,6 +758,65 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               )}
             </CardContent>
           </Card>
+
+          {/* Affiliate Link - Only visible when involved */}
+          {wgo.isInvolved && (
+            <Card className="border-sand-200">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  My Affiliate Link
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-forest-500">
+                  Paste your personal affiliate link for this opportunity.
+                </p>
+                <input
+                  type="url"
+                  value={affiliateLink}
+                  onChange={(e) => {
+                    setAffiliateLink(e.target.value)
+                    setAffiliateSaved(false)
+                  }}
+                  placeholder="https://your-affiliate-link.com/ref/..."
+                  className="w-full px-3 py-2 text-sm border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={handleSaveAffiliateLink}
+                    disabled={affiliateSaving}
+                  >
+                    {affiliateSaving ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Save className="h-3 w-3 mr-1" />
+                    )}
+                    Save
+                  </Button>
+                  {affiliateLink && (
+                    <a
+                      href={affiliateLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Open
+                    </a>
+                  )}
+                  {affiliateSaved && (
+                    <span className="flex items-center gap-1 text-xs text-emerald-600">
+                      <CheckCircle className="h-3 w-3" />
+                      Saved
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Info */}
           <Card className="border-sand-200">
@@ -791,6 +984,7 @@ function EditWGOModal({
     currentAmount: wgo.currentAmount.toString(),
     startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
     endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
+    affiliateLink: wgo.affiliateLink || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -805,6 +999,7 @@ function EditWGOModal({
         category: formData.category,
         status: formData.status,
         currentAmount: parseFloat(formData.currentAmount) || 0,
+        affiliateLink: formData.affiliateLink.trim() || null,
       }
 
       if (formData.targetAmount) {
@@ -875,7 +1070,7 @@ function EditWGOModal({
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-forest-700 mb-1">
-                  Description
+                  Brief Description
                 </label>
                 <textarea
                   value={formData.description}
@@ -883,6 +1078,19 @@ function EditWGOModal({
                   rows={4}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Affiliate Link
+                </label>
+                <input
+                  type="url"
+                  value={formData.affiliateLink}
+                  onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
+                  placeholder="https://affiliate-link.com/ref/..."
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 

@@ -14,6 +14,12 @@ const updateInvolvementSchema = z.object({
   involvementId: z.string().min(1),
   role: z.enum(['LEADER', 'COORDINATOR', 'PARTICIPANT', 'OBSERVER']).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).optional(),
+  affiliateLink: z.string().url().max(2000).optional().nullable(),
+})
+
+const updateAffiliateLinkSchema = z.object({
+  wgoId: z.string().min(1),
+  affiliateLink: z.string().max(2000).optional().nullable(),
 })
 
 const leaveWGOSchema = z.object({
@@ -250,6 +256,7 @@ export async function PATCH(request: NextRequest) {
     const updateData: Record<string, unknown> = {}
     if (role) updateData.role = role
     if (status) updateData.status = status
+    if (parsed.data.affiliateLink !== undefined) updateData.affiliateLink = parsed.data.affiliateLink
 
     const updatedInvolvement = await prisma.userWGOInvolvement.update({
       where: { id: involvementId },
@@ -270,6 +277,54 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     logError(error, { action: 'update_involvement' })
     return NextResponse.json({ error: 'Failed to update involvement' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const rateLimitResult = await rateLimit(request, 'wgo-involvement', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const parsed = updateAffiliateLinkSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const { wgoId, affiliateLink } = parsed.data
+
+    const involvement = await prisma.userWGOInvolvement.findUnique({
+      where: {
+        userId_wgoId: {
+          userId: session.user.id,
+          wgoId,
+        },
+      },
+    })
+
+    if (!involvement) {
+      return NextResponse.json({ error: 'You are not involved in this WGO' }, { status: 404 })
+    }
+
+    const updated = await prisma.userWGOInvolvement.update({
+      where: { id: involvement.id },
+      data: { affiliateLink: affiliateLink || null },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    logError(error, { action: 'update_affiliate_link' })
+    return NextResponse.json({ error: 'Failed to update affiliate link' }, { status: 500 })
   }
 }
 

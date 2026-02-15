@@ -29,7 +29,7 @@ export const PAGE_DESCRIPTIONS: Record<string, { title: string; description: str
 
   // WGO - Wealth Generation Opportunities
   wgo: {
-    title: 'Wealth Generation Opportunities',
+    title: 'Wealth Generation Opportunities (WGO)',
     description: 'Partnering platforms for wealth generation, vetted through intensive protocol to offer private members increase and personal sovereignty. These opportunities are separate from BRITE Pool but available through membership.',
     terms: ['Risk Tolerance', 'Compounding', 'Affiliate', 'Passive Income'],
   },

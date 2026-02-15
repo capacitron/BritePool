@@ -14,6 +14,7 @@ const updateWGOSchema = z.object({
   currentAmount: z.number().min(0).optional(),
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),
+  affiliateLink: z.string().url().max(2000).optional().nullable(),
 })
 
 export async function GET(

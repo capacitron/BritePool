@@ -450,7 +450,7 @@ export default function FinancialScreeningPage() {
         <CardContent className="pt-0">
           <p className="text-forest-700 font-medium mb-6 font-body text-base leading-relaxed">
             If a current member introduced you to Brite Pool, search for them below. This connects
-            you for networking within our Wealth Generation Opportunities.
+            you for networking within our Wealth Generation Opportunities (WGO).
           </p>
           <div ref={referralRef} className="relative">
             {selectedReferrer ? (

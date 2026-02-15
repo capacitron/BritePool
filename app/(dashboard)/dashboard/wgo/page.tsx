@@ -252,7 +252,7 @@ export default function WGOPage() {
             <p className="text-forest-500">
               {hasActiveFilters
                 ? 'Try adjusting your filters to see more opportunities.'
-                : 'Check back soon for new wealth generation opportunities.'}
+                : 'Check back soon for new Wealth Generation Opportunities (WGO).'}
             </p>
           </CardContent>
         </Card>
@@ -426,7 +426,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between border-b">
-          <CardTitle>Add Wealth Generation Opportunity</CardTitle>
+          <CardTitle>Add Wealth Generation Opportunity (WGO)</CardTitle>
           <button onClick={onClose} className="p-1 hover:bg-sand-100 rounded">
             <X className="h-5 w-5" />
           </button>
