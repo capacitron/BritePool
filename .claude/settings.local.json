@@ -81,7 +81,9 @@
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push:*)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db execute:*)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx:*)",
-      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx -e:*)"
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx -e:*)",
+      "Bash(git hash-object:*)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": []
   },
