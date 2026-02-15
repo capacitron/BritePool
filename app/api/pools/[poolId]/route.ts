@@ -146,3 +146,63 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update pool' }, { status: 500 })
   }
 }
+
+// DELETE /api/pools/[poolId] - Delete pool (creator or admin only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ poolId: string }> }
+) {
+  try {
+    const rateLimitResult = await rateLimit(request, 'pools-detail', RateLimitConfigs.moderate)
+    if (rateLimitResult) return rateLimitResult
+
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { poolId } = await params
+
+    const existingPool = await prisma.pool.findUnique({
+      where: { id: poolId },
+      include: {
+        cuts: {
+          include: {
+            _count: { select: { pledges: true } },
+          },
+        },
+      },
+    })
+
+    if (!existingPool) {
+      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+    }
+
+    const isCreator = existingPool.creatorId === session.user.id
+    const userIsAdmin = isAdmin(session.user.role)
+
+    if (!isCreator && !userIsAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only pool creator or admin can delete' },
+        { status: 403 }
+      )
+    }
+
+    // Prevent deletion of pools with active pledges
+    const hasActivePledges = existingPool.cuts.some((cut) => cut._count.pledges > 0)
+    if (hasActivePledges) {
+      return NextResponse.json(
+        { error: 'Cannot delete pool with existing pledges' },
+        { status: 409 }
+      )
+    }
+
+    // Cascade will handle deleting related cuts
+    await prisma.pool.delete({ where: { id: poolId } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    logError(error, { action: 'delete_pool' })
+    return NextResponse.json({ error: 'Failed to delete pool' }, { status: 500 })
+  }
+}

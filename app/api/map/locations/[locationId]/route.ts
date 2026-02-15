@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canModerateContent } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER', 'CONTENT_MODERATOR']
 
 const updateLocationSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -90,9 +89,9 @@ export async function PATCH(
     }
 
     const isOwner = existingLocation.createdById === session.user.id
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const userIsAdmin = canModerateContent(session.user.role)
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Only the creator or administrators can update this location' },
         { status: 403 }
@@ -166,9 +165,9 @@ export async function DELETE(
     }
 
     const isOwner = existingLocation.createdById === session.user.id
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const userIsAdmin = canModerateContent(session.user.role)
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Only the creator or administrators can delete this location' },
         { status: 403 }

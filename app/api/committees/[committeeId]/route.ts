@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -84,8 +85,7 @@ export async function PATCH(
 
     const { committeeId } = await params
 
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
-    if (!adminRoles.includes(session.user.role)) {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -113,5 +113,50 @@ export async function PATCH(
   } catch (error) {
     logError(error, { action: 'update_committee' })
     return NextResponse.json({ error: 'Failed to update committee' }, { status: 500 })
+  }
+}
+
+// DELETE /api/committees/[committeeId] - Delete committee (admin only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ committeeId: string }> }
+) {
+  try {
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { committeeId } = await params
+
+    const committee = await prisma.committee.findUnique({
+      where: { id: committeeId },
+      include: {
+        _count: { select: { members: true } },
+      },
+    })
+
+    if (!committee) {
+      return NextResponse.json({ error: 'Committee not found' }, { status: 404 })
+    }
+
+    if (committee._count.members > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete committee with active members' },
+        { status: 409 }
+      )
+    }
+
+    await prisma.committee.delete({ where: { id: committeeId } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    logError(error, { action: 'delete_committee' })
+    return NextResponse.json({ error: 'Failed to delete committee' }, { status: 500 })
   }
 }

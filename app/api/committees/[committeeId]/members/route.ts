@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canManageCommittees } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -60,10 +61,13 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({
-      ...membership,
-      message: 'Your request to join has been submitted for approval.'
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        ...membership,
+        message: 'Your request to join has been submitted for approval.',
+      },
+      { status: 201 }
+    )
   } catch (error) {
     logError(error, { action: 'join_committee' })
     return NextResponse.json({ error: 'Failed to join committee' }, { status: 500 })
@@ -120,8 +124,7 @@ export async function PATCH(
 
     const { committeeId } = await params
 
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
-    if (!adminRoles.includes(session.user.role)) {
+    if (!canManageCommittees(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

@@ -5,6 +5,26 @@ import { hasPermission, canAssignRole } from '@/lib/auth-utils'
 import { logError } from '@/lib/api-utils'
 import { logUserUpdated, logUserSuspended } from '@/lib/audit'
 import type { UserRole, UserStatus, SubscriptionTier, SubscriptionStatus } from '@prisma/client'
+import { z } from 'zod'
+
+const updateUserSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  role: z
+    .enum([
+      'WEB_STEWARD',
+      'BOARD_CHAIR',
+      'COMMITTEE_LEADER',
+      'CONTENT_MODERATOR',
+      'SUPPORT_STAFF',
+      'STEWARD',
+      'PARTNER',
+      'RESIDENT',
+    ])
+    .optional(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']).optional(),
+  subscriptionTier: z.enum(['FREE', 'BASIC', 'PREMIUM', 'PLATINUM']).optional(),
+  subscriptionStatus: z.enum(['ACTIVE', 'INACTIVE', 'PAST_DUE', 'CANCELLED']).optional(),
+})
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -165,13 +185,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const body = await request.json()
+    const parsed = updateUserSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      )
+    }
+
     const {
       name,
       role: newRole,
       status: newStatus,
       subscriptionTier: newTier,
       subscriptionStatus: newSubStatus,
-    } = body
+    } = parsed.data
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
@@ -195,10 +224,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (newRole && newRole !== existingUser.role) {
       // Check if user can assign this role
-      if (!canAssignRole(userRole, newRole as UserRole)) {
+      if (!canAssignRole(userRole, newRole)) {
         return NextResponse.json({ error: 'You cannot assign this role' }, { status: 403 })
       }
-      updateData.role = newRole as UserRole
+      updateData.role = newRole
     }
 
     if (newStatus && newStatus !== existingUser.status) {
@@ -206,15 +235,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (!hasPermission(userRole, 'editUsers')) {
         return NextResponse.json({ error: 'You cannot change user status' }, { status: 403 })
       }
-      updateData.status = newStatus as UserStatus
+      updateData.status = newStatus
     }
 
     if (newTier && newTier !== existingUser.subscriptionTier) {
-      updateData.subscriptionTier = newTier as SubscriptionTier
+      updateData.subscriptionTier = newTier
     }
 
     if (newSubStatus && newSubStatus !== existingUser.subscriptionStatus) {
-      updateData.subscriptionStatus = newSubStatus as SubscriptionStatus
+      updateData.subscriptionStatus = newSubStatus
     }
 
     if (Object.keys(updateData).length === 0) {

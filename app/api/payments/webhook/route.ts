@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import Stripe from 'stripe'
 
+// In-memory idempotency guard — prevents duplicate processing of replayed webhook events
+const processedEvents = new Set<string>()
+const MAX_PROCESSED_EVENTS = 10000
+
 export async function POST(request: NextRequest) {
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
@@ -27,6 +31,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logError(error, { action: 'stripe_webhook_signature_verification' })
     return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 })
+  }
+
+  // Idempotency check — skip already-processed events
+  if (processedEvents.has(event.id)) {
+    return NextResponse.json({ received: true })
   }
 
   try {
@@ -89,6 +98,18 @@ export async function POST(request: NextRequest) {
           })
         }
         break
+      }
+    }
+
+    // Mark event as processed after successful handling
+    processedEvents.add(event.id)
+
+    // Prevent unbounded growth of the Set
+    if (processedEvents.size > MAX_PROCESSED_EVENTS) {
+      const entries = [...processedEvents]
+      const removeCount = entries.length - MAX_PROCESSED_EVENTS / 2
+      for (let i = 0; i < removeCount; i++) {
+        processedEvents.delete(entries[i]!)
       }
     }
 

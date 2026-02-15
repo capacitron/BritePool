@@ -11,6 +11,7 @@ import {
   HttpStatus,
 } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { isAdmin } from '@/lib/auth/roles'
 import type { Prisma } from '@prisma/client'
 
 const querySchema = z.object({
@@ -26,8 +27,6 @@ const createPostSchema = z.object({
   categoryId: z.string().min(1),
 })
 
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR']
-
 export async function GET(request: NextRequest) {
   try {
     const rateLimitResult = await rateLimit(request, 'forums', RateLimitConfigs.moderate)
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const { page, limit, categorySlug, search } = query
     const skip = (page - 1) * limit
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     // Build where clause: top-level posts only, not deleted
     const where: Prisma.ForumPostWhereInput = {
@@ -51,11 +50,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Non-admins see APPROVED posts + their own PENDING posts
-    if (!isAdmin) {
-      where.OR = [
-        { status: 'APPROVED' },
-        { status: 'PENDING', authorId: auth.user.id },
-      ]
+    if (!userIsAdmin) {
+      where.OR = [{ status: 'APPROVED' }, { status: 'PENDING', authorId: auth.user.id }]
     }
 
     // Category filter
@@ -143,7 +139,7 @@ export async function POST(request: NextRequest) {
     if (bodyError) return bodyError
 
     const { title, content, categoryId } = body
-    const isAdmin = ADMIN_ROLES.includes(auth.user.role)
+    const userIsAdmin = isAdmin(auth.user.role)
 
     // Verify category exists
     const category = await prisma.forumCategory.findUnique({
@@ -159,7 +155,7 @@ export async function POST(request: NextRequest) {
         content,
         categoryId,
         authorId: auth.user.id,
-        status: isAdmin ? 'APPROVED' : 'PENDING',
+        status: userIsAdmin ? 'APPROVED' : 'PENDING',
       },
       include: {
         author: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -58,8 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
-    if (!adminRoles.includes(session.user.role)) {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

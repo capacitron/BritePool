@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canModerateContent } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER', 'CONTENT_MODERATOR']
 
 const createLocationSchema = z.object({
   name: z.string().min(1).max(255),
@@ -72,8 +71,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
-    if (!isAdmin) {
+    const userIsAdmin = canModerateContent(session.user.role)
+    if (!userIsAdmin) {
       return NextResponse.json(
         { error: 'Only administrators can create map locations' },
         { status: 403 }

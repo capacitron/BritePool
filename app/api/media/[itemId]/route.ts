@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canModerateContent } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
@@ -11,8 +12,6 @@ const updateMediaSchema = z.object({
     .optional(),
   tags: z.array(z.string()).optional(),
 })
-
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER', 'CONTENT_MODERATOR']
 
 export async function GET(
   request: NextRequest,
@@ -69,9 +68,9 @@ export async function PATCH(
     }
 
     const isOwner = existingItem.uploadedById === session.user.id
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const userIsAdmin = canModerateContent(session.user.role)
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Only the owner or administrators can update this item' },
         { status: 403 }
@@ -133,9 +132,9 @@ export async function DELETE(
     }
 
     const isOwner = existingItem.uploadedById === session.user.id
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const userIsAdmin = canModerateContent(session.user.role)
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Only the owner or administrators can delete this item' },
         { status: 403 }

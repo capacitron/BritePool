@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { canManageCommittees } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 
 const updateMessageSchema = z.object({
   content: z.string().min(1).max(5000),
 })
-
-// Admin roles that can delete any message
-const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
 
 // Update a chat message (author only)
 export async function PATCH(
@@ -160,10 +158,10 @@ export async function DELETE(
 
     // Check if user can delete the message
     const isAuthor = message.authorId === session.user.id
-    const isAdmin = ADMIN_ROLES.includes(session.user.role)
+    const isUserAdmin = canManageCommittees(session.user.role)
     const isCommitteeLeader = membership.role === 'LEADER'
 
-    if (!isAuthor && !isAdmin && !isCommitteeLeader) {
+    if (!isAuthor && !isUserAdmin && !isCommitteeLeader) {
       return NextResponse.json({ error: 'You can only delete your own messages' }, { status: 403 })
     }
 
