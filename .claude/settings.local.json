@@ -78,7 +78,8 @@
       "Bash(via [Name] 's Link\" button is displayed, opening the affiliate link in a new tab.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npx next build:*)",
       "Bash(git rm:*)",
-      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push:*)"
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db execute:*)"
     ],
     "deny": []
   },

@@ -102,9 +102,14 @@ export default function AdminUsersPage() {
       })
       if (res.ok) {
         fetchUsers()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || `Failed to update role (${res.status})`)
+        fetchUsers()
       }
     } catch (error) {
       console.error('Error updating role:', error)
+      alert('Network error updating role. Please try again.')
     }
   }
 
@@ -117,9 +122,14 @@ export default function AdminUsersPage() {
       })
       if (res.ok) {
         fetchUsers()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || `Failed to update subscription status (${res.status})`)
+        fetchUsers()
       }
     } catch (error) {
       console.error('Error updating status:', error)
+      alert('Network error updating status. Please try again.')
     }
   }
 

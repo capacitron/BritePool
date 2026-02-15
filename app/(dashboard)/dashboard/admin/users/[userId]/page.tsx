@@ -106,6 +106,7 @@ interface UserData {
   email: string
   name: string
   role: string
+  status: string
   subscriptionTier: string
   subscriptionStatus: string
   covenantAcceptedAt: string | null
@@ -138,6 +139,7 @@ const roles = [
 
 const subscriptionTiers = ['FREE', 'BASIC', 'PREMIUM', 'PLATINUM']
 const subscriptionStatuses = ['ACTIVE', 'INACTIVE', 'PAST_DUE', 'CANCELLED']
+const accountStatuses = ['ACTIVE', 'SUSPENDED', 'LOCKED']
 
 export default function AdminUserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params)
@@ -151,6 +153,8 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
   const [editedTier, setEditedTier] = useState('')
   const [editedStatus, setEditedStatus] = useState('')
   const [editedName, setEditedName] = useState('')
+  const [editedAccountStatus, setEditedAccountStatus] = useState('')
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
     fetchUser()
@@ -167,6 +171,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
         setEditedTier(userData.subscriptionTier)
         setEditedStatus(userData.subscriptionStatus)
         setEditedName(userData.name)
+        setEditedAccountStatus(userData.status || 'ACTIVE')
       } else if (res.status === 404) {
         router.push('/dashboard/admin/users')
       }
@@ -179,6 +184,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
 
   async function handleSave() {
     setSaving(true)
+    setFeedback(null)
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'PATCH',
@@ -187,14 +193,20 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
           role: editedRole,
           subscriptionTier: editedTier,
           subscriptionStatus: editedStatus,
+          status: editedAccountStatus,
           name: editedName,
         }),
       })
       if (res.ok) {
+        setFeedback({ type: 'success', message: 'User updated successfully.' })
         fetchUser()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setFeedback({ type: 'error', message: data.error || `Failed to update user (${res.status})` })
       }
     } catch (error) {
       console.error('Error saving user:', error)
+      setFeedback({ type: 'error', message: 'Network error. Please try again.' })
     } finally {
       setSaving(false)
     }
@@ -293,7 +305,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <Label htmlFor="role">Role</Label>
                   <select
@@ -305,6 +317,21 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
                     {roles.map((role) => (
                       <option key={role} value={role}>
                         {role.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="accountStatus">Account Status</Label>
+                  <select
+                    id="accountStatus"
+                    value={editedAccountStatus}
+                    onChange={(e) => setEditedAccountStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone rounded-lg"
+                  >
+                    {accountStatuses.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
                       </option>
                     ))}
                   </select>
@@ -340,6 +367,18 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
                   </select>
                 </div>
               </div>
+
+              {feedback && (
+                <div
+                  className={`px-4 py-3 rounded-lg text-sm font-medium ${
+                    feedback.type === 'success'
+                      ? 'bg-green-50 text-green-800 border border-green-200'
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}
+                >
+                  {feedback.message}
+                </div>
+              )}
 
               <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
                 <Save className="h-4 w-4 mr-2" />
