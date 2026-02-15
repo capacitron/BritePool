@@ -79,7 +79,9 @@
       "Bash(npx next build:*)",
       "Bash(git rm:*)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push:*)",
-      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db execute:*)"
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db execute:*)",
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx:*)",
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx -e:*)"
     ],
     "deny": []
   },

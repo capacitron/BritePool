@@ -247,7 +247,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+      return NextResponse.json({ user: existingUser, message: 'No changes detected' })
     }
 
     const user = await prisma.user.update({
