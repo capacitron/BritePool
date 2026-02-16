@@ -12,7 +12,8 @@ import {
   Video,
   User,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -68,7 +69,7 @@ function formatDate(dateString: string) {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -82,14 +83,18 @@ function formatTime(dateString: string) {
   })
 }
 
+const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
+
 export function EventDetailClient({ event, userId, userRole }: EventDetailClientProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [isRegistered, setIsRegistered] = useState(event.isRegistered)
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount)
 
   const isPastEvent = new Date(event.startTime) < new Date()
   const isAtCapacity = event.capacity ? attendeeCount >= event.capacity : false
+  const canDelete = ADMIN_ROLES.includes(userRole)
 
   const handleRegister = async () => {
     setIsLoading(true)
@@ -100,7 +105,7 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
 
       if (response.ok) {
         setIsRegistered(true)
-        setAttendeeCount(prev => prev + 1)
+        setAttendeeCount((prev) => prev + 1)
         router.refresh()
       } else {
         const data = await response.json()
@@ -125,7 +130,7 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
 
       if (response.ok) {
         setIsRegistered(false)
-        setAttendeeCount(prev => prev - 1)
+        setAttendeeCount((prev) => prev - 1)
         router.refresh()
       } else {
         const data = await response.json()
@@ -136,6 +141,29 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
       alert('Failed to cancel registration')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this event? This cannot be undone.')) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        router.push('/dashboard/events')
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete event')
+      }
+    } catch (error) {
+      console.error('Delete event error:', error)
+      alert('Failed to delete event')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -155,10 +183,12 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <span className={cn(
-                    'inline-block px-3 py-1 rounded-full text-sm font-medium mb-3',
-                    EVENT_TYPE_COLORS[event.type]
-                  )}>
+                  <span
+                    className={cn(
+                      'inline-block px-3 py-1 rounded-full text-sm font-medium mb-3',
+                      EVENT_TYPE_COLORS[event.type]
+                    )}
+                  >
                     {EVENT_TYPE_LABELS[event.type]}
                   </span>
                   <CardTitle className="text-2xl">{event.title}</CardTitle>
@@ -177,7 +207,9 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
                   <Calendar className="h-5 w-5 text-forest-500" />
                   <div>
                     <p className="text-xs text-forest-500 font-body">Date</p>
-                    <p className="font-medium text-forest-800 font-body">{formatDate(event.startTime)}</p>
+                    <p className="font-medium text-forest-800 font-body">
+                      {formatDate(event.startTime)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-sand-100">
@@ -219,7 +251,9 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
               {event.description && (
                 <div>
                   <h3 className="font-semibold text-forest-800 mb-2 font-body">Description</h3>
-                  <p className="text-forest-600 whitespace-pre-wrap font-body">{event.description}</p>
+                  <p className="text-forest-600 whitespace-pre-wrap font-body">
+                    {event.description}
+                  </p>
                 </div>
               )}
 
@@ -299,7 +333,7 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
                 <p className="text-forest-500 text-sm font-body">No attendees yet</p>
               ) : (
                 <div className="space-y-2">
-                  {event.attendees.slice(0, 10).map(attendee => (
+                  {event.attendees.slice(0, 10).map((attendee) => (
                     <div
                       key={attendee.id}
                       className="flex items-center gap-2 p-2 rounded-lg hover:bg-sand-100"
@@ -326,6 +360,22 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
               )}
             </CardContent>
           </Card>
+
+          {canDelete && (
+            <Card className="border-red-200">
+              <CardContent className="p-4">
+                <Button
+                  variant="outline"
+                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isDeleting ? 'Deleting...' : 'Delete Event'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

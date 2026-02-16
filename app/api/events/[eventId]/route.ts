@@ -158,6 +158,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
+    // Clean up related records without cascade
+    await prisma.eventApproval.deleteMany({
+      where: { eventId },
+    })
+
     await prisma.event.delete({
       where: { id: eventId },
     })
