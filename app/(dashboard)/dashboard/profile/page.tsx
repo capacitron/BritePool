@@ -24,6 +24,7 @@ import {
   EyeOff,
   Link2,
   Copy,
+  CalendarClock,
 } from 'lucide-react'
 import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
 import { PageHeader } from '@/components/PageHeader'
@@ -45,6 +46,7 @@ interface UserProfile {
     location: string | null
     timezone: string
     language: string
+    availability: Record<string, { enabled: boolean; start: string; end: string }> | null
   } | null
 }
 
@@ -60,6 +62,40 @@ const TIMEZONES = [
   'Asia/Tokyo',
   'Australia/Sydney',
 ]
+
+const DAYS_OF_WEEK = [
+  { key: 'monday', label: 'Monday' },
+  { key: 'tuesday', label: 'Tuesday' },
+  { key: 'wednesday', label: 'Wednesday' },
+  { key: 'thursday', label: 'Thursday' },
+  { key: 'friday', label: 'Friday' },
+  { key: 'saturday', label: 'Saturday' },
+  { key: 'sunday', label: 'Sunday' },
+]
+
+const TIME_OPTIONS = (() => {
+  const options: { value: string; label: string }[] = []
+  for (let h = 6; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const hh = h.toString().padStart(2, '0')
+      const mm = m.toString().padStart(2, '0')
+      const period = h < 12 ? 'AM' : 'PM'
+      const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h
+      options.push({ value: `${hh}:${mm}`, label: `${displayH}:${mm} ${period}` })
+    }
+  }
+  return options
+})()
+
+const DEFAULT_AVAILABILITY: Record<string, { enabled: boolean; start: string; end: string }> = {
+  monday: { enabled: false, start: '09:00', end: '17:00' },
+  tuesday: { enabled: false, start: '09:00', end: '17:00' },
+  wednesday: { enabled: false, start: '09:00', end: '17:00' },
+  thursday: { enabled: false, start: '09:00', end: '17:00' },
+  friday: { enabled: false, start: '09:00', end: '17:00' },
+  saturday: { enabled: false, start: '09:00', end: '17:00' },
+  sunday: { enabled: false, start: '09:00', end: '17:00' },
+}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -82,6 +118,9 @@ export default function ProfilePage() {
     timezone: 'UTC',
   })
   const [linkCopied, setLinkCopied] = useState(false)
+  const [availability, setAvailability] = useState<
+    Record<string, { enabled: boolean; start: string; end: string }>
+  >({ ...DEFAULT_AVAILABILITY })
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -116,6 +155,9 @@ export default function ProfilePage() {
         location: data.profile?.location || '',
         timezone: data.profile?.timezone || 'UTC',
       })
+      if (data.profile?.availability) {
+        setAvailability({ ...DEFAULT_AVAILABILITY, ...data.profile.availability })
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
       setMessage({ type: 'error', text: 'Failed to load profile' })
@@ -133,7 +175,7 @@ export default function ProfilePage() {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, availability }),
       })
 
       if (!res.ok) {
@@ -550,6 +592,97 @@ export default function ProfilePage() {
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-sand-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+            <CalendarClock className="h-5 w-5 text-forest-500" />
+            My Availability
+          </CardTitle>
+          <CardDescription className="text-forest-500 font-body">
+            Set your weekly availability so other members know when you&apos;re free
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {DAYS_OF_WEEK.map(({ key, label }) => {
+              const day = availability[key] ?? { enabled: false, start: '09:00', end: '17:00' }
+              const updateDay = (updates: Partial<typeof day>) =>
+                setAvailability({ ...availability, [key]: { ...day, ...updates } })
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg transition-colors',
+                    day.enabled ? 'bg-forest-50' : 'bg-sand-50'
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={day.enabled}
+                    onChange={(e) => updateDay({ enabled: e.target.checked })}
+                    className="h-4 w-4 rounded border-sand-300 text-forest-600 focus:ring-forest-500"
+                  />
+                  <span
+                    className={cn(
+                      'w-24 text-sm font-medium font-body',
+                      day.enabled ? 'text-forest-800' : 'text-forest-400'
+                    )}
+                  >
+                    {label}
+                  </span>
+                  <select
+                    value={day.start}
+                    onChange={(e) => updateDay({ start: e.target.value })}
+                    disabled={!day.enabled}
+                    className={cn(
+                      'px-2 py-1.5 rounded-lg border text-sm font-body',
+                      day.enabled
+                        ? 'border-sand-300 bg-white text-forest-700 focus:outline-none focus:ring-2 focus:ring-forest-500'
+                        : 'border-sand-200 bg-sand-100 text-forest-300 cursor-not-allowed'
+                    )}
+                  >
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    className={cn(
+                      'text-sm font-body',
+                      day.enabled ? 'text-forest-500' : 'text-forest-300'
+                    )}
+                  >
+                    to
+                  </span>
+                  <select
+                    value={day.end}
+                    onChange={(e) => updateDay({ end: e.target.value })}
+                    disabled={!day.enabled}
+                    className={cn(
+                      'px-2 py-1.5 rounded-lg border text-sm font-body',
+                      day.enabled
+                        ? 'border-sand-300 bg-white text-forest-700 focus:outline-none focus:ring-2 focus:ring-forest-500'
+                        : 'border-sand-200 bg-sand-100 text-forest-300 cursor-not-allowed'
+                    )}
+                  >
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-forest-400 font-body mt-3">
+            Times are based on your selected timezone ({formData.timezone.replace(/_/g, ' ')}). Save
+            changes above to update.
+          </p>
         </CardContent>
       </Card>
 

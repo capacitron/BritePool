@@ -86,6 +86,7 @@ model UserProfile {
   location        String?
   timezone        String   @default("UTC")
   language        String   @default("en")
+  availability    Json?
 
   // Sacred Ledger
   totalEquityUnits Float   @default(0)

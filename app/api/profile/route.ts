@@ -5,6 +5,12 @@ import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { usernameSchema } from '@/lib/validations/username'
 
+const availabilityDaySchema = z.object({
+  enabled: z.boolean(),
+  start: z.string(),
+  end: z.string(),
+})
+
 const updateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   username: usernameSchema.optional(),
@@ -13,6 +19,7 @@ const updateProfileSchema = z.object({
   location: z.string().max(100).optional().nullable(),
   timezone: z.string().max(50).optional(),
   language: z.string().max(10).optional(),
+  availability: z.record(z.string(), availabilityDaySchema).optional(),
 })
 
 export async function GET() {
@@ -47,6 +54,7 @@ export async function GET() {
             language: true,
             totalEquityUnits: true,
             totalHoursLogged: true,
+            availability: true,
           },
         },
       },
@@ -81,7 +89,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { name, username, bio, phone, location, timezone, language } = parsed.data
+    const { name, username, bio, phone, location, timezone, language, availability } = parsed.data
 
     const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
@@ -103,6 +111,7 @@ export async function PATCH(request: NextRequest) {
     if (location !== undefined) profileUpdateData.location = location
     if (timezone !== undefined) profileUpdateData.timezone = timezone
     if (language !== undefined) profileUpdateData.language = language
+    if (availability !== undefined) profileUpdateData.availability = availability
 
     const user = await prisma.user.update({
       where: { id: session.user.id },
@@ -128,6 +137,7 @@ export async function PATCH(request: NextRequest) {
             location: true,
             timezone: true,
             language: true,
+            availability: true,
           },
         },
       },
