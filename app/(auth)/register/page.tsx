@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { Loader2, Eye, EyeOff, UserPlus } from 'lucide-react'
+import { Loader2, Eye, EyeOff, UserPlus, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,6 +28,7 @@ function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [showPassword, setShowPassword] = useState(true)
   const [showConfirmPassword, setShowConfirmPassword] = useState(true)
 
@@ -48,6 +49,7 @@ function RegisterForm() {
     const data = {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
+      username: username || undefined,
       password: pw,
     }
 
@@ -151,6 +153,31 @@ function RegisterForm() {
             />
             {fieldErrors.email && (
               <p className="text-sm text-earth-600 font-body">{fieldErrors.email}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username" className="flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5" />
+              Referral Username
+              <span className="text-xs text-forest-400 font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="username"
+              name="username"
+              type="text"
+              placeholder="your-username"
+              autoComplete="username"
+              disabled={isLoading}
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+              maxLength={30}
+            />
+            <p className="text-xs text-forest-400 font-body">
+              Create your unique BritePool username to generate a shareable referral link. Lowercase
+              letters, numbers, and hyphens only.
+            </p>
+            {fieldErrors.username && (
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.username}</p>
             )}
           </div>
           <div className="space-y-2">

@@ -24,8 +24,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, email, password } = parsed.data
+    const { name, email, username, password } = parsed.data
     const normalizedEmail = email.toLowerCase()
+    const normalizedUsername = username && username.length >= 3 ? username.toLowerCase() : undefined
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -36,6 +37,22 @@ export async function POST(request: NextRequest) {
         { error: 'An account with this email already exists' },
         { status: 409 }
       )
+    }
+
+    if (normalizedUsername) {
+      const existingUsername = await prisma.user.findUnique({
+        where: { username: normalizedUsername },
+        select: { id: true },
+      })
+      if (existingUsername) {
+        return NextResponse.json(
+          {
+            error: 'Username already taken',
+            details: { fieldErrors: { username: 'This username is already taken' } },
+          },
+          { status: 409 }
+        )
+      }
     }
 
     // Look up referrer by username
@@ -56,6 +73,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         email: normalizedEmail,
+        username: normalizedUsername || undefined,
         passwordHash,
         role: 'STEWARD',
         status: 'ACTIVE',
