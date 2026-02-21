@@ -24,6 +24,7 @@ const updateUserSchema = z.object({
   status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']).optional(),
   subscriptionTier: z.enum(['FREE', 'BASIC', 'PREMIUM', 'PLATINUM']).optional(),
   subscriptionStatus: z.enum(['ACTIVE', 'INACTIVE', 'PAST_DUE', 'CANCELLED']).optional(),
+  referredById: z.string().nullable().optional(),
 })
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -200,6 +201,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status: newStatus,
       subscriptionTier: newTier,
       subscriptionStatus: newSubStatus,
+      referredById: newReferredById,
     } = parsed.data
 
     const existingUser = await prisma.user.findUnique({
@@ -216,10 +218,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status?: UserStatus
       subscriptionTier?: SubscriptionTier
       subscriptionStatus?: SubscriptionStatus
+      referredById?: string | null
     } = {}
 
     if (name) {
       updateData.name = name
+    }
+
+    if (newReferredById !== undefined) {
+      if (newReferredById === null || newReferredById === '') {
+        updateData.referredById = null
+      } else {
+        if (newReferredById === id) {
+          return NextResponse.json({ error: 'A user cannot refer themselves' }, { status: 400 })
+        }
+        const referrer = await prisma.user.findUnique({ where: { id: newReferredById } })
+        if (!referrer) {
+          return NextResponse.json({ error: 'Referrer user not found' }, { status: 404 })
+        }
+        updateData.referredById = newReferredById
+      }
     }
 
     if (newRole && newRole !== existingUser.role) {
@@ -284,6 +302,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       changes.subscriptionStatus = {
         old: existingUser.subscriptionStatus,
         new: updateData.subscriptionStatus,
+      }
+    }
+    if (updateData.referredById !== undefined) {
+      changes.referredBy = {
+        old: existingUser.referredById || null,
+        new: updateData.referredById,
       }
     }
 

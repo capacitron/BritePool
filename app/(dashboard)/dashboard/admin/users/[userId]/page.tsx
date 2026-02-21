@@ -16,6 +16,9 @@ import {
   Calendar,
   CheckSquare,
   Users,
+  Pencil,
+  X,
+  Search,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -154,7 +157,21 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
   const [editedStatus, setEditedStatus] = useState('')
   const [editedName, setEditedName] = useState('')
   const [editedAccountStatus, setEditedAccountStatus] = useState('')
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [editedReferredById, setEditedReferredById] = useState<string | null>(null)
+  const [editingReferrer, setEditingReferrer] = useState(false)
+  const [referrerSearch, setReferrerSearch] = useState('')
+  const [referrerResults, setReferrerResults] = useState<
+    { id: string; name: string; email: string }[]
+  >([])
+  const [searchingReferrer, setSearchingReferrer] = useState(false)
+  const [selectedReferrer, setSelectedReferrer] = useState<{
+    id: string
+    name: string
+    email: string
+  } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  )
 
   useEffect(() => {
     fetchUser()
@@ -172,6 +189,9 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
         setEditedStatus(userData.subscriptionStatus)
         setEditedName(userData.name)
         setEditedAccountStatus(userData.status || 'ACTIVE')
+        setEditedReferredById(userData.referredBy?.id ?? null)
+        setSelectedReferrer(userData.referredBy ?? null)
+        setEditingReferrer(false)
       } else if (res.status === 404) {
         router.push('/dashboard/admin/users')
       }
@@ -195,6 +215,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
           subscriptionStatus: editedStatus,
           status: editedAccountStatus,
           name: editedName,
+          referredById: editedReferredById,
         }),
       })
       if (res.ok) {
@@ -202,7 +223,10 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
         fetchUser()
       } else {
         const data = await res.json().catch(() => ({}))
-        setFeedback({ type: 'error', message: data.error || `Failed to update user (${res.status})` })
+        setFeedback({
+          type: 'error',
+          message: data.error || `Failed to update user (${res.status})`,
+        })
       }
     } catch (error) {
       console.error('Error saving user:', error)
@@ -235,6 +259,49 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
     } finally {
       setDeleting(false)
     }
+  }
+
+  async function searchReferrer(query: string) {
+    if (query.length < 2) {
+      setReferrerResults([])
+      return
+    }
+    setSearchingReferrer(true)
+    try {
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}&limit=5`)
+      if (res.ok) {
+        const data = await res.json()
+        setReferrerResults(
+          (data.users || [])
+            .filter((u: { id: string }) => u.id !== userId)
+            .map((u: { id: string; name: string; email: string }) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+            }))
+        )
+      }
+    } catch {
+      // silently fail search
+    } finally {
+      setSearchingReferrer(false)
+    }
+  }
+
+  function handleSelectReferrer(referrer: { id: string; name: string; email: string }) {
+    setSelectedReferrer(referrer)
+    setEditedReferredById(referrer.id)
+    setEditingReferrer(false)
+    setReferrerSearch('')
+    setReferrerResults([])
+  }
+
+  function handleRemoveReferrer() {
+    setSelectedReferrer(null)
+    setEditedReferredById(null)
+    setEditingReferrer(false)
+    setReferrerSearch('')
+    setReferrerResults([])
   }
 
   function formatDate(dateStr: string | null) {
@@ -583,62 +650,139 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
             </Card>
           )}
 
-          {(user.referredBy || user.referrals.length > 0) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Referral Network
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {user.referredBy && (
-                  <div>
-                    <p className="text-xs text-earth-brown-light">Introduced By</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-8 h-8 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs">
-                        {user.referredBy.name
-                          .split(' ')
-                          .map((n: string) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{user.referredBy.name}</p>
-                        <p className="text-xs text-earth-brown-light">{user.referredBy.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {user.referrals.length > 0 && (
-                  <div>
-                    <p className="text-xs text-earth-brown-light">
-                      People They Introduced ({user.referrals.length})
-                    </p>
-                    <div className="space-y-2 mt-2">
-                      {user.referrals.map((ref: ReferralUser) => (
-                        <div key={ref.id} className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-earth-100 flex items-center justify-center text-earth-600 font-bold text-xs">
-                            {ref.name
-                              .split(' ')
-                              .map((n: string) => n[0])
-                              .join('')
-                              .toUpperCase()
-                              .slice(0, 2)}
-                          </div>
-                          <div>
-                            <p className="text-sm">{ref.name}</p>
-                            <p className="text-xs text-earth-brown-light">{ref.email}</p>
-                          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Referral Network
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs text-earth-brown-light mb-1">Introduced By</p>
+                {!editingReferrer ? (
+                  <div className="flex items-center justify-between">
+                    {selectedReferrer ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs">
+                          {selectedReferrer.name
+                            .split(' ')
+                            .map((n: string) => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2)}
                         </div>
-                      ))}
+                        <div>
+                          <p className="text-sm font-medium">{selectedReferrer.name}</p>
+                          <p className="text-xs text-earth-brown-light">{selectedReferrer.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-earth-brown-light italic">No referrer assigned</p>
+                    )}
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setEditingReferrer(true)}
+                        className="p-1.5 rounded-md hover:bg-stone-warm text-earth-brown-light hover:text-earth-brown-dark transition-colors"
+                        title="Change referrer"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      {selectedReferrer && (
+                        <button
+                          onClick={handleRemoveReferrer}
+                          className="p-1.5 rounded-md hover:bg-red-50 text-earth-brown-light hover:text-red-600 transition-colors"
+                          title="Remove referrer"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-earth-brown-light" />
+                      <Input
+                        placeholder="Search by name or email..."
+                        value={referrerSearch}
+                        onChange={(e) => {
+                          setReferrerSearch(e.target.value)
+                          searchReferrer(e.target.value)
+                        }}
+                        className="pl-8 h-9 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    {searchingReferrer && (
+                      <p className="text-xs text-earth-brown-light">Searching...</p>
+                    )}
+                    {referrerResults.length > 0 && (
+                      <div className="border border-stone rounded-lg overflow-hidden max-h-40 overflow-y-auto">
+                        {referrerResults.map((result) => (
+                          <button
+                            key={result.id}
+                            onClick={() => handleSelectReferrer(result)}
+                            className="w-full flex items-center gap-2 p-2 hover:bg-stone-warm text-left transition-colors"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-forest-100 flex items-center justify-center text-forest-700 font-bold text-xs shrink-0">
+                              {result.name
+                                .split(' ')
+                                .map((n: string) => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{result.name}</p>
+                              <p className="text-xs text-earth-brown-light truncate">
+                                {result.email}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditingReferrer(false)
+                        setReferrerSearch('')
+                        setReferrerResults([])
+                      }}
+                      className="text-xs text-earth-brown-light hover:text-earth-brown-dark"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
+              </div>
+              {user.referrals.length > 0 && (
+                <div>
+                  <p className="text-xs text-earth-brown-light">
+                    People They Introduced ({user.referrals.length})
+                  </p>
+                  <div className="space-y-2 mt-2">
+                    {user.referrals.map((ref: ReferralUser) => (
+                      <div key={ref.id} className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-earth-100 flex items-center justify-center text-earth-600 font-bold text-xs">
+                          {ref.name
+                            .split(' ')
+                            .map((n: string) => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </div>
+                        <div>
+                          <p className="text-sm">{ref.name}</p>
+                          <p className="text-xs text-earth-brown-light">{ref.email}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
