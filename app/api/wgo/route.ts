@@ -158,6 +158,13 @@ export async function POST(request: NextRequest) {
     } = parsed.data
 
     // Create WGO with the creator as a LEADER involvement
+    // Only include metadata fields when they have values (safe if DB columns don't exist yet)
+    const metadataFields: Record<string, unknown> = {}
+    if (credibilityScore) metadataFields.credibilityScore = credibilityScore
+    if (presentationDays) metadataFields.presentationDays = presentationDays
+    if (shortDescription) metadataFields.shortDescription = shortDescription
+    if (wgoType) metadataFields.wgoType = wgoType
+
     const wgo = await prisma.wealthOpportunity.create({
       data: {
         title,
@@ -167,10 +174,7 @@ export async function POST(request: NextRequest) {
         targetAmount: targetAmount ?? null,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
-        credibilityScore: credibilityScore ?? null,
-        presentationDays: presentationDays ?? null,
-        shortDescription: shortDescription ?? null,
-        wgoType: wgoType ?? null,
+        ...metadataFields,
         creatorId: session.user.id,
         involvements: {
           create: {

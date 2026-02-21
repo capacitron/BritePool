@@ -158,6 +158,14 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
+    // Remove null metadata fields to avoid errors if DB columns don't exist yet
+    const metadataFields = ['credibilityScore', 'presentationDays', 'shortDescription', 'wgoType']
+    for (const field of metadataFields) {
+      if (updateData[field] === null || updateData[field] === undefined) {
+        delete updateData[field]
+      }
+    }
+
     // Convert date strings to Date objects
     if (parsed.data.startDate !== undefined) {
       updateData.startDate = parsed.data.startDate ? new Date(parsed.data.startDate) : null

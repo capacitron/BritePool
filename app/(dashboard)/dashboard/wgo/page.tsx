@@ -408,12 +408,16 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : null,
           startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
           endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-          credibilityScore: formData.credibilityScore
-            ? parseFloat(formData.credibilityScore)
-            : null,
-          presentationDays: formData.presentationDays.trim() || null,
-          shortDescription: formData.shortDescription.trim() || null,
-          wgoType: formData.wgoType.trim() || null,
+          ...(formData.credibilityScore
+            ? { credibilityScore: parseFloat(formData.credibilityScore) }
+            : {}),
+          ...(formData.presentationDays.trim()
+            ? { presentationDays: formData.presentationDays.trim() }
+            : {}),
+          ...(formData.shortDescription.trim()
+            ? { shortDescription: formData.shortDescription.trim() }
+            : {}),
+          ...(formData.wgoType.trim() ? { wgoType: formData.wgoType.trim() } : {}),
         }),
       })
 

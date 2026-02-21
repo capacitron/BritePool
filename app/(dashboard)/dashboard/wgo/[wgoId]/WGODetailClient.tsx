@@ -1067,11 +1067,17 @@ function EditWGOModal({
         category: formData.category,
         status: formData.status,
         currentAmount: parseFloat(formData.currentAmount) || 0,
-        credibilityScore: formData.credibilityScore ? parseFloat(formData.credibilityScore) : null,
-        presentationDays: formData.presentationDays.trim() || null,
-        shortDescription: formData.shortDescription.trim() || null,
-        wgoType: formData.wgoType.trim() || null,
       }
+
+      // Only send metadata fields when they have values (avoids errors if DB columns don't exist yet)
+      const credScore = formData.credibilityScore ? parseFloat(formData.credibilityScore) : null
+      const presDays = formData.presentationDays.trim() || null
+      const shortDesc = formData.shortDescription.trim() || null
+      const type = formData.wgoType.trim() || null
+      if (credScore !== null) payload.credibilityScore = credScore
+      if (presDays !== null) payload.presentationDays = presDays
+      if (shortDesc !== null) payload.shortDescription = shortDesc
+      if (type !== null) payload.wgoType = type
 
       if (formData.targetAmount) {
         payload.targetAmount = parseFloat(formData.targetAmount)
