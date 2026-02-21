@@ -1080,8 +1080,12 @@ model WealthOpportunity {
   currentAmount Float                 @default(0)
   startDate     DateTime?
   endDate       DateTime?
-  affiliateLink String?
-  creatorId     String
+  affiliateLink    String?
+  credibilityScore Float?
+  presentationDays String?
+  shortDescription String?
+  wgoType          String?
+  creatorId        String
   involvements  UserWGOInvolvement[]
   forumPosts    WGOForumPost[]
   createdAt     DateTime              @default(now())

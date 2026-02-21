@@ -16,6 +16,10 @@ const updateWGOSchema = z.object({
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),
   affiliateLink: z.string().url().max(2000).optional().nullable(),
+  credibilityScore: z.number().min(1).max(10).optional().nullable(),
+  presentationDays: z.string().max(500).optional().nullable(),
+  shortDescription: z.string().max(1000).optional().nullable(),
+  wgoType: z.string().max(500).optional().nullable(),
 })
 
 export async function GET(

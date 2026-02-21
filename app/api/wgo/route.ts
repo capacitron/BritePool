@@ -17,6 +17,10 @@ const createWGOSchema = z.object({
   targetAmount: z.number().positive().optional().nullable(),
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),
+  credibilityScore: z.number().min(1).max(10).optional().nullable(),
+  presentationDays: z.string().max(500).optional().nullable(),
+  shortDescription: z.string().max(1000).optional().nullable(),
+  wgoType: z.string().max(500).optional().nullable(),
 })
 
 const querySchema = z.object({
@@ -139,7 +143,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, category, status, targetAmount, startDate, endDate } = parsed.data
+    const {
+      title,
+      description,
+      category,
+      status,
+      targetAmount,
+      startDate,
+      endDate,
+      credibilityScore,
+      presentationDays,
+      shortDescription,
+      wgoType,
+    } = parsed.data
 
     // Create WGO with the creator as a LEADER involvement
     const wgo = await prisma.wealthOpportunity.create({
@@ -151,6 +167,10 @@ export async function POST(request: NextRequest) {
         targetAmount: targetAmount ?? null,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        credibilityScore: credibilityScore ?? null,
+        presentationDays: presentationDays ?? null,
+        shortDescription: shortDescription ?? null,
+        wgoType: wgoType ?? null,
         creatorId: session.user.id,
         involvements: {
           create: {

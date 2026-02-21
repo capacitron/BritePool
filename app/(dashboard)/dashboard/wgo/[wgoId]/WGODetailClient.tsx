@@ -110,6 +110,10 @@ interface WGO {
   startDate: string | null
   endDate: string | null
   affiliateLink: string | null
+  credibilityScore: number | null
+  presentationDays: string | null
+  shortDescription: string | null
+  wgoType: string | null
   creatorId: string
   createdAt: string
   updatedAt: string
@@ -502,6 +506,41 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {wgo.shortDescription && (
+                <p className="text-forest-800 font-medium text-lg">{wgo.shortDescription}</p>
+              )}
+
+              {(wgo.credibilityScore || wgo.wgoType || wgo.presentationDays) && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 p-4 bg-sand-50 rounded-lg">
+                  {wgo.credibilityScore && (
+                    <div>
+                      <p className="text-xs text-forest-500 mb-1">Credibility Score</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-bold text-emerald-700">
+                          {wgo.credibilityScore.toFixed(1)}
+                        </span>
+                        <span className="text-sm text-forest-500">/10</span>
+                      </div>
+                    </div>
+                  )}
+                  {wgo.wgoType && (
+                    <div>
+                      <p className="text-xs text-forest-500 mb-1">Type of WGO</p>
+                      <p className="text-sm font-medium text-forest-800">{wgo.wgoType}</p>
+                    </div>
+                  )}
+                  {wgo.presentationDays && (
+                    <div>
+                      <p className="text-xs text-forest-500 mb-1">Presentations</p>
+                      <div className="flex items-start gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                        <p className="text-sm text-forest-700">{wgo.presentationDays}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
               {wgo.referrerAffiliateLink && (
                 <a
@@ -1010,6 +1049,10 @@ function EditWGOModal({
     startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
     endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
     affiliateLink: wgo.userInvolvement?.affiliateLink || '',
+    credibilityScore: wgo.credibilityScore?.toString() || '',
+    presentationDays: wgo.presentationDays || '',
+    shortDescription: wgo.shortDescription || '',
+    wgoType: wgo.wgoType || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1024,6 +1067,10 @@ function EditWGOModal({
         category: formData.category,
         status: formData.status,
         currentAmount: parseFloat(formData.currentAmount) || 0,
+        credibilityScore: formData.credibilityScore ? parseFloat(formData.credibilityScore) : null,
+        presentationDays: formData.presentationDays.trim() || null,
+        shortDescription: formData.shortDescription.trim() || null,
+        wgoType: formData.wgoType.trim() || null,
       }
 
       if (formData.targetAmount) {
@@ -1119,6 +1166,67 @@ function EditWGOModal({
                   rows={4}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Short Description
+                </label>
+                <textarea
+                  value={formData.shortDescription}
+                  onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="A brief summary shown at the top of the opportunity"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Type of WGO
+                </label>
+                <input
+                  type="text"
+                  value={formData.wgoType}
+                  onChange={(e) => setFormData({ ...formData, wgoType: e.target.value })}
+                  maxLength={500}
+                  placeholder="e.g. Crypto trading, Fiat trading, Gold, Nodes"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Credibility Score (1-10)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={formData.credibilityScore}
+                  onChange={(e) => setFormData({ ...formData, credibilityScore: e.target.value })}
+                  placeholder="e.g. 8.5"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-xs text-forest-500 mt-1">
+                  Risk mitigation & sustainability (10 = best)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Presentation Days
+                </label>
+                <input
+                  type="text"
+                  value={formData.presentationDays}
+                  onChange={(e) => setFormData({ ...formData, presentationDays: e.target.value })}
+                  maxLength={500}
+                  placeholder="e.g. Every Thursday 4:00PM"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 

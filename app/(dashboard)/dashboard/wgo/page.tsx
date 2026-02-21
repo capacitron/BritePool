@@ -385,6 +385,10 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     targetAmount: '',
     startDate: '',
     endDate: '',
+    credibilityScore: '',
+    presentationDays: '',
+    shortDescription: '',
+    wgoType: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -404,6 +408,12 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : null,
           startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
           endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+          credibilityScore: formData.credibilityScore
+            ? parseFloat(formData.credibilityScore)
+            : null,
+          presentationDays: formData.presentationDays.trim() || null,
+          shortDescription: formData.shortDescription.trim() || null,
+          wgoType: formData.wgoType.trim() || null,
         }),
       })
 
@@ -462,6 +472,64 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                 className="w-full px-3 py-2 border border-sand-300 rounded-lg"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">
+                Short Description
+              </label>
+              <textarea
+                value={formData.shortDescription}
+                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                rows={2}
+                maxLength={1000}
+                placeholder="A brief summary shown at the top of the opportunity"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1">Type of WGO</label>
+              <input
+                type="text"
+                value={formData.wgoType}
+                onChange={(e) => setFormData({ ...formData, wgoType: e.target.value })}
+                maxLength={500}
+                placeholder="e.g. Crypto trading, Fiat trading, Gold, Nodes"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Credibility Score (1-10)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={formData.credibilityScore}
+                  onChange={(e) => setFormData({ ...formData, credibilityScore: e.target.value })}
+                  placeholder="e.g. 8.5"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Presentation Days
+                </label>
+                <input
+                  type="text"
+                  value={formData.presentationDays}
+                  onChange={(e) => setFormData({ ...formData, presentationDays: e.target.value })}
+                  maxLength={500}
+                  placeholder="e.g. Every Thursday 4:00PM"
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
