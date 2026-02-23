@@ -20,27 +20,44 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     where: { id: eventId },
     include: {
       committee: {
-        select: { id: true, name: true, slug: true }
+        select: { id: true, name: true, slug: true },
       },
       registrations: {
         include: {
           user: {
-            select: { id: true, name: true }
-          }
+            select: { id: true, name: true },
+          },
         },
-        orderBy: { registeredAt: 'desc' }
+        orderBy: { registeredAt: 'desc' },
       },
       _count: {
-        select: { registrations: true }
-      }
-    }
+        select: { registrations: true },
+      },
+    },
   })
 
   if (!event) {
     notFound()
   }
 
-  const userRegistration = event.registrations.find(r => r.userId === session.user.id)
+  const userRegistration = event.registrations.find((r) => r.userId === session.user.id)
+
+  // Fetch user's committees for the duplicate modal
+  const userCommittees = await prisma.committeeMember.findMany({
+    where: { userId: session.user.id },
+    include: {
+      committee: {
+        select: { id: true, name: true, type: true },
+      },
+    },
+  })
+
+  const formattedCommittees = userCommittees.map((m) => ({
+    id: m.committee.id,
+    name: m.committee.name,
+    type: m.committee.type,
+    role: m.role,
+  }))
 
   const formattedEvent = {
     id: event.id,
@@ -54,14 +71,14 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     capacity: event.capacity,
     committee: event.committee,
     attendeeCount: event._count.registrations,
-    attendees: event.registrations.map(r => ({
+    attendees: event.registrations.map((r) => ({
       id: r.user.id,
       name: r.user.name,
       status: r.status,
-      registeredAt: r.registeredAt.toISOString()
+      registeredAt: r.registeredAt.toISOString(),
     })),
     isRegistered: !!userRegistration,
-    registrationStatus: userRegistration?.status || null
+    registrationStatus: userRegistration?.status || null,
   }
 
   return (
@@ -69,6 +86,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       event={formattedEvent}
       userId={session.user.id}
       userRole={session.user.role}
+      userCommittees={formattedCommittees}
     />
   )
 }

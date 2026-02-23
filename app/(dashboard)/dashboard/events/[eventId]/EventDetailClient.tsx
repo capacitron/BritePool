@@ -14,9 +14,11 @@ import {
   CheckCircle,
   AlertCircle,
   Trash2,
+  Copy,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { cn } from '@/lib/utils'
 
 interface Attendee {
@@ -43,10 +45,18 @@ interface EventData {
   registrationStatus: string | null
 }
 
+interface UserCommittee {
+  id: string
+  name: string
+  type: string
+  role: string
+}
+
 interface EventDetailClientProps {
   event: EventData
   userId: string
   userRole: string
+  userCommittees: UserCommittee[]
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -85,12 +95,18 @@ function formatTime(dateString: string) {
 
 const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
 
-export function EventDetailClient({ event, userId, userRole }: EventDetailClientProps) {
+export function EventDetailClient({
+  event,
+  userId,
+  userRole,
+  userCommittees,
+}: EventDetailClientProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isRegistered, setIsRegistered] = useState(event.isRegistered)
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount)
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
 
   const isPastEvent = new Date(event.startTime) < new Date()
   const isAtCapacity = event.capacity ? attendeeCount >= event.capacity : false
@@ -362,8 +378,16 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
           </Card>
 
           {canDelete && (
-            <Card className="border-red-200">
-              <CardContent className="p-4">
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowDuplicateModal(true)}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate Event
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full border-red-300 text-red-700 hover:bg-red-50"
@@ -378,6 +402,28 @@ export function EventDetailClient({ event, userId, userRole }: EventDetailClient
           )}
         </div>
       </div>
+
+      {showDuplicateModal && (
+        <CreateEventModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          onSuccess={() => {
+            setShowDuplicateModal(false)
+            router.push('/dashboard/events')
+          }}
+          userCommittees={userCommittees}
+          userRole={userRole}
+          initialData={{
+            title: event.title,
+            description: event.description || undefined,
+            type: event.type,
+            location: event.location || undefined,
+            virtualLink: event.virtualLink || undefined,
+            capacity: event.capacity,
+            committeeId: event.committee?.id,
+          }}
+        />
+      )}
     </div>
   )
 }

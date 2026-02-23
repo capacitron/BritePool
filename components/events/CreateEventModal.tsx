@@ -12,12 +12,23 @@ interface UserCommittee {
   role: string
 }
 
+interface EventInitialData {
+  title?: string
+  description?: string
+  type?: string
+  location?: string
+  virtualLink?: string
+  capacity?: number | null
+  committeeId?: string
+}
+
 interface CreateEventModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
   userCommittees: UserCommittee[]
   userRole: string
+  initialData?: EventInitialData
 }
 
 const EVENT_TYPES = [
@@ -34,22 +45,31 @@ const RECURRENCE_OPTIONS = [
   { value: 'MONTHLY', label: 'Monthly' },
 ]
 
-export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, userRole }: CreateEventModalProps) {
+export function CreateEventModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  userCommittees,
+  userRole,
+  initialData,
+}: CreateEventModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Form state
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [type, setType] = useState('COMMITTEE_MEETING')
+  // Form state - pre-fill from initialData when duplicating
+  const [title, setTitle] = useState(initialData?.title ? `${initialData.title} (Copy)` : '')
+  const [description, setDescription] = useState(initialData?.description || '')
+  const [type, setType] = useState(initialData?.type || 'COMMITTEE_MEETING')
   const [startDate, setStartDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endDate, setEndDate] = useState('')
   const [endTime, setEndTime] = useState('')
-  const [location, setLocation] = useState('')
-  const [virtualLink, setVirtualLink] = useState('')
-  const [capacity, setCapacity] = useState('')
-  const [selectedCommitteeId, setSelectedCommitteeId] = useState('')
+  const [location, setLocation] = useState(initialData?.location || '')
+  const [virtualLink, setVirtualLink] = useState(initialData?.virtualLink || '')
+  const [capacity, setCapacity] = useState(
+    initialData?.capacity ? String(initialData.capacity) : ''
+  )
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState(initialData?.committeeId || '')
   const [recurrence, setRecurrence] = useState('')
   const [recurrenceUntil, setRecurrenceUntil] = useState('')
 
@@ -119,7 +139,9 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
         <CardHeader className="flex flex-row items-center justify-between border-b border-sand-200">
-          <CardTitle className="font-display text-forest-800">Create Event</CardTitle>
+          <CardTitle className="font-display text-forest-800">
+            {initialData ? 'Duplicate Event' : 'Create Event'}
+          </CardTitle>
           <button onClick={onClose} className="p-1 hover:bg-sand-100 rounded">
             <X className="h-5 w-5 text-forest-500" />
           </button>
@@ -149,9 +171,7 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1">
-                Description
-              </label>
+              <label className="block text-sm font-medium text-forest-700 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -175,7 +195,7 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 >
                   <option value="">No committee</option>
-                  {userCommittees.map(committee => (
+                  {userCommittees.map((committee) => (
                     <option key={committee.id} value={committee.id}>
                       {committee.name}
                     </option>
@@ -193,8 +213,10 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                   onChange={(e) => setType(e.target.value)}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 >
-                  {EVENT_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {EVENT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -232,9 +254,7 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">
-                  End Date *
-                </label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">End Date *</label>
                 <input
                   type="date"
                   value={endDate}
@@ -245,9 +265,7 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">
-                  End Time *
-                </label>
+                <label className="block text-sm font-medium text-forest-700 mb-1">End Time *</label>
                 <input
                   type="time"
                   value={endTime}
@@ -270,8 +288,10 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                   onChange={(e) => setRecurrence(e.target.value)}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 >
-                  {RECURRENCE_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {RECURRENCE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -296,8 +316,18 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
               <p className="text-sm text-forest-600 bg-forest-50 rounded-lg px-3 py-2">
                 <Repeat className="inline h-3.5 w-3.5 mr-1" />
                 This will create multiple events repeating{' '}
-                {recurrence === 'WEEKLY' ? 'every week' : recurrence === 'BIWEEKLY' ? 'every 2 weeks' : 'every month'}{' '}
-                until {new Date(recurrenceUntil + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+                {recurrence === 'WEEKLY'
+                  ? 'every week'
+                  : recurrence === 'BIWEEKLY'
+                    ? 'every 2 weeks'
+                    : 'every month'}{' '}
+                until{' '}
+                {new Date(recurrenceUntil + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+                .
               </p>
             )}
 
@@ -349,12 +379,7 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t border-sand-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={loading}
-              >
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
               <Button
@@ -362,7 +387,13 @@ export function CreateEventModal({ isOpen, onClose, onSuccess, userCommittees, u
                 className="bg-forest-600 hover:bg-forest-700 text-white"
                 disabled={loading}
               >
-                {loading ? 'Creating...' : recurrence ? 'Create Recurring Events' : 'Create Event'}
+                {loading
+                  ? 'Creating...'
+                  : recurrence
+                    ? 'Create Recurring Events'
+                    : initialData
+                      ? 'Duplicate Event'
+                      : 'Create Event'}
               </Button>
             </div>
           </form>
