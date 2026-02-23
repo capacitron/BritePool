@@ -10,20 +10,20 @@ import { z } from 'zod'
 export const runtime = 'nodejs'
 
 const updateWGOSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().min(1).max(5000).optional(),
+  title: z.string().max(200).optional(),
+  description: z.string().max(5000).optional(),
   category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']).optional(),
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
-  targetAmount: z.number().positive().optional().nullable(),
-  currentAmount: z.number().min(0).optional(),
-  startDate: z.string().datetime().optional().nullable(),
-  endDate: z.string().datetime().optional().nullable(),
-  affiliateLink: z.string().url().max(2000).optional().nullable(),
-  credibilityScore: z.number().min(1).max(10).optional().nullable(),
-  presentationDays: z.string().max(500).optional().nullable(),
-  shortDescription: z.string().max(1000).optional().nullable(),
-  wgoType: z.string().max(500).optional().nullable(),
-  minimumInvestment: z.number().min(0).optional().nullable(),
+  targetAmount: z.number().optional().nullable(),
+  currentAmount: z.number().optional(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  affiliateLink: z.string().optional().nullable(),
+  credibilityScore: z.number().optional().nullable(),
+  presentationDays: z.string().optional().nullable(),
+  shortDescription: z.string().optional().nullable(),
+  wgoType: z.string().optional().nullable(),
+  minimumInvestment: z.number().optional().nullable(),
 })
 
 export async function GET(
@@ -150,10 +150,16 @@ export async function PATCH(
       )
     }
 
-    const body = await request.json()
+    let body: Record<string, unknown> = {}
+    try {
+      body = await request.json()
+    } catch {
+      body = {}
+    }
     const parsed = updateWGOSchema.safeParse(body)
 
     if (!parsed.success) {
+      console.error('WGO update validation error:', JSON.stringify(parsed.error.flatten()))
       return NextResponse.json(
         { error: 'Invalid input', details: parsed.error.flatten() },
         { status: 400 }
@@ -162,7 +168,7 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Remove null metadata fields to avoid errors if DB columns don't exist yet
+    // Remove undefined metadata fields to keep existing values
     const metadataFields = [
       'credibilityScore',
       'presentationDays',
@@ -171,17 +177,32 @@ export async function PATCH(
       'minimumInvestment',
     ]
     for (const field of metadataFields) {
-      if (updateData[field] === null || updateData[field] === undefined) {
+      if (updateData[field] === undefined) {
         delete updateData[field]
       }
     }
 
-    // Convert date strings to Date objects
+    // Convert date strings to Date objects safely
     if (parsed.data.startDate !== undefined) {
-      updateData.startDate = parsed.data.startDate ? new Date(parsed.data.startDate) : null
+      if (parsed.data.startDate) {
+        const d = new Date(parsed.data.startDate)
+        updateData.startDate = isNaN(d.getTime()) ? null : d
+      } else {
+        updateData.startDate = null
+      }
     }
     if (parsed.data.endDate !== undefined) {
-      updateData.endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : null
+      if (parsed.data.endDate) {
+        const d = new Date(parsed.data.endDate)
+        updateData.endDate = isNaN(d.getTime()) ? null : d
+      } else {
+        updateData.endDate = null
+      }
+    }
+
+    // Handle affiliateLink - allow any string or null
+    if (updateData.affiliateLink === '') {
+      updateData.affiliateLink = null
     }
 
     const wgo = await prisma.wealthOpportunity.update({
@@ -197,8 +218,13 @@ export async function PATCH(
 
     return NextResponse.json(wgo)
   } catch (error) {
+    console.error('WGO UPDATE ERROR:', error)
     logError(error, { action: 'update_wgo' })
-    return NextResponse.json({ error: 'Failed to update wealth opportunity' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json(
+      { error: `Failed to update wealth opportunity: ${message}` },
+      { status: 500 }
+    )
   }
 }
 

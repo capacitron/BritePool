@@ -10,21 +10,24 @@ import { z } from 'zod'
 export const runtime = 'nodejs'
 
 const createWGOSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().min(1).max(5000),
-  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']),
+  title: z.string().max(200).optional().default('Untitled Opportunity'),
+  description: z.string().max(5000).optional().default(''),
+  category: z
+    .enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY'])
+    .optional()
+    .default('INVESTMENT'),
   status: z
     .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
     .optional()
     .default('ACTIVE'),
-  targetAmount: z.number().positive().optional().nullable(),
-  startDate: z.string().datetime().optional().nullable(),
-  endDate: z.string().datetime().optional().nullable(),
-  credibilityScore: z.number().min(1).max(10).optional().nullable(),
-  presentationDays: z.string().max(500).optional().nullable(),
-  shortDescription: z.string().max(1000).optional().nullable(),
-  wgoType: z.string().max(500).optional().nullable(),
-  minimumInvestment: z.number().min(0).optional().nullable(),
+  targetAmount: z.number().optional().nullable(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  credibilityScore: z.number().optional().nullable(),
+  presentationDays: z.string().optional().nullable(),
+  shortDescription: z.string().optional().nullable(),
+  wgoType: z.string().optional().nullable(),
+  minimumInvestment: z.number().optional().nullable(),
 })
 
 const querySchema = z.object({
@@ -137,10 +140,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    let body: Record<string, unknown> = {}
+    try {
+      body = await request.json()
+    } catch {
+      // Empty body is fine - all fields have defaults
+    }
     const parsed = createWGOSchema.safeParse(body)
 
     if (!parsed.success) {
+      console.error('WGO validation error:', JSON.stringify(parsed.error.flatten()))
       return NextResponse.json(
         { error: 'Invalid input', details: parsed.error.flatten() },
         { status: 400 }
@@ -163,7 +172,7 @@ export async function POST(request: NextRequest) {
     } = parsed.data
 
     // Create WGO with the creator as a LEADER involvement
-    // Only include metadata fields when they have values (safe if DB columns don't exist yet)
+    // Only include metadata fields when they have values
     const metadataFields: Record<string, unknown> = {}
     if (credibilityScore) metadataFields.credibilityScore = credibilityScore
     if (presentationDays) metadataFields.presentationDays = presentationDays
@@ -172,15 +181,27 @@ export async function POST(request: NextRequest) {
     if (minimumInvestment !== undefined && minimumInvestment !== null)
       metadataFields.minimumInvestment = minimumInvestment
 
+    // Parse dates safely - accept any string format
+    let parsedStartDate: Date | null = null
+    let parsedEndDate: Date | null = null
+    if (startDate) {
+      const d = new Date(startDate)
+      if (!isNaN(d.getTime())) parsedStartDate = d
+    }
+    if (endDate) {
+      const d = new Date(endDate)
+      if (!isNaN(d.getTime())) parsedEndDate = d
+    }
+
     const wgo = await prisma.wealthOpportunity.create({
       data: {
-        title,
-        description,
-        category,
-        status,
+        title: title || 'Untitled Opportunity',
+        description: description || '',
+        category: category || 'INVESTMENT',
+        status: status || 'ACTIVE',
         targetAmount: targetAmount ?? null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
         ...metadataFields,
         creatorId: session.user.id,
         involvements: {
@@ -211,7 +232,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(wgo, { status: 201 })
   } catch (error) {
+    console.error('WGO CREATE ERROR:', error)
     logError(error, { action: 'create_wgo' })
-    return NextResponse.json({ error: 'Failed to create wealth opportunity' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json(
+      { error: `Failed to create wealth opportunity: ${message}` },
+      { status: 500 }
+    )
   }
 }

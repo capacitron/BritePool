@@ -1099,6 +1099,8 @@ function EditWGOModal({
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({})
+  const [submitted, setSubmitted] = useState(false)
 
   const [formData, setFormData] = useState({
     title: wgo.title,
@@ -1117,21 +1119,49 @@ function EditWGOModal({
     wgoType: wgo.wgoType || '',
   })
 
+  const getWarnings = () => {
+    const warnings: Record<string, string> = {}
+    if (!formData.title.trim())
+      warnings.title = 'Recommended — will default to "Untitled Opportunity"'
+    if (!formData.description.trim())
+      warnings.description = 'Recommended — helps members understand the opportunity'
+    if (formData.credibilityScore) {
+      const score = parseFloat(formData.credibilityScore)
+      if (isNaN(score) || score < 1 || score > 10)
+        warnings.credibilityScore = 'Should be between 1 and 10'
+    }
+    if (formData.targetAmount) {
+      const amt = parseFloat(formData.targetAmount)
+      if (isNaN(amt) || amt < 0) warnings.targetAmount = 'Should be a positive number'
+    }
+    if (formData.minimumInvestment) {
+      const amt = parseFloat(formData.minimumInvestment)
+      if (isNaN(amt) || amt < 0) warnings.minimumInvestment = 'Should be a positive number'
+    }
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+      warnings.endDate = 'End date is before start date'
+    }
+    return warnings
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitted(true)
+    const warnings = getWarnings()
+    setFieldWarnings(warnings)
     setLoading(true)
     setError(null)
 
     try {
       const payload: Record<string, unknown> = {
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        status: formData.status,
+        title: formData.title || 'Untitled Opportunity',
+        description: formData.description || '',
+        category: formData.category || 'INVESTMENT',
+        status: formData.status || 'ACTIVE',
         currentAmount: parseFloat(formData.currentAmount) || 0,
       }
 
-      // Only send metadata fields when they have values (avoids errors if DB columns don't exist yet)
+      // Include metadata fields - send null to clear, value to set
       const credScore = formData.credibilityScore ? parseFloat(formData.credibilityScore) : null
       const presDays = formData.presentationDays.trim() || null
       const shortDesc = formData.shortDescription.trim() || null
@@ -1141,29 +1171,12 @@ function EditWGOModal({
       if (shortDesc !== null) payload.shortDescription = shortDesc
       if (type !== null) payload.wgoType = type
 
-      if (formData.targetAmount) {
-        payload.targetAmount = parseFloat(formData.targetAmount)
-      } else {
-        payload.targetAmount = null
-      }
-
-      if (formData.minimumInvestment) {
-        payload.minimumInvestment = parseFloat(formData.minimumInvestment)
-      } else {
-        payload.minimumInvestment = null
-      }
-
-      if (formData.startDate) {
-        payload.startDate = new Date(formData.startDate).toISOString()
-      } else {
-        payload.startDate = null
-      }
-
-      if (formData.endDate) {
-        payload.endDate = new Date(formData.endDate).toISOString()
-      } else {
-        payload.endDate = null
-      }
+      payload.targetAmount = formData.targetAmount ? parseFloat(formData.targetAmount) : null
+      payload.minimumInvestment = formData.minimumInvestment
+        ? parseFloat(formData.minimumInvestment)
+        : null
+      payload.startDate = formData.startDate || null
+      payload.endDate = formData.endDate || null
 
       const res = await fetch(`/api/wgo/${wgo.id}`, {
         method: 'PATCH',
@@ -1173,6 +1186,17 @@ function EditWGOModal({
 
       if (!res.ok) {
         const data = await res.json()
+        if (data.details?.fieldErrors) {
+          const apiFieldWarnings: Record<string, string> = {}
+          for (const [field, messages] of Object.entries(data.details.fieldErrors)) {
+            if (Array.isArray(messages) && messages.length > 0) {
+              apiFieldWarnings[field] = messages[0] as string
+            }
+          }
+          if (Object.keys(apiFieldWarnings).length > 0) {
+            setFieldWarnings((prev) => ({ ...prev, ...apiFieldWarnings }))
+          }
+        }
         throw new Error(data.error || 'Failed to update')
       }
 
@@ -1224,10 +1248,23 @@ function EditWGOModal({
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  required
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.title
+                        return n
+                      })
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.title ? 'border-amber-400' : 'border-sand-300'
+                  )}
                 />
+                {submitted && fieldWarnings.title && (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.title}</p>
+                )}
               </div>
 
               <div className="col-span-2">
@@ -1236,11 +1273,24 @@ function EditWGOModal({
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.description
+                        return n
+                      })
+                  }}
                   rows={4}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  required
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.description ? 'border-amber-400' : 'border-sand-300'
+                  )}
                 />
+                {submitted && fieldWarnings.description && (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.description}</p>
+                )}
               </div>
 
               <div className="col-span-2">
@@ -1281,13 +1331,30 @@ function EditWGOModal({
                   max="10"
                   step="0.1"
                   value={formData.credibilityScore}
-                  onChange={(e) => setFormData({ ...formData, credibilityScore: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, credibilityScore: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.credibilityScore
+                        return n
+                      })
+                  }}
                   placeholder="e.g. 8.5"
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.credibilityScore
+                      ? 'border-amber-400'
+                      : 'border-sand-300'
+                  )}
                 />
-                <p className="text-xs text-forest-500 mt-1">
-                  Risk mitigation & sustainability (10 = best)
-                </p>
+                {submitted && fieldWarnings.credibilityScore ? (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.credibilityScore}</p>
+                ) : (
+                  <p className="text-xs text-forest-500 mt-1">
+                    Risk mitigation & sustainability (10 = best)
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1362,10 +1429,24 @@ function EditWGOModal({
                   min="0"
                   step="0.01"
                   value={formData.targetAmount}
-                  onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, targetAmount: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.targetAmount
+                        return n
+                      })
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.targetAmount ? 'border-amber-400' : 'border-sand-300'
+                  )}
                   placeholder="Optional"
                 />
+                {submitted && fieldWarnings.targetAmount && (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.targetAmount}</p>
+                )}
               </div>
 
               <div>
@@ -1377,10 +1458,26 @@ function EditWGOModal({
                   min="0"
                   step="0.01"
                   value={formData.minimumInvestment}
-                  onChange={(e) => setFormData({ ...formData, minimumInvestment: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, minimumInvestment: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.minimumInvestment
+                        return n
+                      })
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.minimumInvestment
+                      ? 'border-amber-400'
+                      : 'border-sand-300'
+                  )}
                   placeholder="Optional"
                 />
+                {submitted && fieldWarnings.minimumInvestment && (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.minimumInvestment}</p>
+                )}
               </div>
 
               <div>
@@ -1412,9 +1509,23 @@ function EditWGOModal({
                 <input
                   type="date"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, endDate: e.target.value })
+                    if (submitted)
+                      setFieldWarnings((w) => {
+                        const n = { ...w }
+                        delete n.endDate
+                        return n
+                      })
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500',
+                    submitted && fieldWarnings.endDate ? 'border-amber-400' : 'border-sand-300'
+                  )}
                 />
+                {submitted && fieldWarnings.endDate && (
+                  <p className="text-xs text-amber-600 mt-1">{fieldWarnings.endDate}</p>
+                )}
               </div>
             </div>
 
