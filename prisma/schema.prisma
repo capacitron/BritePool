@@ -1085,6 +1085,7 @@ model WealthOpportunity {
   presentationDays String?
   shortDescription String?
   wgoType          String?
+  minimumInvestment Float?
   creatorId        String
   involvements  UserWGOInvolvement[]
   forumPosts    WGOForumPost[]

@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Save,
   Video,
+  Copy,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -114,6 +115,7 @@ interface WGO {
   presentationDays: string | null
   shortDescription: string | null
   wgoType: string | null
+  minimumInvestment: number | null
   creatorId: string
   createdAt: string
   updatedAt: string
@@ -163,6 +165,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [affiliateSaving, setAffiliateSaving] = useState(false)
   const [affiliateSaved, setAffiliateSaved] = useState(false)
   const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([])
+  const [duplicating, setDuplicating] = useState(false)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -346,6 +349,46 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     }
   }
 
+  const handleDuplicate = async () => {
+    if (!wgo) return
+    setDuplicating(true)
+    try {
+      const payload: Record<string, unknown> = {
+        title: `${wgo.title} (Copy)`,
+        description: wgo.description,
+        category: wgo.category,
+        status: 'DRAFT',
+        targetAmount: wgo.targetAmount,
+        minimumInvestment: wgo.minimumInvestment,
+        startDate: wgo.startDate,
+        endDate: wgo.endDate,
+      }
+      if (wgo.credibilityScore) payload.credibilityScore = wgo.credibilityScore
+      if (wgo.presentationDays) payload.presentationDays = wgo.presentationDays
+      if (wgo.shortDescription) payload.shortDescription = wgo.shortDescription
+      if (wgo.wgoType) payload.wgoType = wgo.wgoType
+
+      const res = await fetch('/api/wgo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (res.ok) {
+        const newWgo = await res.json()
+        router.push(`/dashboard/wgo/${newWgo.id}`)
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to duplicate')
+      }
+    } catch (err) {
+      console.error('Error duplicating WGO:', err)
+      alert('Failed to duplicate. Please try again.')
+    } finally {
+      setDuplicating(false)
+    }
+  }
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPostContent.trim()) return
@@ -478,6 +521,16 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
             <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
+            </Button>
+          )}
+          {(canEdit || isAdmin) && (
+            <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={duplicating}>
+              {duplicating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Copy className="h-4 w-4 mr-2" />
+              )}
+              Duplicate
             </Button>
           )}
           {canDelete && (
@@ -646,6 +699,14 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                     ${wgo.currentAmount.toLocaleString()}
                   </p>
                 </div>
+                {wgo.minimumInvestment !== null && wgo.minimumInvestment !== undefined && (
+                  <div className="p-4 bg-amber-50 rounded-lg col-span-2">
+                    <div className="text-amber-700 text-sm mb-1">Minimum Investment</div>
+                    <p className="text-xl font-bold text-amber-800">
+                      ${wgo.minimumInvestment.toLocaleString()}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {wgo.targetAmount !== null && (
@@ -1045,6 +1106,7 @@ function EditWGOModal({
     category: wgo.category,
     status: wgo.status,
     targetAmount: wgo.targetAmount?.toString() || '',
+    minimumInvestment: wgo.minimumInvestment?.toString() || '',
     currentAmount: wgo.currentAmount.toString(),
     startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
     endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
@@ -1083,6 +1145,12 @@ function EditWGOModal({
         payload.targetAmount = parseFloat(formData.targetAmount)
       } else {
         payload.targetAmount = null
+      }
+
+      if (formData.minimumInvestment) {
+        payload.minimumInvestment = parseFloat(formData.minimumInvestment)
+      } else {
+        payload.minimumInvestment = null
       }
 
       if (formData.startDate) {
@@ -1295,6 +1363,21 @@ function EditWGOModal({
                   step="0.01"
                   value={formData.targetAmount}
                   onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Minimum Investment ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.minimumInvestment}
+                  onChange={(e) => setFormData({ ...formData, minimumInvestment: e.target.value })}
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Optional"
                 />

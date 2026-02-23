@@ -23,6 +23,7 @@ const updateWGOSchema = z.object({
   presentationDays: z.string().max(500).optional().nullable(),
   shortDescription: z.string().max(1000).optional().nullable(),
   wgoType: z.string().max(500).optional().nullable(),
+  minimumInvestment: z.number().min(0).optional().nullable(),
 })
 
 export async function GET(
@@ -162,7 +163,13 @@ export async function PATCH(
     const updateData: Record<string, unknown> = { ...parsed.data }
 
     // Remove null metadata fields to avoid errors if DB columns don't exist yet
-    const metadataFields = ['credibilityScore', 'presentationDays', 'shortDescription', 'wgoType']
+    const metadataFields = [
+      'credibilityScore',
+      'presentationDays',
+      'shortDescription',
+      'wgoType',
+      'minimumInvestment',
+    ]
     for (const field of metadataFields) {
       if (updateData[field] === null || updateData[field] === undefined) {
         delete updateData[field]

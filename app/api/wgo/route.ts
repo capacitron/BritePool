@@ -24,6 +24,7 @@ const createWGOSchema = z.object({
   presentationDays: z.string().max(500).optional().nullable(),
   shortDescription: z.string().max(1000).optional().nullable(),
   wgoType: z.string().max(500).optional().nullable(),
+  minimumInvestment: z.number().min(0).optional().nullable(),
 })
 
 const querySchema = z.object({
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
       presentationDays,
       shortDescription,
       wgoType,
+      minimumInvestment,
     } = parsed.data
 
     // Create WGO with the creator as a LEADER involvement
@@ -167,6 +169,8 @@ export async function POST(request: NextRequest) {
     if (presentationDays) metadataFields.presentationDays = presentationDays
     if (shortDescription) metadataFields.shortDescription = shortDescription
     if (wgoType) metadataFields.wgoType = wgoType
+    if (minimumInvestment !== undefined && minimumInvestment !== null)
+      metadataFields.minimumInvestment = minimumInvestment
 
     const wgo = await prisma.wealthOpportunity.create({
       data: {

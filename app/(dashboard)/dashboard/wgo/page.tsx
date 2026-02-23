@@ -397,6 +397,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     presentationDays: '',
     shortDescription: '',
     wgoType: '',
+    minimumInvestment: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -414,6 +415,9 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           category: formData.category,
           status: formData.status,
           targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : null,
+          minimumInvestment: formData.minimumInvestment
+            ? parseFloat(formData.minimumInvestment)
+            : null,
           startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
           endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
           ...(formData.credibilityScore
@@ -576,19 +580,36 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1">
-                Target Amount ($)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.targetAmount}
-                onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg"
-                placeholder="Optional"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Target Amount ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.targetAmount}
+                  onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-700 mb-1">
+                  Minimum Investment ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.minimumInvestment}
+                  onChange={(e) => setFormData({ ...formData, minimumInvestment: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg"
+                  placeholder="Optional"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
