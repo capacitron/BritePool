@@ -6,6 +6,9 @@ import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { logWGOCreated } from '@/lib/audit'
 import { z } from 'zod'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 const createWGOSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(5000),
@@ -192,15 +195,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Audit log WGO creation
-    await logWGOCreated(
+    // Audit log WGO creation (fire and forget - don't block response)
+    logWGOCreated(
       session.user.id,
       session.user.role,
       wgo.id,
       wgo.title,
       wgo.category,
       request
-    )
+    ).catch(() => {})
 
     return NextResponse.json(wgo, { status: 201 })
   } catch (error) {

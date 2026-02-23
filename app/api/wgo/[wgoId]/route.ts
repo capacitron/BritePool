@@ -6,6 +6,9 @@ import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 const updateWGOSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(5000).optional(),

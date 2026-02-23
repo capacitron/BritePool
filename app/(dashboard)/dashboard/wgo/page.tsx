@@ -49,8 +49,11 @@ export default function WGOPage() {
   const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => {
-    fetchOpportunities()
     fetchUserRole()
+  }, [])
+
+  useEffect(() => {
+    fetchOpportunities()
   }, [categoryFilter, statusFilter, minRiskFilter])
 
   const fetchUserRole = async () => {
@@ -65,11 +68,11 @@ export default function WGOPage() {
 
   const fetchOpportunities = async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams()
       if (categoryFilter) params.set('category', categoryFilter)
       if (statusFilter && statusFilter !== '') params.set('status', statusFilter)
-      if (minRiskFilter) params.set('minRisk', minRiskFilter.toString())
 
       const res = await fetch(`/api/wgo?${params}`)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -363,8 +366,13 @@ export default function WGOPage() {
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false)
-            setStatusFilter('')
-            fetchOpportunities()
+            // Reset to show all statuses - the useEffect will trigger a refetch
+            if (statusFilter === '') {
+              // If already showing all, manually refetch since state won't change
+              fetchOpportunities()
+            } else {
+              setStatusFilter('')
+            }
           }}
         />
       )}

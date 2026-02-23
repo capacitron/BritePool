@@ -6,6 +6,9 @@ import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 const createPostSchema = z.object({
   content: z.string().min(1).max(10000),
   isPinned: z.boolean().optional().default(false),
