@@ -43,7 +43,7 @@ export default function WGOPage() {
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE')
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const [minRiskFilter, setMinRiskFilter] = useState<number | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -68,7 +68,7 @@ export default function WGOPage() {
     try {
       const params = new URLSearchParams()
       if (categoryFilter) params.set('category', categoryFilter)
-      if (statusFilter) params.set('status', statusFilter)
+      if (statusFilter && statusFilter !== '') params.set('status', statusFilter)
       if (minRiskFilter) params.set('minRisk', minRiskFilter.toString())
 
       const res = await fetch(`/api/wgo?${params}`)
@@ -86,11 +86,11 @@ export default function WGOPage() {
 
   const clearFilters = () => {
     setCategoryFilter(null)
-    setStatusFilter('ACTIVE')
+    setStatusFilter('')
     setMinRiskFilter(null)
   }
 
-  const hasActiveFilters = categoryFilter || statusFilter !== 'ACTIVE' || minRiskFilter
+  const hasActiveFilters = categoryFilter || statusFilter !== '' || minRiskFilter
 
   return (
     <div className="space-y-6">
@@ -186,10 +186,10 @@ export default function WGOPage() {
               <label className="block text-sm font-medium text-forest-700 mb-2">Status</label>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setStatusFilter('all')}
+                  onClick={() => setStatusFilter('')}
                   className={cn(
                     'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                    statusFilter === 'all'
+                    statusFilter === ''
                       ? 'bg-forest-600 text-white'
                       : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
                   )}
@@ -363,7 +363,7 @@ export default function WGOPage() {
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false)
-            setStatusFilter('all')
+            setStatusFilter('')
             fetchOpportunities()
           }}
         />
