@@ -114,7 +114,7 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="space-y-6">
         <Card className="border-sand-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-forest-800">
