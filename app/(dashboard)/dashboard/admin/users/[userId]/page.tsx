@@ -622,29 +622,110 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-earth-brown-light">Guidance Preference</p>
-                  <p className="text-sm">
-                    {user.financialScreening.guidancePreference.replace(/_/g, ' ')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-earth-brown-light">Primary Intentions</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {user.financialScreening.primaryIntentions.map((intent: string) => (
-                      <span
-                        key={intent}
-                        className="text-xs bg-sand-100 text-forest-700 px-2 py-1 rounded-full"
-                      >
-                        {intent.replace(/_/g, ' ')}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
                   <p className="text-xs text-earth-brown-light">Completed</p>
                   <p className="text-sm">
                     {new Date(user.financialScreening.createdAt).toLocaleDateString()}
                   </p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs font-semibold text-earth-brown-light uppercase tracking-wide mb-3">
+                    Screening Responses
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Financial Readiness</p>
+                      <p className="text-sm">
+                        {(
+                          {
+                            stable_discretionary: 'Stable with discretionary funds available',
+                            stable_conservative: 'Stable but prefers conservative participation',
+                            building_start_small: 'Building toward stability, starting small',
+                            reorganizing_low_commitment:
+                              'Reorganizing finances, needs low-commitment',
+                          } as Record<string, string>
+                        )[user.financialScreening.financialRhythm] ||
+                          user.financialScreening.financialRhythm?.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Decision Style</p>
+                      <p className="text-sm">
+                        {(
+                          {
+                            move_quickly: 'Moves quickly when something resonates',
+                            research_thoroughly: 'Researches thoroughly before committing',
+                            phased_incremental: 'Prefers phased or incremental entry',
+                            seek_counsel: 'Seeks counsel before making decisions',
+                          } as Record<string, string>
+                        )[user.financialScreening.opportunityApproach] ||
+                          user.financialScreening.opportunityApproach?.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Timeline Alignment</p>
+                      <p className="text-sm">
+                        {(
+                          {
+                            short_term_liquidity: 'Short-term liquidity or quicker cycles',
+                            mid_range_6_18: 'Mid-range timelines (6\u201318 months)',
+                            long_term_2_plus: 'Long-term positioning (2+ years)',
+                            steady_strategic_growth: 'Steady, strategic growth over speed',
+                          } as Record<string, string>
+                        )[user.financialScreening.timelineAlignment] ||
+                          user.financialScreening.timelineAlignment?.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Resilience & Flexibility</p>
+                      <p className="text-sm">
+                        {(
+                          {
+                            no_significant_impact: 'Would not significantly impact them',
+                            wants_updates: 'Wants regular communication and updates',
+                            some_stress_but_steady: 'Some stress, but can stay steady',
+                            needs_exit_path: 'Needs structured flexibility or exit path',
+                          } as Record<string, string>
+                        )[user.financialScreening.responseToDelays] ||
+                          user.financialScreening.responseToDelays?.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Primary Intentions</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user.financialScreening.primaryIntentions.map((intent: string) => (
+                          <span
+                            key={intent}
+                            className="text-xs bg-sand-100 text-forest-700 px-2 py-1 rounded-full"
+                          >
+                            {(
+                              {
+                                wealth_building: 'Wealth building',
+                                diversification: 'Diversification',
+                                community_alignment: 'Community alignment',
+                                learning_exposure: 'Learning and exposure',
+                                healing_ventures: 'Healing ventures',
+                                other: 'Other',
+                              } as Record<string, string>
+                            )[intent] || intent.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-earth-brown-light">Guidance Preference</p>
+                      <p className="text-sm">
+                        {(
+                          {
+                            yes_guidance: 'Yes, wants guidance',
+                            possibly: 'Possibly',
+                            no_guidance_needed: 'No, already knows comfort range',
+                          } as Record<string, string>
+                        )[user.financialScreening.guidancePreference] ||
+                          user.financialScreening.guidancePreference?.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
