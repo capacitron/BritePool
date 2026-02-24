@@ -1,5 +1,28 @@
 # Claude Code Configuration - SPARC Development Environment
 
+## 🗄️ Database Configuration (2 Databases)
+
+This project has **two PostgreSQL databases** that must stay in sync:
+
+| Database              | Env Variable             | Host                                                          | Purpose                           |
+| --------------------- | ------------------------ | ------------------------------------------------------------- | --------------------------------- |
+| **Replit PostgreSQL** | `DATABASE_URL` (default) | `helium/heliumdb`                                             | Local development DB on Replit    |
+| **Neon PostgreSQL**   | `NEON_DB_URL`            | `ep-long-pine-ai08dkjk-pooler.us-east-1.aws.neon.tech/neondb` | External production/deployment DB |
+
+**Key details:**
+
+- ORM: **Prisma v5.22.0** — schema at `prisma/schema.prisma`
+- The `.replit` config maps `NEON_DB_URL` → `DATABASE_URL` at runtime for dev/build/deploy
+- When syncing schemas, push to **both** databases:
+  ```bash
+  # Sync local Replit DB
+  npx prisma db push
+  # Sync external Neon DB
+  env DATABASE_URL="${NEON_DB_URL}" npx prisma db push
+  ```
+- Seed script: `prisma/seed.ts`
+- Prisma client singleton: `lib/prisma.ts`
+
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:
