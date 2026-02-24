@@ -128,15 +128,18 @@ export default async function AdminDashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {recentUsers.map((user) => (
-                <div
+                <Link
                   key={user.id}
-                  className="flex items-center justify-between p-3 bg-sand-50 rounded-lg"
+                  href={`/dashboard/admin/users/${user.id}`}
+                  className="flex items-center justify-between p-3 bg-sand-50 rounded-lg hover:bg-forest-50 transition-colors cursor-pointer group"
                 >
                   <div>
-                    <p className="font-medium text-forest-800 font-body">{user.name}</p>
+                    <p className="font-medium text-forest-800 font-body group-hover:text-forest-900">
+                      {user.name}
+                    </p>
                     <p className="text-sm text-forest-500 font-body">{user.email}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-1">
                     <p className="text-xs text-forest-400 font-body">
                       {formatDate(user.createdAt)}
                     </p>
@@ -147,8 +150,9 @@ export default async function AdminDashboardPage() {
                     ) : (
                       <span className="text-xs text-earth-500 font-medium font-body">Pending</span>
                     )}
+                    <ArrowRight className="h-3 w-3 text-forest-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <Button
