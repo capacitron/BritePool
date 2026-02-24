@@ -18,6 +18,7 @@ import {
   Image,
   Map,
   Handshake,
+  Heart,
   FileText,
   Eye,
   PieChart,
@@ -58,6 +59,7 @@ const navGroups: NavGroup[] = [
   {
     title: 'Community',
     items: [
+      { href: '/dashboard/gratitude', label: 'Gratitude', icon: Heart },
       { href: '/dashboard/committees', label: 'Committees', icon: Users, locked: true },
       { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare },
       { href: '/dashboard/wgo', label: 'WGO', icon: Globe },
