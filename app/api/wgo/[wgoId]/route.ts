@@ -63,6 +63,14 @@ export async function GET(
       return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
     }
 
+    // Draft WGOs are only visible to the creator and admins
+    if (wgo.status === 'DRAFT') {
+      const userIsAdmin = isAdmin(session.user.role)
+      if (wgo.creatorId !== session.user.id && !userIsAdmin) {
+        return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
+      }
+    }
+
     const userInvolvement = wgo.involvements.find((inv) => inv.userId === session.user.id)
 
     // Look up the current user's referrer's affiliate link for this WGO

@@ -391,7 +391,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     title: '',
     description: '',
     category: 'INVESTMENT',
-    status: 'ACTIVE',
+    status: 'DRAFT',
     targetAmount: '',
     startDate: '',
     endDate: '',
@@ -778,7 +778,11 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 disabled={loading}
               >
-                {loading ? 'Creating...' : 'Create Opportunity'}
+                {loading
+                  ? 'Creating...'
+                  : formData.status === 'DRAFT'
+                    ? 'Save as Draft'
+                    : 'Create & Publish'}
               </Button>
             </div>
           </form>

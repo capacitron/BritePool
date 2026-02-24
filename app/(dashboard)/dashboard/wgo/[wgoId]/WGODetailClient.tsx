@@ -166,6 +166,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [affiliateSaved, setAffiliateSaved] = useState(false)
   const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([])
   const [duplicating, setDuplicating] = useState(false)
+  const [publishLoading, setPublishLoading] = useState(false)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -389,6 +390,30 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     }
   }
 
+  const handleTogglePublish = async () => {
+    if (!wgo) return
+    const newStatus = wgo.status === 'DRAFT' ? 'ACTIVE' : 'DRAFT'
+    setPublishLoading(true)
+    try {
+      const res = await fetch(`/api/wgo/${wgoId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        await fetchWGO()
+      } else {
+        const data = await res.json()
+        alert(data.error || `Failed to ${newStatus === 'ACTIVE' ? 'publish' : 'unpublish'}`)
+      }
+    } catch (err) {
+      console.error('Error toggling publish:', err)
+      alert('Failed to update status. Please try again.')
+    } finally {
+      setPublishLoading(false)
+    }
+  }
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPostContent.trim()) return
@@ -481,6 +506,34 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
 
   return (
     <div className="space-y-6">
+      {/* Draft Banner */}
+      {wgo.status === 'DRAFT' && (
+        <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-gray-500 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-700">This opportunity is a draft</p>
+            <p className="text-xs text-gray-500">
+              Only you and admins can see it. Publish when ready to make it visible to all members.
+            </p>
+          </div>
+          {canEdit && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleTogglePublish}
+              disabled={publishLoading}
+            >
+              {publishLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              Publish
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start gap-4">
         <Link
@@ -517,6 +570,37 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
         </div>
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
+          {canEdit && wgo.status === 'ACTIVE' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-gray-600 border-gray-300 hover:bg-gray-50"
+              onClick={handleTogglePublish}
+              disabled={publishLoading}
+            >
+              {publishLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <X className="h-4 w-4 mr-2" />
+              )}
+              Unpublish
+            </Button>
+          )}
+          {canEdit && wgo.status === 'DRAFT' && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleTogglePublish}
+              disabled={publishLoading}
+            >
+              {publishLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              Publish
+            </Button>
+          )}
           {canEdit && (
             <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
               <Pencil className="h-4 w-4 mr-2" />

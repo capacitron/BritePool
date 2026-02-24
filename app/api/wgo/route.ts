@@ -70,6 +70,9 @@ export async function GET(request: NextRequest) {
     const { category, status, page, limit, search } = parsed.data
     const skip = (page - 1) * limit
 
+    // Check if user is admin
+    const userIsAdmin = session.user.role === 'WEB_STEWARD' || session.user.role === 'BOARD_CHAIR'
+
     const where: Record<string, unknown> = {}
 
     if (category) {
@@ -78,13 +81,23 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status
+    } else if (!userIsAdmin) {
+      // Non-admins only see their own drafts; all other statuses are visible
+      where.OR = [{ status: { not: 'DRAFT' } }, { creatorId: session.user.id }]
     }
 
     if (search) {
-      where.OR = [
+      // When we already have an OR clause (draft filtering), wrap in AND
+      const searchCondition = [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ]
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchCondition }]
+        delete where.OR
+      } else {
+        where.OR = searchCondition
+      }
     }
 
     const [wgos, total] = await Promise.all([
