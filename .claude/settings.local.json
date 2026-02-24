@@ -83,7 +83,9 @@
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx:*)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx tsx -e:*)",
       "Bash(git hash-object:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(npx prisma db execute --stdin 2>&1 <<'SQL'\nSELECT column_name FROM information_schema.columns WHERE table_name = 'WealthOpportunity';)",
+      "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push --accept-data-loss 2>&1 | tail)"
     ],
     "deny": []
   },

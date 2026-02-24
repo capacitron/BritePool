@@ -1079,14 +1079,14 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-forest-500">Members</span>
+                <span className="text-forest-500">Discussion Members</span>
                 <span className="font-bold text-forest-800 flex items-center gap-1">
                   <Users className="h-4 w-4" />
                   {wgo.involvementCount}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-forest-500">Forum Posts</span>
+                <span className="text-forest-500">Discussion Posts</span>
                 <span className="font-bold text-forest-800 flex items-center gap-1">
                   <MessageSquare className="h-4 w-4" />
                   {wgo.forumPostCount}
