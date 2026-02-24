@@ -167,6 +167,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([])
   const [duplicating, setDuplicating] = useState(false)
   const [publishLoading, setPublishLoading] = useState(false)
+  const [eventsPage, setEventsPage] = useState(1)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -694,70 +695,92 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
           </Card>
 
           {/* Scheduled Meetings & Presentations */}
-          {relatedEvents.length > 0 && (
-            <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50 to-white">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-emerald-600" />
-                  Scheduled Meetings & Presentations
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {relatedEvents.map((evt) => {
-                  const evtDate = new Date(evt.startTime)
-                  const endDate = new Date(evt.endTime)
-                  const isPast = evtDate < new Date()
-                  return (
+          {relatedEvents.length > 0 &&
+            (() => {
+              const WEEKS_PER_PAGE = 4
+              const MS_PER_PAGE = WEEKS_PER_PAGE * 7 * 24 * 60 * 60 * 1000
+              const sorted = [...relatedEvents].sort(
+                (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+              )
+              const earliest = new Date(sorted[0].startTime).getTime()
+              const cutoff = earliest + eventsPage * MS_PER_PAGE
+              const visible = sorted.filter((evt) => new Date(evt.startTime).getTime() < cutoff)
+              const hasMore = visible.length < sorted.length
+
+              return (
+                <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50 to-white">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-emerald-600" />
+                      Scheduled Meetings & Presentations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {visible.map((evt) => {
+                      const evtDate = new Date(evt.startTime)
+                      const endDate = new Date(evt.endTime)
+                      const isPast = evtDate < new Date()
+                      return (
+                        <Link
+                          key={evt.id}
+                          href={`/dashboard/events/${evt.id}`}
+                          className={cn(
+                            'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+                            isPast
+                              ? 'border-sand-200 bg-sand-50 opacity-60'
+                              : 'border-emerald-200 bg-white hover:bg-emerald-50'
+                          )}
+                        >
+                          <div className="flex-shrink-0 text-center bg-emerald-100 rounded-lg px-3 py-1.5">
+                            <div className="text-xs font-medium text-emerald-700">
+                              {evtDate.toLocaleDateString('en-US', { month: 'short' })}
+                            </div>
+                            <div className="text-lg font-bold text-emerald-800">
+                              {evtDate.getDate()}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-forest-800 truncate">{evt.title}</p>
+                            <p className="text-xs text-forest-500">
+                              {evtDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              })}
+                              {' - '}
+                              {endDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              })}
+                              {evt.location && ` · ${evt.location}`}
+                            </p>
+                          </div>
+                          {evt.virtualLink && (
+                            <Video className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                          )}
+                        </Link>
+                      )
+                    })}
+                    {hasMore && (
+                      <Button
+                        variant="outline"
+                        className="w-full text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                        onClick={() => setEventsPage((p) => p + 1)}
+                      >
+                        Show next {WEEKS_PER_PAGE} weeks
+                      </Button>
+                    )}
                     <Link
-                      key={evt.id}
-                      href={`/dashboard/events/${evt.id}`}
-                      className={cn(
-                        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-                        isPast
-                          ? 'border-sand-200 bg-sand-50 opacity-60'
-                          : 'border-emerald-200 bg-white hover:bg-emerald-50'
-                      )}
+                      href="/dashboard/events"
+                      className="block text-center text-sm text-emerald-600 hover:text-emerald-700 pt-1"
                     >
-                      <div className="flex-shrink-0 text-center bg-emerald-100 rounded-lg px-3 py-1.5">
-                        <div className="text-xs font-medium text-emerald-700">
-                          {evtDate.toLocaleDateString('en-US', { month: 'short' })}
-                        </div>
-                        <div className="text-lg font-bold text-emerald-800">
-                          {evtDate.getDate()}
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-forest-800 truncate">{evt.title}</p>
-                        <p className="text-xs text-forest-500">
-                          {evtDate.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          })}
-                          {' - '}
-                          {endDate.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          })}
-                          {evt.location && ` · ${evt.location}`}
-                        </p>
-                      </div>
-                      {evt.virtualLink && (
-                        <Video className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                      )}
+                      View all events
                     </Link>
-                  )
-                })}
-                <Link
-                  href="/dashboard/events"
-                  className="block text-center text-sm text-emerald-600 hover:text-emerald-700 pt-1"
-                >
-                  View all events
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+                  </CardContent>
+                </Card>
+              )
+            })()}
 
           {/* Financial Details */}
           <Card className="border-sand-200">
