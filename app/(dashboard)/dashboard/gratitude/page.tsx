@@ -157,12 +157,6 @@ export default function GratitudePage() {
               </p>
             </div>
 
-            {/* Author attribution */}
-            <div className="mt-10 text-center">
-              <p className="text-sm uppercase tracking-[0.2em] text-earth-500 font-body mb-1">By</p>
-              <p className="text-lg font-display font-bold text-forest-800">Rebecca Richelle</p>
-            </div>
-
             {/* Closing seal section */}
             <div className="mt-12 pt-8 border-t border-earth-200 text-center">
               <div className="inline-flex flex-col items-center">
