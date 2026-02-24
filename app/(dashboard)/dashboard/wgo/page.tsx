@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { TrendingUp, Plus, Filter, X, DollarSign, Users, Clock, AlertTriangle } from 'lucide-react'
+import {
+  TrendingUp,
+  Plus,
+  Filter,
+  X,
+  DollarSign,
+  Users,
+  Clock,
+  AlertTriangle,
+  ChevronUp,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
@@ -47,6 +57,11 @@ export default function WGOPage() {
   const [minRiskFilter, setMinRiskFilter] = useState<number | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [disclaimerDismissed, setDisclaimerDismissed] = useState(true) // default true to avoid flash
+
+  useEffect(() => {
+    setDisclaimerDismissed(localStorage.getItem('wgo-disclaimer-ack') === 'true')
+  }, [])
 
   useEffect(() => {
     fetchUserRole()
@@ -112,20 +127,31 @@ export default function WGOPage() {
         </div>
       )}
 
-      {/* Risk Disclaimer Banner */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-amber-800 font-medium">Investment Risk Disclaimer</p>
-            <p className="text-xs text-amber-700 mt-1">
-              All opportunities listed are supported by the good faith of the membership. Higher
-              trust ratings indicate more organizational credibility, but all investments carry
-              risk. Please conduct your own due diligence before participating.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Risk Disclaimer Banner - inline when not yet acknowledged */}
+      {!disclaimerDismissed && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-amber-800 font-medium">Investment Risk Disclaimer</p>
+              <p className="text-xs text-amber-700 mt-1">
+                All opportunities listed are supported by the good faith of the membership. Higher
+                trust ratings indicate more organizational credibility, but all investments carry
+                risk. Please conduct your own due diligence before participating.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setDisclaimerDismissed(true)
+                localStorage.setItem('wgo-disclaimer-ack', 'true')
+              }}
+              className="flex-shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 border border-amber-300 rounded-md px-3 py-1.5 hover:bg-amber-100 transition-colors"
+            >
+              I Understand
+            </button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filter Toggle */}
       <div className="flex items-center gap-2">
@@ -375,6 +401,28 @@ export default function WGOPage() {
             }
           }}
         />
+      )}
+
+      {/* Persistent bottom disclaimer after acknowledgement */}
+      {disclaimerDismissed && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-amber-50/95 backdrop-blur-sm border-t border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+            <p className="text-xs text-amber-700">
+              All investments carry risk. Conduct your own due diligence before participating.
+            </p>
+            <button
+              onClick={() => {
+                setDisclaimerDismissed(false)
+                localStorage.removeItem('wgo-disclaimer-ack')
+              }}
+              className="flex-shrink-0 text-amber-500 hover:text-amber-700 transition-colors"
+              title="Show full disclaimer"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
