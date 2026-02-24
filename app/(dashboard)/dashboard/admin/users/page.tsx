@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Users, Search, ChevronLeft, ChevronRight, Eye, UserCog } from 'lucide-react'
+import { Users, Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 interface User {
@@ -154,12 +154,16 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">User Management</h1>
-          <p className="text-earth-brown-light mt-1">View and manage all platform users</p>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-earth-brown-dark">
+            User Management
+          </h1>
+          <p className="text-earth-brown-light mt-1 text-sm sm:text-base">
+            View and manage all platform users
+          </p>
         </div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="self-start sm:self-auto">
           <Link href="/dashboard/admin">
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Admin
@@ -179,77 +183,79 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="mb-6">
-            <div className="flex gap-4 flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-earth-brown-light" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name or email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-earth-brown-light" />
+                <Input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              <select
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value)
-                  setPage(1)
-                }}
-                className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
-              >
-                <option value="">All Roles</option>
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {role.replace(/_/g, ' ')}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={tierFilter}
-                onChange={(e) => {
-                  setTierFilter(e.target.value)
-                  setPage(1)
-                }}
-                className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
-              >
-                <option value="">All Tiers</option>
-                {subscriptionTiers.map((tier) => (
-                  <option key={tier} value={tier}>
-                    {tier}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={accountStatusFilter}
-                onChange={(e) => {
-                  setAccountStatusFilter(e.target.value)
-                  setPage(1)
-                }}
-                className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
-              >
-                <option value="">All Statuses</option>
-                {accountStatuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={covenantFilter}
-                onChange={(e) => {
-                  setCovenantFilter(e.target.value)
-                  setPage(1)
-                }}
-                className="px-3 py-2 border border-stone rounded-lg bg-white text-sm"
-              >
-                <option value="">Agreement Status</option>
-                <option value="accepted">Accepted</option>
-                <option value="pending">Pending</option>
-              </select>
-              <Button type="submit">Search</Button>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full px-3 py-2 border border-stone rounded-lg bg-white text-sm"
+                >
+                  <option value="">All Roles</option>
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {role.replace(/_/g, ' ')}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={tierFilter}
+                  onChange={(e) => {
+                    setTierFilter(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full px-3 py-2 border border-stone rounded-lg bg-white text-sm"
+                >
+                  <option value="">All Tiers</option>
+                  {subscriptionTiers.map((tier) => (
+                    <option key={tier} value={tier}>
+                      {tier}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={accountStatusFilter}
+                  onChange={(e) => {
+                    setAccountStatusFilter(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full px-3 py-2 border border-stone rounded-lg bg-white text-sm"
+                >
+                  <option value="">All Statuses</option>
+                  {accountStatuses.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={covenantFilter}
+                  onChange={(e) => {
+                    setCovenantFilter(e.target.value)
+                    setPage(1)
+                  }}
+                  className="w-full px-3 py-2 border border-stone rounded-lg bg-white text-sm"
+                >
+                  <option value="">Agreement Status</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="pending">Pending</option>
+                </select>
+                <Button type="submit" className="w-full">
+                  Search
+                </Button>
+              </div>
             </div>
           </form>
 
@@ -258,120 +264,68 @@ export default function AdminUsersPage() {
           ) : users.length === 0 ? (
             <div className="text-center py-8 text-earth-brown-light">No users found</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-stone">
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
-                      Email
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">Role</th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
-                      Subscription
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
-                      Agreement
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium text-earth-brown-light">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr
-                      key={user.id}
-                      className={`border-b border-stone hover:bg-stone-warm ${user.status === 'SUSPENDED' ? 'opacity-50' : user.status === 'LOCKED' ? 'opacity-40 bg-red-50' : ''}`}
+            <div className="space-y-3">
+              {users.map((user) => (
+                <Link
+                  key={user.id}
+                  href={`/dashboard/admin/users/${user.id}`}
+                  className={`block p-4 rounded-lg border border-stone hover:bg-stone-warm transition-colors group ${user.status === 'SUSPENDED' ? 'opacity-50' : user.status === 'LOCKED' ? 'opacity-40 bg-red-50' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-earth-dark group-hover:text-earth-brown-dark truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-sm text-earth-brown-light truncate">{user.email}</p>
+                    </div>
+                    <Eye className="h-4 w-4 text-earth-brown-light shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${getRoleBadgeClass(user.role)}`}
                     >
-                      <td className="py-3 px-4">
-                        <p className="font-medium text-earth-dark">{user.name}</p>
-                        <p className="text-xs text-earth-brown-light">
-                          Joined {formatDate(user.createdAt)}
-                        </p>
-                      </td>
-                      <td className="py-3 px-4 text-sm">{user.email}</td>
-                      <td className="py-3 px-4">
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeClass(user.role)}`}
-                        >
-                          {roles.map((role) => (
-                            <option key={role} value={role}>
-                              {role.replace(/_/g, ' ')}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="text-sm font-medium">{user.subscriptionTier}</p>
-                        <select
-                          value={user.subscriptionStatus}
-                          onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            user.subscriptionStatus === 'ACTIVE'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {subscriptionStatuses.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`text-xs px-2 py-1 rounded font-medium ${
-                            user.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-800'
-                              : user.status === 'SUSPENDED'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {user.covenantAcceptedAt ? (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                            Accepted
-                          </span>
-                        ) : (
-                          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button asChild size="sm" variant="ghost">
-                            <Link href={`/dashboard/admin/users/${user.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button asChild size="sm" variant="ghost">
-                            <Link href={`/dashboard/admin/users/${user.id}`}>
-                              <UserCog className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      {user.role.replace(/_/g, ' ')}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        user.status === 'ACTIVE'
+                          ? 'bg-green-100 text-green-800'
+                          : user.status === 'SUSPENDED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {user.status}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        user.subscriptionStatus === 'ACTIVE'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {user.subscriptionTier} / {user.subscriptionStatus}
+                    </span>
+                    {user.covenantAcceptedAt ? (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                        Agreement Accepted
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                        Agreement Pending
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-earth-brown-light mt-2">
+                    Joined {formatDate(user.createdAt)}
+                  </p>
+                </Link>
+              ))}
             </div>
           )}
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-stone">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-stone">
               <p className="text-sm text-earth-brown-light">
                 Page {pagination.page} of {pagination.totalPages}
               </p>

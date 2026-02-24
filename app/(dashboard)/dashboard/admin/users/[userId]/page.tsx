@@ -327,27 +327,29 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">User Details</h1>
-          <p className="text-earth-brown-light mt-1">{user.email}</p>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-earth-brown-dark">
+            User Details
+          </h1>
+          <p className="text-earth-brown-light mt-1 text-sm sm:text-base truncate">{user.email}</p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/admin/users">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Users
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
             </Link>
           </Button>
-          <Button onClick={handleDelete} variant="destructive" disabled={deleting}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            {deleting ? 'Deleting...' : 'Delete User'}
+          <Button onClick={handleDelete} variant="destructive" size="sm" disabled={deleting}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            {deleting ? 'Deleting...' : 'Delete'}
           </Button>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -372,7 +374,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <div>
                   <Label htmlFor="role">Role</Label>
                   <select

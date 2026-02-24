@@ -134,9 +134,9 @@ export function ModerationQueue({ items, onRefresh }: ModerationQueueProps) {
         {items.map((item) => (
           <Card key={`${item.type}-${item.id}`} className="overflow-hidden">
             <CardContent className="p-0">
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row">
                 {item.type === 'media' && (
-                  <div className="w-32 h-32 flex-shrink-0 bg-slate-100">
+                  <div className="w-full h-48 sm:w-32 sm:h-32 flex-shrink-0 bg-slate-100">
                     <img
                       src={item.preview}
                       alt={item.title}
@@ -145,52 +145,49 @@ export function ModerationQueue({ items, onRefresh }: ModerationQueueProps) {
                   </div>
                 )}
                 <div className="flex-1 p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {item.type === 'forum' ? 'Forum Post' : 'Media Upload'}
-                        </Badge>
-                        {item.mediaType && (
-                          <Badge variant="secondary" className="text-xs">
-                            {item.mediaType}
-                          </Badge>
-                        )}
-                      </div>
-                      <h3 className="font-medium text-slate-900">{item.title}</h3>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => handleApprove(item)}
-                        disabled={loading === item.id}
-                      >
-                        {loading === item.id ? '...' : 'Approve'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => openRejectDialog(item)}
-                        disabled={loading === item.id}
-                      >
-                        Reject
-                      </Button>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs">
+                      {item.type === 'forum' ? 'Forum Post' : 'Media Upload'}
+                    </Badge>
+                    {item.mediaType && (
+                      <Badge variant="secondary" className="text-xs">
+                        {item.mediaType}
+                      </Badge>
+                    )}
                   </div>
+                  <h3 className="font-medium text-slate-900 mb-2">{item.title}</h3>
 
                   {item.type === 'forum' && (
                     <p className="text-sm text-slate-600 mb-3 line-clamp-2">{item.preview}</p>
                   )}
 
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500 mb-3">
                     <span>
                       By <span className="font-medium">{item.author.name}</span> (
                       {item.author.email})
                     </span>
                     <span>{formatDate(item.createdAt)}</span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 sm:flex-none text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => handleApprove(item)}
+                      disabled={loading === item.id}
+                    >
+                      {loading === item.id ? '...' : 'Approve'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => openRejectDialog(item)}
+                      disabled={loading === item.id}
+                    >
+                      Reject
+                    </Button>
                   </div>
                 </div>
               </div>

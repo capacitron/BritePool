@@ -129,12 +129,12 @@ export default function AuditLogsPage() {
       </div>
 
       <div className="bg-white p-4 rounded-lg border shadow-sm">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-3">
           <Select
             value={actionFilter || 'all'}
             onValueChange={(v) => setActionFilter(v === 'all' ? '' : v)}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full lg:w-[200px]">
               <SelectValue placeholder="All Actions" />
             </SelectTrigger>
             <SelectContent>
@@ -151,7 +151,7 @@ export default function AuditLogsPage() {
             value={resourceTypeFilter || 'all'}
             onValueChange={(v) => setResourceTypeFilter(v === 'all' ? '' : v)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full lg:w-[180px]">
               <SelectValue placeholder="All Resources" />
             </SelectTrigger>
             <SelectContent>
@@ -164,35 +164,38 @@ export default function AuditLogsPage() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center space-x-2">
+          <div className="col-span-2 sm:col-span-1 flex items-center gap-2">
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-[150px]"
+              className="flex-1"
               placeholder="Start date"
             />
-            <span className="text-slate-400">to</span>
+            <span className="text-slate-400 text-sm">to</span>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-[150px]"
+              className="flex-1"
               placeholder="End date"
             />
           </div>
 
-          <Button
-            onClick={() => {
-              setPagination({ ...pagination, page: 1 })
-              fetchLogs()
-            }}
-          >
-            Filter
-          </Button>
-          <Button variant="outline" onClick={clearFilters}>
-            Clear
-          </Button>
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex gap-2">
+            <Button
+              className="flex-1 lg:flex-none"
+              onClick={() => {
+                setPagination({ ...pagination, page: 1 })
+                fetchLogs()
+              }}
+            >
+              Filter
+            </Button>
+            <Button className="flex-1 lg:flex-none" variant="outline" onClick={clearFilters}>
+              Clear
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -205,7 +208,7 @@ export default function AuditLogsPage() {
           <AuditLogTable logs={logs} />
 
           {pagination.totalPages > 1 && (
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
               <p className="text-sm text-slate-600">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
                 {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}

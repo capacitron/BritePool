@@ -72,57 +72,83 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
   }
 
   return (
-    <div className="rounded-md border bg-white">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Timestamp</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Resource</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>IP Address</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {logs.map((log) => (
-            <TableRow key={log.id}>
-              <TableCell className="whitespace-nowrap text-sm">
+    <>
+      {/* Mobile card layout */}
+      <div className="space-y-3 lg:hidden">
+        {logs.map((log) => (
+          <div key={log.id} className="rounded-lg border bg-white p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <Badge className={getActionBadgeColor(log.action)}>{formatAction(log.action)}</Badge>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {formatDate(log.createdAt)}
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="font-medium text-sm font-mono text-xs">
-                    {log.userId.substring(0, 8)}...
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {log.userRole?.replace(/_/g, ' ') ?? 'N/A'}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge className={getActionBadgeColor(log.action)}>
-                  {formatAction(log.action)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="text-sm">{formatResourceType(log.resourceType)}</p>
-                  {log.resourceId && (
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {log.resourceId.substring(0, 8)}...
-                    </p>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="max-w-md">
-                <p className="text-sm truncate">{log.description}</p>
-              </TableCell>
-              <TableCell className="font-mono text-xs">{log.ipAddress}</TableCell>
+              </span>
+            </div>
+            <p className="text-sm">{log.description}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>
+                {formatResourceType(log.resourceType)}
+                {log.resourceId ? ` (${log.resourceId.substring(0, 8)}...)` : ''}
+              </span>
+              <span>
+                User: {log.userId.substring(0, 8)}... ({log.userRole?.replace(/_/g, ' ') ?? 'N/A'})
+              </span>
+              <span className="font-mono">{log.ipAddress}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="rounded-md border bg-white hidden lg:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Timestamp</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Resource</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>IP Address</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {logs.map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="whitespace-nowrap text-sm">
+                  {formatDate(log.createdAt)}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium font-mono text-xs">{log.userId.substring(0, 8)}...</p>
+                    <p className="text-xs text-muted-foreground">
+                      {log.userRole?.replace(/_/g, ' ') ?? 'N/A'}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getActionBadgeColor(log.action)}>
+                    {formatAction(log.action)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="text-sm">{formatResourceType(log.resourceType)}</p>
+                    {log.resourceId && (
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {log.resourceId.substring(0, 8)}...
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="max-w-md">
+                  <p className="text-sm truncate">{log.description}</p>
+                </TableCell>
+                <TableCell className="font-mono text-xs">{log.ipAddress}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   )
 }

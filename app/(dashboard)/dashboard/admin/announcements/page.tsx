@@ -1,25 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Megaphone,
-  Plus,
-  ChevronLeft,
-  Edit,
-  Trash2,
-  Pin,
-  X,
-} from 'lucide-react'
+import { Megaphone, Plus, ChevronLeft, Edit, Trash2, Pin, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface Announcement {
@@ -51,10 +37,10 @@ export default function AdminAnnouncementsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  
+
   const [formTitle, setFormTitle] = useState('')
   const [formContent, setFormContent] = useState('')
-  const [formPriority, setFormPriority] = useState<typeof priorities[number]>('INFO')
+  const [formPriority, setFormPriority] = useState<(typeof priorities)[number]>('INFO')
   const [formTargetRoles, setFormTargetRoles] = useState<string[]>([])
   const [formIsPinned, setFormIsPinned] = useState(false)
   const [formExpiresAt, setFormExpiresAt] = useState('')
@@ -101,15 +87,13 @@ export default function AdminAnnouncementsPage() {
 
   function toggleTargetRole(role: string) {
     setFormTargetRoles((prev) =>
-      prev.includes(role)
-        ? prev.filter((r) => r !== role)
-        : [...prev, role]
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     )
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    
+
     const data = {
       title: formTitle,
       content: formContent,
@@ -194,25 +178,25 @@ export default function AdminAnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-earth-brown-dark">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-earth-brown-dark">
             Announcements
           </h1>
-          <p className="text-earth-brown-light mt-1">
+          <p className="text-earth-brown-light mt-1 text-sm sm:text-base">
             Create and manage platform announcements
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/admin">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Admin
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
             </Link>
           </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Announcement
+          <Button size="sm" onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            New
           </Button>
         </div>
       </div>
@@ -222,7 +206,9 @@ export default function AdminAnnouncementsPage() {
           <CardHeader>
             <CardTitle>{editingId ? 'Edit Announcement' : 'Create Announcement'}</CardTitle>
             <CardDescription>
-              {editingId ? 'Update the announcement details' : 'Create a new announcement for the platform'}
+              {editingId
+                ? 'Update the announcement details'
+                : 'Create a new announcement for the platform'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,17 +234,19 @@ export default function AdminAnnouncementsPage() {
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <div>
                   <Label htmlFor="priority">Priority</Label>
                   <select
                     id="priority"
                     value={formPriority}
-                    onChange={(e) => setFormPriority(e.target.value as typeof priorities[number])}
+                    onChange={(e) => setFormPriority(e.target.value as (typeof priorities)[number])}
                     className="w-full px-3 py-2 border border-stone rounded-lg"
                   >
                     {priorities.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -325,9 +313,7 @@ export default function AdminAnnouncementsPage() {
             <Megaphone className="h-5 w-5" />
             All Announcements
           </CardTitle>
-          <CardDescription>
-            {announcements.length} total announcements
-          </CardDescription>
+          <CardDescription>{announcements.length} total announcements</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -340,57 +326,59 @@ export default function AdminAnnouncementsPage() {
                 <div
                   key={announcement.id}
                   className={`p-4 rounded-lg border ${
-                    announcement.isPinned ? 'border-earth-brown bg-amber-50' : 'border-stone bg-white'
+                    announcement.isPinned
+                      ? 'border-earth-brown bg-amber-50'
+                      : 'border-stone bg-white'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {announcement.isPinned && (
-                          <Pin className="h-4 w-4 text-earth-brown" />
+                          <Pin className="h-4 w-4 text-earth-brown shrink-0" />
                         )}
                         <h3 className="font-medium text-earth-dark">{announcement.title}</h3>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityBadgeClass(announcement.priority)}`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityBadgeClass(announcement.priority)}`}
+                        >
                           {announcement.priority}
                         </span>
                       </div>
-                      <p className="text-sm text-earth-brown-light mb-2 line-clamp-2">
-                        {announcement.content}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-earth-brown-light">
-                        <span>Published: {formatDate(announcement.publishedAt)}</span>
-                        {announcement.expiresAt && (
-                          <span>Expires: {formatDate(announcement.expiresAt)}</span>
-                        )}
-                        {announcement.targetRoles.length > 0 && (
-                          <span>Target: {announcement.targetRoles.join(', ')}</span>
-                        )}
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePin(announcement)}
+                          title={announcement.isPinned ? 'Unpin' : 'Pin'}
+                        >
+                          <Pin
+                            className={`h-4 w-4 ${announcement.isPinned ? 'text-earth-brown' : ''}`}
+                          />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(announcement)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(announcement.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => togglePin(announcement)}
-                        title={announcement.isPinned ? 'Unpin' : 'Pin'}
-                      >
-                        <Pin className={`h-4 w-4 ${announcement.isPinned ? 'text-earth-brown' : ''}`} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEdit(announcement)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(announcement.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <p className="text-sm text-earth-brown-light mb-2 line-clamp-2">
+                      {announcement.content}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-earth-brown-light">
+                      <span>Published: {formatDate(announcement.publishedAt)}</span>
+                      {announcement.expiresAt && (
+                        <span>Expires: {formatDate(announcement.expiresAt)}</span>
+                      )}
+                      {announcement.targetRoles.length > 0 && (
+                        <span>Target: {announcement.targetRoles.join(', ')}</span>
+                      )}
                     </div>
                   </div>
                 </div>
