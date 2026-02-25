@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -38,8 +38,22 @@ export function formatRelativeTime(date: Date | string): string {
   return formatDate(date)
 }
 
-export function getGreeting(): string {
-  const hour = new Date().getHours()
+export function getGreeting(timezone?: string): string {
+  let hour: number
+  if (timezone) {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        hour12: false,
+      })
+      hour = parseInt(formatter.format(new Date()), 10)
+    } catch {
+      hour = new Date().getHours()
+    }
+  } else {
+    hour = new Date().getHours()
+  }
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'

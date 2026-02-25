@@ -44,6 +44,7 @@ export default async function DashboardPage({
         select: {
           totalEquityUnits: true,
           totalHoursLogged: true,
+          timezone: true,
         },
       },
     },
@@ -64,7 +65,7 @@ export default async function DashboardPage({
     redirect('/onboarding')
   }
 
-  const greeting = getGreeting()
+  const greeting = getGreeting(user.profile?.timezone || undefined)
 
   return (
     <div className="space-y-8">

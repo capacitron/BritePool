@@ -681,15 +681,22 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
 
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
               {wgo.referrerAffiliateLink && (
-                <a
-                  href={wgo.referrerAffiliateLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Sign Up{wgo.referrerName ? ` via ${wgo.referrerName}'s Link` : ''}
-                </a>
+                <div className="mt-2">
+                  <p className="text-xs text-forest-500 mb-2 font-body">
+                    {wgo.referrerName
+                      ? `Shared by your upline, ${wgo.referrerName}`
+                      : 'Shared by your upline'}
+                  </p>
+                  <a
+                    href={wgo.referrerAffiliateLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Sign Up with {wgo.title}
+                  </a>
+                </div>
               )}
             </CardContent>
           </Card>
