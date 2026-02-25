@@ -60,10 +60,11 @@ interface WGOInvolvement {
 
 interface WGO {
   id: string
-  name: string
-  logo: string | null
+  title: string
+  name?: string
+  logo?: string | null
   category: string
-  riskTolerance: number
+  riskTolerance?: number
 }
 
 export function WGOInvolvementsSection() {
@@ -109,7 +110,7 @@ export function WGOInvolvementsSection() {
 
       if (wgoRes.ok) {
         const data = await wgoRes.json()
-        setAvailableWGOs(data)
+        setAvailableWGOs(data.data || [])
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -514,7 +515,7 @@ export function WGOInvolvementsSection() {
                     <option value="">Choose a WGO...</option>
                     {availableToAdd.map((wgo) => (
                       <option key={wgo.id} value={wgo.id}>
-                        {wgo.name} - {WGO_CATEGORY_LABELS[wgo.category]}
+                        {wgo.title || wgo.name} - {WGO_CATEGORY_LABELS[wgo.category]}
                       </option>
                     ))}
                   </select>
