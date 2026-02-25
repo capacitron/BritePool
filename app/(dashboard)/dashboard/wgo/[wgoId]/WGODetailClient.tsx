@@ -391,9 +391,9 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     }
   }
 
-  const handleTogglePublish = async () => {
+  const handleTogglePublish = async (targetStatus?: string) => {
     if (!wgo) return
-    const newStatus = wgo.status === 'DRAFT' ? 'ACTIVE' : 'DRAFT'
+    const newStatus = targetStatus || (wgo.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE')
     setPublishLoading(true)
     try {
       const res = await fetch(`/api/wgo/${wgoId}`, {
@@ -521,7 +521,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={handleTogglePublish}
+              onClick={() => handleTogglePublish('ACTIVE')}
               disabled={publishLoading}
             >
               {publishLoading ? (
@@ -571,12 +571,12 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
         </div>
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
-          {canEdit && wgo.status === 'ACTIVE' && (
+          {canEdit && wgo.status !== 'DRAFT' && (
             <Button
               variant="outline"
               size="sm"
               className="text-gray-600 border-gray-300 hover:bg-gray-50"
-              onClick={handleTogglePublish}
+              onClick={() => handleTogglePublish('DRAFT')}
               disabled={publishLoading}
             >
               {publishLoading ? (
@@ -587,11 +587,11 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               Unpublish
             </Button>
           )}
-          {canEdit && wgo.status === 'DRAFT' && (
+          {canEdit && wgo.status !== 'ACTIVE' && (
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={handleTogglePublish}
+              onClick={() => handleTogglePublish('ACTIVE')}
               disabled={publishLoading}
             >
               {publishLoading ? (

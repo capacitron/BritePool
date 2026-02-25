@@ -80,7 +80,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      where.status = status
+      // Non-admins filtering by DRAFT should only see their own drafts
+      if (status === 'DRAFT' && !userIsAdmin) {
+        where.status = 'DRAFT'
+        where.creatorId = session.user.id
+      } else {
+        where.status = status
+      }
     } else if (!userIsAdmin) {
       // Non-admins only see their own drafts; all other statuses are visible
       where.OR = [{ status: { not: 'DRAFT' } }, { creatorId: session.user.id }]
