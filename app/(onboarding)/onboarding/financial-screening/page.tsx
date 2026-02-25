@@ -150,9 +150,13 @@ export default function FinancialScreeningPage() {
         const data = await res.json()
         setReferralResults(data.members || [])
         setShowReferralDropdown(true)
+      } else {
+        setReferralResults([])
+        setShowReferralDropdown(true)
       }
     } catch {
       setReferralResults([])
+      setShowReferralDropdown(true)
     } finally {
       setReferralSearching(false)
     }
