@@ -704,14 +704,11 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
           {/* Scheduled Meetings & Presentations */}
           {relatedEvents.length > 0 &&
             (() => {
-              const WEEKS_PER_PAGE = 4
-              const MS_PER_PAGE = WEEKS_PER_PAGE * 7 * 24 * 60 * 60 * 1000
+              const EVENTS_PER_PAGE = 4
               const sorted = [...relatedEvents].sort(
                 (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
               )
-              const earliest = new Date(sorted[0].startTime).getTime()
-              const cutoff = earliest + eventsPage * MS_PER_PAGE
-              const visible = sorted.filter((evt) => new Date(evt.startTime).getTime() < cutoff)
+              const visible = sorted.slice(0, eventsPage * EVENTS_PER_PAGE)
               const hasMore = visible.length < sorted.length
 
               return (
@@ -775,7 +772,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                         className="w-full text-emerald-600 border-emerald-300 hover:bg-emerald-50"
                         onClick={() => setEventsPage((p) => p + 1)}
                       >
-                        Show next {WEEKS_PER_PAGE} weeks
+                        Show more events
                       </Button>
                     )}
                     <Link
