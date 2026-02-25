@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 
 export default async function UsernamePage({ params }: { params: Promise<{ username: string }> }) {
@@ -12,6 +13,19 @@ export default async function UsernamePage({ params }: { params: Promise<{ usern
   if (!user) {
     notFound()
   }
+
+  // Silent referral click tracking (fire-and-forget)
+  const headerList = await headers()
+  const userAgent = headerList.get('user-agent') || undefined
+
+  prisma.referralClick
+    .create({
+      data: {
+        referrerId: user.id,
+        userAgent: userAgent?.slice(0, 256) || null,
+      },
+    })
+    .catch(() => {})
 
   redirect(`/register?ref=${user.username}`)
 }

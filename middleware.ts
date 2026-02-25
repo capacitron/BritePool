@@ -16,6 +16,20 @@ export default auth((req) => {
   const isAuthRoute = authRoutes.includes(path)
   const isOnboardingRoute = path.startsWith('/onboarding')
 
+  // Allow /<username> referral links (single path segment, not a known route prefix)
+  const knownPrefixes = [
+    '/dashboard',
+    '/onboarding',
+    '/api',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/_next',
+  ]
+  const isReferralRoute =
+    path !== '/' && !knownPrefixes.some((p) => path.startsWith(p)) && /^\/[a-z0-9-]+$/.test(path)
+
   // Redirect logged in users away from auth routes
   if (isAuthRoute && isLoggedIn) {
     const userRole = req.auth?.user?.role
@@ -23,6 +37,11 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/dashboard/admin', nextUrl))
     }
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
+  }
+
+  // Allow referral links through for unauthenticated users (e.g. /capacitron -> /register?ref=capacitron)
+  if (isReferralRoute && !isLoggedIn) {
+    return NextResponse.next()
   }
 
   // Redirect unauthenticated users to login

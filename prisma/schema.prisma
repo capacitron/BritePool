@@ -69,11 +69,25 @@ model User {
   referredById  String?
   referredBy    User?   @relation("UserReferrals", fields: [referredById], references: [id])
   referrals     User[]  @relation("UserReferrals")
+  referralClicks ReferralClick[]
 
   @@index([email])
   @@index([role])
   @@index([deletedAt])
   @@index([referredById])
+}
+
+model ReferralClick {
+  id         String   @id @default(cuid())
+  referrerId String
+  referrer   User     @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  userAgent  String?
+  country    String?
+  clickedAt  DateTime @default(now())
+  converted  Boolean  @default(false)
+
+  @@index([referrerId])
+  @@index([clickedAt])
 }
 
 model UserProfile {
