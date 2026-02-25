@@ -25,6 +25,7 @@ import {
   Link2,
   Copy,
   CalendarClock,
+  UserPlus,
 } from 'lucide-react'
 import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
 import { PageHeader } from '@/components/PageHeader'
@@ -47,6 +48,11 @@ interface UserProfile {
     timezone: string
     language: string
     availability: Record<string, { enabled: boolean; start: string; end: string }> | null
+  } | null
+  referredBy: {
+    id: string
+    name: string
+    role: string
   } | null
 }
 
@@ -312,6 +318,38 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
       </Card>
+
+      {profile.referredBy && (
+        <Card className="border-sand-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <UserPlus className="h-5 w-5 text-forest-500" />
+              Introduced By
+            </CardTitle>
+            <CardDescription className="text-forest-500 font-body">
+              The member who introduced you to Brite Pool
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 p-4 bg-forest-50 rounded-lg border border-forest-100">
+              <div className="w-12 h-12 rounded-full bg-forest-600 flex items-center justify-center text-white font-bold text-lg">
+                {profile.referredBy.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2)}
+              </div>
+              <div>
+                <p className="font-semibold text-forest-800 font-body">{profile.referredBy.name}</p>
+                <p className="text-sm text-forest-500 font-body">
+                  {profile.referredBy.role.replace(/_/g, ' ')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-sand-200">
         <CardHeader>

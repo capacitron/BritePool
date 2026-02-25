@@ -57,6 +57,13 @@ export async function GET() {
             availability: true,
           },
         },
+        referredBy: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
       },
     })
 

@@ -22,13 +22,14 @@ import { registerSchema, type RegisterInput } from '@/lib/validations/auth'
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const referrer = searchParams.get('ref')
+  const refParam = searchParams.get('ref')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [referrer, setReferrer] = useState(refParam || '')
   const [showPassword, setShowPassword] = useState(true)
   const [showConfirmPassword, setShowConfirmPassword] = useState(true)
 
@@ -71,7 +72,7 @@ function RegisterForm() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, referrer: referrer || undefined }),
+        body: JSON.stringify({ ...data, referrer: referrer.trim() || undefined }),
       })
 
       const result = await response.json()
@@ -112,16 +113,6 @@ function RegisterForm() {
       </CardHeader>
       <form onSubmit={onSubmit} suppressHydrationWarning>
         <CardContent className="space-y-4" suppressHydrationWarning>
-          {referrer && (
-            <div className="bg-forest-50 border border-forest-200 text-forest-700 px-4 py-3 rounded-lg text-sm font-body">
-              <div className="flex items-start gap-3">
-                <UserPlus className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <p>
-                  You've been invited by <strong>@{referrer}</strong>
-                </p>
-              </div>
-            </div>
-          )}
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
               {error}
@@ -178,6 +169,32 @@ function RegisterForm() {
             </p>
             {fieldErrors.username && (
               <p className="text-sm text-earth-600 font-body">{fieldErrors.username}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="referrer" className="flex items-center gap-1.5">
+              <UserPlus className="h-3.5 w-3.5" />
+              Who Referred You to Brite Pool?
+              <span className="text-xs text-forest-400 font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="referrer"
+              name="referrer"
+              type="text"
+              placeholder="Enter their username"
+              disabled={isLoading}
+              value={referrer}
+              onChange={(e) => setReferrer(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+              maxLength={30}
+            />
+            {referrer && (
+              <p className="text-xs text-forest-600 font-body flex items-center gap-1">
+                <UserPlus className="h-3 w-3" />
+                You&apos;ll be linked to <strong>@{referrer}</strong> as your referrer
+              </p>
+            )}
+            {fieldErrors.referrer && (
+              <p className="text-sm text-earth-600 font-body">{fieldErrors.referrer}</p>
             )}
           </div>
           <div className="space-y-2">
