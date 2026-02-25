@@ -491,7 +491,7 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display text-forest-800">
             <Link2 className="h-5 w-5 text-forest-500" />
-            Referral Link
+            Brite Pool Referral Link
           </CardTitle>
           <CardDescription className="text-forest-500 font-body">
             Create your unique BritePool username to generate a shareable referral link
@@ -500,7 +500,7 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username" className="text-forest-700 font-body">
-              Username
+              Brite Pool Username
             </Label>
             <Input
               id="username"

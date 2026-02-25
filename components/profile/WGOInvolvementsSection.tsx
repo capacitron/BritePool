@@ -250,7 +250,8 @@ export function WGOInvolvementsSection() {
                 Wealth Generation Opportunities (WGO)
               </CardTitle>
               <CardDescription className="text-forest-500 font-body">
-                Track your wealth generation opportunities
+                WGOs appear here when you sign up or join through an affiliate link, indicating your
+                active participation in that opportunity
               </CardDescription>
             </div>
             {availableToAdd.length > 0 && (
