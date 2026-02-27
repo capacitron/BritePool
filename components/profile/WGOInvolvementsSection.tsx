@@ -55,6 +55,11 @@ export function WGOInvolvementsSection() {
   const [affiliateSaving, setAffiliateSaving] = useState<Record<string, boolean>>({})
   const [affiliateSaved, setAffiliateSaved] = useState<Record<string, boolean>>({})
   const [selectedWgoId, setSelectedWgoId] = useState('')
+  const [showAffiliateLinkPrompt, setShowAffiliateLinkPrompt] = useState(false)
+  const [affiliateLinkPromptWgoId, setAffiliateLinkPromptWgoId] = useState('')
+  const [affiliateLinkPromptWgoTitle, setAffiliateLinkPromptWgoTitle] = useState('')
+  const [affiliateLinkPromptValue, setAffiliateLinkPromptValue] = useState('')
+  const [affiliateLinkPromptSaving, setAffiliateLinkPromptSaving] = useState(false)
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({})
 
   useEffect(() => {
@@ -108,11 +113,22 @@ export function WGOInvolvementsSection() {
         throw new Error(data.error || 'Failed to add involvement')
       }
 
+      // Capture WGO title before resetting selection
+      const addedWgo = safeAvailableWGOs.find((w) => w.id === selectedWgoId)
+      const addedWgoTitle = addedWgo?.title || 'this opportunity'
+      const addedWgoId = selectedWgoId
+
       setMessage({ type: 'success', text: 'WGO involvement added successfully!' })
       setTimeout(() => setMessage(null), 3000)
       setShowAddModal(false)
       setSelectedWgoId('')
-      fetchData()
+      await fetchData()
+
+      // Show affiliate link prompt
+      setAffiliateLinkPromptWgoId(addedWgoId)
+      setAffiliateLinkPromptWgoTitle(addedWgoTitle)
+      setAffiliateLinkPromptValue('')
+      setShowAffiliateLinkPrompt(true)
     } catch (error) {
       setMessage({
         type: 'error',
@@ -184,6 +200,43 @@ export function WGOInvolvementsSection() {
     debounceTimers.current[wgoId] = setTimeout(() => {
       handleSaveAffiliateLink(wgoId, value)
     }, 1500)
+  }
+
+  const handleSaveAffiliateLinkPrompt = async () => {
+    if (!affiliateLinkPromptValue.trim() || !affiliateLinkPromptWgoId) return
+    setAffiliateLinkPromptSaving(true)
+    try {
+      const response = await fetch('/api/wgo/involvement', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wgoId: affiliateLinkPromptWgoId,
+          affiliateLink: affiliateLinkPromptValue.trim(),
+        }),
+      })
+      if (response.ok) {
+        // Update local state so the inline input reflects the saved value
+        setAffiliateLinks((prev) => ({
+          ...prev,
+          [affiliateLinkPromptWgoId]: affiliateLinkPromptValue.trim(),
+        }))
+        setAffiliateSaved((prev) => ({ ...prev, [affiliateLinkPromptWgoId]: true }))
+        setTimeout(
+          () => setAffiliateSaved((prev) => ({ ...prev, [affiliateLinkPromptWgoId]: false })),
+          3000
+        )
+        setShowAffiliateLinkPrompt(false)
+        setAffiliateLinkPromptValue('')
+      } else {
+        const data = await response.json()
+        setMessage({ type: 'error', text: data.error || 'Failed to save affiliate link' })
+      }
+    } catch (error) {
+      console.error('Error saving affiliate link:', error)
+      setMessage({ type: 'error', text: 'Failed to save affiliate link' })
+    } finally {
+      setAffiliateLinkPromptSaving(false)
+    }
   }
 
   const safeInvolvements = Array.isArray(involvements) ? involvements : []
@@ -476,6 +529,72 @@ export function WGOInvolvementsSection() {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Affiliate Link Prompt Modal */}
+      {showAffiliateLinkPrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-gold-100 flex items-center justify-center">
+                    <Link2 className="h-5 w-5 text-gold-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-forest-900">Add Your Affiliate Link</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAffiliateLinkPrompt(false)
+                    setAffiliateLinkPromptValue('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-sm text-forest-600 mb-4">
+                Add your personal affiliate or referral link for{' '}
+                <strong>{affiliateLinkPromptWgoTitle}</strong>. This link will be shared with
+                members you invite so they can sign up through you.
+              </p>
+              <input
+                type="url"
+                value={affiliateLinkPromptValue}
+                onChange={(e) => setAffiliateLinkPromptValue(e.target.value)}
+                placeholder="https://example.com/ref/your-id"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 text-sm mb-4"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowAffiliateLinkPrompt(false)
+                    setAffiliateLinkPromptValue('')
+                  }}
+                >
+                  Skip for Now
+                </Button>
+                <Button
+                  className="flex-1 bg-gold-500 hover:bg-gold-600 text-white"
+                  onClick={handleSaveAffiliateLinkPrompt}
+                  disabled={affiliateLinkPromptSaving || !affiliateLinkPromptValue.trim()}
+                >
+                  {affiliateLinkPromptSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Link'
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

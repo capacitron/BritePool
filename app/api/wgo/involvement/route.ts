@@ -12,6 +12,7 @@ export const runtime = 'nodejs'
 const joinWGOSchema = z.object({
   wgoId: z.string().min(1),
   role: z.enum(['PARTICIPANT', 'OBSERVER']).optional().default('PARTICIPANT'),
+  affiliateLink: z.string().max(2000).optional().nullable(),
 })
 
 const updateInvolvementSchema = z.object({
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { wgoId, role } = parsed.data
+    const { wgoId, role, affiliateLink } = parsed.data
 
     // Check if WGO exists and is active
     const wgo = await prisma.wealthOpportunity.findUnique({
@@ -157,6 +158,7 @@ export async function POST(request: NextRequest) {
         wgoId,
         role,
         status: 'ACTIVE',
+        ...(affiliateLink ? { affiliateLink } : {}),
       },
       include: {
         wgo: {
