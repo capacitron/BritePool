@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { logWGOCreated } from '@/lib/audit'
@@ -70,8 +71,7 @@ export async function GET(request: NextRequest) {
     const { category, status, page, limit, search } = parsed.data
     const skip = (page - 1) * limit
 
-    // Check if user is admin
-    const userIsAdmin = session.user.role === 'WEB_STEWARD' || session.user.role === 'BOARD_CHAIR'
+    const userIsAdmin = isAdmin(session.user.role)
 
     const where: Record<string, unknown> = {}
 
@@ -106,12 +106,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const [wgos, total] = await Promise.all([
+    const [wgos, total, userInvolvements] = await Promise.all([
       prisma.wealthOpportunity.findMany({
         where,
         include: {
           involvements: {
             take: 5,
+            include: { user: { select: { name: true } } },
           },
           _count: {
             select: { involvements: true, forumPosts: true },
@@ -122,15 +123,33 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.wealthOpportunity.count({ where }),
+      // Separate query for the current user's involvements to avoid take:5 miss
+      prisma.userWGOInvolvement.findMany({
+        where: { userId: session.user.id },
+        select: {
+          wgoId: true,
+          id: true,
+          role: true,
+          status: true,
+          affiliateLink: true,
+          joinedAt: true,
+          userId: true,
+        },
+      }),
     ])
 
-    const formattedWGOs = wgos.map((wgo) => ({
-      ...wgo,
-      involvementCount: wgo._count.involvements,
-      forumPostCount: wgo._count.forumPosts,
-      isInvolved: wgo.involvements.some((inv) => inv.userId === session.user.id),
-      userInvolvement: wgo.involvements.find((inv) => inv.userId === session.user.id) || null,
-    }))
+    const userInvolvementMap = new Map(userInvolvements.map((inv) => [inv.wgoId, inv]))
+
+    const formattedWGOs = wgos.map((wgo) => {
+      const userInvolvement = userInvolvementMap.get(wgo.id) || null
+      return {
+        ...wgo,
+        involvementCount: wgo._count.involvements,
+        forumPostCount: wgo._count.forumPosts,
+        isInvolved: !!userInvolvement,
+        userInvolvement,
+      }
+    })
 
     return NextResponse.json({
       data: formattedWGOs,
