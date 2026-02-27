@@ -18,7 +18,7 @@ const updateWGOSchema = z.object({
   currentAmount: z.number().optional(),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
-  affiliateLink: z.string().optional().nullable(),
+  defaultAffiliateLink: z.string().optional().nullable(),
   credibilityScore: z.number().optional().nullable(),
   presentationDays: z.string().optional().nullable(),
   shortDescription: z.string().optional().nullable(),
@@ -99,8 +99,8 @@ export async function GET(
       )
       if (referrerInvolvement?.affiliateLink) {
         referrerAffiliateLink = referrerInvolvement.affiliateLink
-      } else if (referrerInvolvement && wgo.affiliateLink) {
-        referrerAffiliateLink = wgo.affiliateLink
+      } else if (referrerInvolvement && wgo.defaultAffiliateLink) {
+        referrerAffiliateLink = wgo.defaultAffiliateLink
       }
     }
 
@@ -216,9 +216,9 @@ export async function PATCH(
       }
     }
 
-    // Handle affiliateLink - allow any string or null
-    if (updateData.affiliateLink === '') {
-      updateData.affiliateLink = null
+    // Handle defaultAffiliateLink - allow any string or null
+    if (updateData.defaultAffiliateLink === '') {
+      updateData.defaultAffiliateLink = null
     }
 
     const wgo = await prisma.wealthOpportunity.update({

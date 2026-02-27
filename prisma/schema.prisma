@@ -1097,8 +1097,8 @@ model WealthOpportunity {
   currentAmount Float                 @default(0)
   startDate     DateTime?
   endDate       DateTime?
-  affiliateLink    String?
-  credibilityScore Float?
+  defaultAffiliateLink String? @map("affiliateLink")
+  credibilityScore     Float?
   presentationDays String?
   shortDescription String?
   wgoType          String?

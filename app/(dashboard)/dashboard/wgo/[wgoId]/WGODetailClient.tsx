@@ -109,7 +109,7 @@ interface WGO {
   currentAmount: number
   startDate: string | null
   endDate: string | null
-  affiliateLink: string | null
+  defaultAffiliateLink: string | null
   credibilityScore: number | null
   presentationDays: string | null
   shortDescription: string | null
