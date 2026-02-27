@@ -651,12 +651,11 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                   <Users className="h-4 w-4 text-emerald-600" />
                   Your BritePool Partner
                 </h4>
-                {wgo.referrerAffiliateLink ? (
+                {wgo.referrerName && wgo.referrerAffiliateLink ? (
                   <div>
                     <p className="text-sm text-forest-600 mb-3">
-                      {wgo.referrerName
-                        ? `${wgo.referrerName} shared this opportunity with you. Use their link below to get started.`
-                        : 'Your referrer shared this opportunity with you. Use their link below to get started.'}
+                      {wgo.referrerName} shared this opportunity with you. Use their link below to
+                      get started.
                     </p>
                     <a
                       href={wgo.referrerAffiliateLink}
@@ -668,6 +667,12 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                       Sign Up with {wgo.title}
                     </a>
                   </div>
+                ) : wgo.referrerName ? (
+                  <p className="text-sm text-forest-600">
+                    Your BritePool Partner is{' '}
+                    <span className="font-semibold">{wgo.referrerName}</span>. Reach out to them for
+                    a referral link to this opportunity.
+                  </p>
                 ) : (
                   <p className="text-sm text-forest-500">
                     No BritePool Partner linked to your account yet. Connect with a partner to

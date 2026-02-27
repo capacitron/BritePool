@@ -83,16 +83,19 @@ export async function GET(
     let referrerName: string | null = null
 
     if (currentUser?.referredById) {
+      // Always look up the referrer's name
+      const referrer = await prisma.user.findUnique({
+        where: { id: currentUser.referredById },
+        select: { name: true },
+      })
+      referrerName = referrer?.name || null
+
+      // Check if the referrer has an affiliate link for this specific WGO
       const referrerInvolvement = wgo.involvements.find(
         (inv) => inv.userId === currentUser.referredById && inv.affiliateLink
       )
       if (referrerInvolvement) {
-        const referrer = await prisma.user.findUnique({
-          where: { id: currentUser.referredById },
-          select: { name: true },
-        })
         referrerAffiliateLink = referrerInvolvement.affiliateLink
-        referrerName = referrer?.name || null
       }
     }
 
