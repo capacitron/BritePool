@@ -101,21 +101,15 @@ export async function GET(
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
+        include: {
+          author: { select: { id: true, name: true, role: true } },
+        },
       }),
       prisma.wGOForumPost.count({ where }),
     ])
 
-    // Fetch author info separately to avoid N+1
-    const authorIds = [...new Set(posts.map((post) => post.authorId))]
-    const authors = await prisma.user.findMany({
-      where: { id: { in: authorIds } },
-      select: { id: true, name: true, role: true },
-    })
-    const authorMap = new Map(authors.map((a) => [a.id, a]))
-
     const postsWithAuthors = posts.map((post) => ({
       ...post,
-      author: authorMap.get(post.authorId) || null,
       isAuthor: post.authorId === session.user.id,
     }))
 

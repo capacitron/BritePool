@@ -71,6 +71,8 @@ model User {
   referrals     User[]  @relation("UserReferrals")
   referralClicks ReferralClick[]
   wgoInvolvements UserWGOInvolvement[]
+  wgosCreated     WealthOpportunity[] @relation("WGOsCreated")
+  wgoForumPosts   WGOForumPost[]      @relation("WGOForumPosts")
 
   @@index([email])
   @@index([role])
@@ -1102,6 +1104,7 @@ model WealthOpportunity {
   wgoType          String?
   minimumInvestment Float?
   creatorId        String
+  creator          User                  @relation("WGOsCreated", fields: [creatorId], references: [id])
   involvements  UserWGOInvolvement[]
   forumPosts    WGOForumPost[]
   createdAt     DateTime              @default(now())
@@ -1133,6 +1136,7 @@ model WGOForumPost {
   wgoId     String
   wgo       WealthOpportunity @relation(fields: [wgoId], references: [id], onDelete: Cascade)
   authorId  String
+  author    User              @relation("WGOForumPosts", fields: [authorId], references: [id], onDelete: Cascade)
   content   String
   isPinned  Boolean           @default(false)
   createdAt DateTime          @default(now())
