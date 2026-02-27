@@ -20,9 +20,7 @@ import {
   AlertCircle,
   CheckCircle,
   X,
-  Link2,
   ExternalLink,
-  Save,
   Video,
   Copy,
 } from 'lucide-react'
@@ -161,9 +159,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [actionLoading, setActionLoading] = useState(false)
   const [newPostContent, setNewPostContent] = useState('')
   const [postingLoading, setPostingLoading] = useState(false)
-  const [affiliateLink, setAffiliateLink] = useState('')
-  const [affiliateSaving, setAffiliateSaving] = useState(false)
-  const [affiliateSaved, setAffiliateSaved] = useState(false)
   const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([])
   const [duplicating, setDuplicating] = useState(false)
   const [publishLoading, setPublishLoading] = useState(false)
@@ -193,9 +188,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
       const data = await res.json()
       setWgo(data)
       setForumPosts(data.forumPosts || [])
-      if (data.userInvolvement?.affiliateLink) {
-        setAffiliateLink(data.userInvolvement.affiliateLink)
-      }
     } catch (err) {
       console.error('Error fetching WGO:', err)
       setError('Failed to load WGO details. Please try again.')
@@ -320,34 +312,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     } finally {
       setActionLoading(false)
       setShowDeleteConfirm(false)
-    }
-  }
-
-  const handleSaveAffiliateLink = async () => {
-    setAffiliateSaving(true)
-    setAffiliateSaved(false)
-    try {
-      const res = await fetch('/api/wgo/involvement', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wgoId,
-          affiliateLink: affiliateLink.trim() || null,
-        }),
-      })
-
-      if (res.ok) {
-        setAffiliateSaved(true)
-        setTimeout(() => setAffiliateSaved(false), 3000)
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to save affiliate link')
-      }
-    } catch (err) {
-      console.error('Error saving affiliate link:', err)
-      alert('Failed to save affiliate link')
-    } finally {
-      setAffiliateSaving(false)
     }
   }
 
@@ -680,24 +644,37 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               )}
 
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
-              {wgo.referrerAffiliateLink && (
-                <div className="mt-2">
-                  <p className="text-xs text-forest-500 mb-2 font-body">
-                    {wgo.referrerName
-                      ? `Shared by your upline, ${wgo.referrerName}`
-                      : 'Shared by your upline'}
+
+              {/* Your BritePool Partner */}
+              <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-forest-800 mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-emerald-600" />
+                  Your BritePool Partner
+                </h4>
+                {wgo.referrerAffiliateLink ? (
+                  <div>
+                    <p className="text-sm text-forest-600 mb-3">
+                      {wgo.referrerName
+                        ? `${wgo.referrerName} shared this opportunity with you. Use their link below to get started.`
+                        : 'Your referrer shared this opportunity with you. Use their link below to get started.'}
+                    </p>
+                    <a
+                      href={wgo.referrerAffiliateLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Sign Up with {wgo.title}
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-sm text-forest-500">
+                    No BritePool Partner linked to your account yet. Connect with a partner to
+                    receive their referral link for this opportunity.
                   </p>
-                  <a
-                    href={wgo.referrerAffiliateLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Sign Up with {wgo.title}
-                  </a>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -994,66 +971,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
             </CardContent>
           </Card>
 
-          {/* Affiliate Link - Only visible when involved */}
-          {wgo.isInvolved && (
-            <Card className="border-sand-200">
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  My Affiliate Link
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-forest-500">
-                  Add your personal affiliate or referral link for this opportunity. This link will
-                  be shared with members you invite.
-                </p>
-                <input
-                  type="url"
-                  value={affiliateLink}
-                  onChange={(e) => {
-                    setAffiliateLink(e.target.value)
-                    setAffiliateSaved(false)
-                  }}
-                  placeholder="https://example.com/ref/your-id"
-                  className="w-full px-3 py-2 text-sm border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={handleSaveAffiliateLink}
-                    disabled={affiliateSaving}
-                  >
-                    {affiliateSaving ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : (
-                      <Save className="h-3 w-3 mr-1" />
-                    )}
-                    Save
-                  </Button>
-                  {affiliateLink && (
-                    <a
-                      href={affiliateLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Open
-                    </a>
-                  )}
-                  {affiliateSaved && (
-                    <span className="flex items-center gap-1 text-xs text-emerald-600">
-                      <CheckCircle className="h-3 w-3" />
-                      Saved
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Quick Info */}
           <Card className="border-sand-200">
             <CardHeader>
@@ -1223,7 +1140,6 @@ function EditWGOModal({
     currentAmount: wgo.currentAmount.toString(),
     startDate: wgo.startDate ? wgo.startDate.slice(0, 10) : '',
     endDate: wgo.endDate ? wgo.endDate.slice(0, 10) : '',
-    affiliateLink: wgo.userInvolvement?.affiliateLink || '',
     credibilityScore: wgo.credibilityScore?.toString() || '',
     presentationDays: wgo.presentationDays || '',
     shortDescription: wgo.shortDescription || '',
@@ -1309,23 +1225,6 @@ function EditWGOModal({
           }
         }
         throw new Error(data.error || 'Failed to update')
-      }
-
-      // Save affiliate link to the user's involvement record (same as sidebar and profile)
-      if (wgo.isInvolved) {
-        const affiliateRes = await fetch('/api/wgo/involvement', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            wgoId: wgo.id,
-            affiliateLink: formData.affiliateLink.trim() || null,
-          }),
-        })
-
-        if (!affiliateRes.ok) {
-          const data = await affiliateRes.json()
-          throw new Error(data.error || 'Failed to save affiliate link')
-        }
       }
 
       onSuccess()
@@ -1481,25 +1380,6 @@ function EditWGOModal({
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-
-              {wgo.isInvolved && (
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-forest-700 mb-1">
-                    My Affiliate Link
-                  </label>
-                  <p className="text-xs text-forest-500 mb-1.5">
-                    Add your personal affiliate or referral link for this opportunity. This link
-                    will be shared with members you invite.
-                  </p>
-                  <input
-                    type="url"
-                    value={formData.affiliateLink}
-                    onChange={(e) => setFormData({ ...formData, affiliateLink: e.target.value })}
-                    placeholder="https://example.com/ref/your-id"
-                    className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              )}
 
               <div>
                 <label className="block text-sm font-medium text-forest-700 mb-1">Category</label>
