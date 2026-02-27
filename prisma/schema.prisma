@@ -70,6 +70,7 @@ model User {
   referredBy    User?   @relation("UserReferrals", fields: [referredById], references: [id])
   referrals     User[]  @relation("UserReferrals")
   referralClicks ReferralClick[]
+  wgoInvolvements UserWGOInvolvement[]
 
   @@index([email])
   @@index([role])
@@ -1115,6 +1116,7 @@ model UserWGOInvolvement {
   id            String            @id @default(cuid())
   userId        String
   wgoId         String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   wgo           WealthOpportunity @relation(fields: [wgoId], references: [id], onDelete: Cascade)
   role          WGORole           @default(PARTICIPANT)
   status        InvolvementStatus @default(ACTIVE)

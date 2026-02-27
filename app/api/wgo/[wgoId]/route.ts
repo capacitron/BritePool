@@ -48,6 +48,7 @@ export async function GET(
       include: {
         involvements: {
           orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+          include: { user: { select: { name: true } } },
         },
         forumPosts: {
           orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
