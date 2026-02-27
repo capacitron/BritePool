@@ -47,15 +47,21 @@ export async function GET(request: NextRequest) {
     const wgoId = searchParams.get('wgoId')
 
     const where: Record<string, unknown> = {}
+    const userIsAdmin = isAdmin(session.user.role)
 
     // Only admins can view other users' involvements
     if (userId && userId !== session.user.id) {
-      const userIsAdmin = isAdmin(session.user.role)
       if (!userIsAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       where.userId = userId
-    } else if (!wgoId) {
+    } else if (wgoId && !userId) {
+      // When querying by wgoId, non-admins can only see their own involvement
+      // Admins can see all involvements for the WGO
+      if (!userIsAdmin) {
+        where.userId = session.user.id
+      }
+    } else {
       // Default to current user's involvements
       where.userId = session.user.id
     }
