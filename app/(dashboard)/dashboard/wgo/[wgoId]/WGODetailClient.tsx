@@ -82,6 +82,7 @@ interface Involvement {
   status: string
   affiliateLink: string | null
   joinedAt: string
+  user?: { name: string | null } | null
 }
 
 interface ForumPost {
@@ -1046,7 +1047,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 {wgo.involvements.slice(0, 5).map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between py-1">
                     <span className="text-sm text-forest-700">
-                      {inv.userId === userId ? 'You' : `Member ${inv.id.slice(0, 6)}`}
+                      {inv.userId === userId ? 'You' : inv.user?.name || 'Member'}
                     </span>
                     <span
                       className={cn(

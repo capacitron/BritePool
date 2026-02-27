@@ -48,6 +48,7 @@ export async function GET(
       include: {
         involvements: {
           orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+          include: { user: { select: { name: true } } },
         },
         forumPosts: {
           orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
@@ -91,11 +92,15 @@ export async function GET(
       referrerName = referrer?.name || null
 
       // Check if the referrer has an affiliate link for this specific WGO
+      // First check their personal involvement link, then fall back to the WGO-level link
+      // (Leaders typically set the affiliate link on the WGO itself)
       const referrerInvolvement = wgo.involvements.find(
-        (inv) => inv.userId === currentUser.referredById && inv.affiliateLink
+        (inv) => inv.userId === currentUser.referredById
       )
-      if (referrerInvolvement) {
+      if (referrerInvolvement?.affiliateLink) {
         referrerAffiliateLink = referrerInvolvement.affiliateLink
+      } else if (referrerInvolvement && wgo.affiliateLink) {
+        referrerAffiliateLink = wgo.affiliateLink
       }
     }
 
