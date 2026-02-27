@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,6 @@ import {
   AlertCircle,
   CheckCircle,
   Trash2,
-  Save,
 } from 'lucide-react'
 
 interface WGOInvolvement {
@@ -54,7 +53,9 @@ export function WGOInvolvementsSection() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [affiliateLinks, setAffiliateLinks] = useState<Record<string, string>>({})
   const [affiliateSaving, setAffiliateSaving] = useState<Record<string, boolean>>({})
+  const [affiliateSaved, setAffiliateSaved] = useState<Record<string, boolean>>({})
   const [selectedWgoId, setSelectedWgoId] = useState('')
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({})
 
   useEffect(() => {
     fetchData()
@@ -142,21 +143,22 @@ export function WGOInvolvementsSection() {
     }
   }
 
-  async function handleSaveAffiliateLink(wgoId: string) {
+  const handleSaveAffiliateLink = useCallback(async (wgoId: string, link: string) => {
     setAffiliateSaving((prev) => ({ ...prev, [wgoId]: true }))
+    setAffiliateSaved((prev) => ({ ...prev, [wgoId]: false }))
     try {
       const response = await fetch('/api/wgo/involvement', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           wgoId,
-          affiliateLink: affiliateLinks[wgoId]?.trim() || null,
+          affiliateLink: link.trim() || null,
         }),
       })
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Affiliate link saved!' })
-        setTimeout(() => setMessage(null), 3000)
+        setAffiliateSaved((prev) => ({ ...prev, [wgoId]: true }))
+        setTimeout(() => setAffiliateSaved((prev) => ({ ...prev, [wgoId]: false })), 3000)
       } else {
         const data = await response.json()
         setMessage({ type: 'error', text: data.error || 'Failed to save affiliate link' })
@@ -167,6 +169,21 @@ export function WGOInvolvementsSection() {
     } finally {
       setAffiliateSaving((prev) => ({ ...prev, [wgoId]: false }))
     }
+  }, [])
+
+  function handleAffiliateLinkChange(wgoId: string, value: string) {
+    setAffiliateLinks((prev) => ({ ...prev, [wgoId]: value }))
+    setAffiliateSaved((prev) => ({ ...prev, [wgoId]: false }))
+
+    // Clear existing debounce timer
+    if (debounceTimers.current[wgoId]) {
+      clearTimeout(debounceTimers.current[wgoId])
+    }
+
+    // Auto-save after 1.5 seconds of inactivity
+    debounceTimers.current[wgoId] = setTimeout(() => {
+      handleSaveAffiliateLink(wgoId, value)
+    }, 1500)
   }
 
   const safeInvolvements = Array.isArray(involvements) ? involvements : []
@@ -348,38 +365,49 @@ export function WGOInvolvementsSection() {
                         type="url"
                         value={affiliateLinks[involvement.wgoId] || ''}
                         onChange={(e) =>
-                          setAffiliateLinks((prev) => ({
-                            ...prev,
-                            [involvement.wgoId]: e.target.value,
-                          }))
+                          handleAffiliateLinkChange(involvement.wgoId, e.target.value)
                         }
+                        onBlur={() => {
+                          // Save immediately on blur if there are unsaved changes
+                          if (debounceTimers.current[involvement.wgoId]) {
+                            clearTimeout(debounceTimers.current[involvement.wgoId])
+                            delete debounceTimers.current[involvement.wgoId]
+                            handleSaveAffiliateLink(
+                              involvement.wgoId,
+                              affiliateLinks[involvement.wgoId] || ''
+                            )
+                          }
+                        }}
                         placeholder="https://example.com/ref/your-id"
-                        className="flex-1 px-3 py-1.5 text-sm border border-sand-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveAffiliateLink(involvement.wgoId)}
-                        disabled={affiliateSaving[involvement.wgoId]}
-                        className="bg-gold-500 hover:bg-gold-600 text-white"
-                      >
-                        {affiliateSaving[involvement.wgoId] ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Save className="h-3.5 w-3.5" />
+                        className={cn(
+                          'flex-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500',
+                          affiliateSaved[involvement.wgoId]
+                            ? 'border-emerald-400 bg-emerald-50'
+                            : 'border-sand-300'
                         )}
-                      </Button>
+                      />
+                      {affiliateSaving[involvement.wgoId] && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-gold-500 shrink-0" />
+                      )}
+                      {affiliateSaved[involvement.wgoId] && (
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 shrink-0">
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          Saved
+                        </span>
+                      )}
                       {affiliateLinks[involvement.wgoId] && (
                         <a
                           href={affiliateLinks[involvement.wgoId]}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 text-gold-600 hover:text-gold-700"
+                          className="p-1.5 text-gold-600 hover:text-gold-700 shrink-0"
                           title="Open affiliate link"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       )}
                     </div>
+                    <p className="text-xs text-forest-400 mt-1">Auto-saves as you type</p>
                   </div>
                 </div>
               ))}
