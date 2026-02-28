@@ -478,18 +478,21 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     <div className="space-y-6">
       {/* Draft Banner */}
       {wgo.status === 'DRAFT' && (
-        <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-gray-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 p-4 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-sm">
+          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-amber-100 flex-shrink-0">
+            <AlertCircle className="h-6 w-6 text-amber-600" />
+          </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-700">This opportunity is a draft</p>
-            <p className="text-xs text-gray-500">
-              Only you and admins can see it. Publish when ready to make it visible to all members.
+            <p className="text-sm font-bold text-amber-800">Draft — Not Published</p>
+            <p className="text-xs text-amber-700">
+              Only you and admins can see this. Publish when ready to make it visible to all
+              members.
             </p>
           </div>
           {canEdit && (
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
               onClick={() => handleTogglePublish('ACTIVE')}
               disabled={publishLoading}
             >
@@ -554,21 +557,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 <X className="h-4 w-4 mr-2" />
               )}
               Unpublish
-            </Button>
-          )}
-          {canEdit && wgo.status !== 'ACTIVE' && (
-            <Button
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => handleTogglePublish('ACTIVE')}
-              disabled={publishLoading}
-            >
-              {publishLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
-              )}
-              Publish
             </Button>
           )}
           {canEdit && (
