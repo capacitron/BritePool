@@ -257,6 +257,178 @@ async function main() {
   }
   console.log('✓ Forum categories seeded')
 
+  // ── WGO Category Migration ──────────────────────────────────────
+  // Migrate existing WGOs from old categories to new categories
+  const categoryMigrations = [
+    { oldTitle: 'Polar Tensor', newCategory: 'CRYPTO_AI_TRADING' },
+    { oldTitle: 'Bellator', newCategory: 'NODES' },
+    { oldTitle: 'MetaTerra', newCategory: 'NODES' },
+    { oldTitle: 'Aurum', newCategory: 'CRYPTO_AI_TRADING' },
+  ]
+
+  for (const migration of categoryMigrations) {
+    await prisma.wealthOpportunity.updateMany({
+      where: { title: { contains: migration.oldTitle } },
+      data: { category: migration.newCategory as any },
+    })
+  }
+  console.log('✓ Existing WGO categories migrated')
+
+  // ── Seed new DRAFT WGOs (4-8) ──────────────────────────────────
+  // Find an admin user to be the creator
+  const seedCreator = await prisma.user.findFirst({
+    where: { role: 'WEB_STEWARD' },
+  })
+
+  if (seedCreator) {
+    const draftWGOs = [
+      {
+        title: 'LiveGood',
+        description:
+          'LiveGood is a membership-based wellness and financial opportunity platform offering high-quality health products at member-only prices. Members can earn through product sales, team building, and a matrix compensation plan.',
+        category: 'MEMBERSHIP',
+        status: 'DRAFT',
+        credibilityScore: 10,
+        minimumInvestment: 10,
+        wgoType: 'Crypto + Fiat',
+        shortDescription: 'Matrix + Uni-Level hybrid with product sales and team commissions',
+        presentationDays: 'Every Tuesday 5:00 PM PST / Thursday 12:00 PM PST',
+      },
+      {
+        title: 'Affiliate Mentor',
+        description:
+          'Affiliate Mentor is an AI-powered marketing platform that automates affiliate campaigns using advanced AI tools. Members earn through automated marketing funnels, referral commissions, and AI-generated content strategies.',
+        category: 'AI_MARKETING',
+        status: 'DRAFT',
+        credibilityScore: 9,
+        minimumInvestment: 25,
+        wgoType: 'Fiat (Stripe / PayPal)',
+        shortDescription: 'Recurring affiliate commissions + AI-automated marketing funnels',
+        presentationDays: 'Webinar every Wednesday 6:00 PM EST',
+      },
+      {
+        title: 'GGC — Crypto Gold Exchange',
+        description:
+          'GGC (Global Gold Coin) is a gold-backed cryptocurrency platform enabling members to trade, stake, and invest in tokenized gold assets. Combines the stability of gold with blockchain transparency.',
+        category: 'GOLD_RWA',
+        status: 'DRAFT',
+        credibilityScore: 8,
+        minimumInvestment: 100,
+        wgoType: 'Crypto only (USDT / BTC)',
+        shortDescription: 'Gold-backed token staking + RWA trading yields',
+        presentationDays: 'Bi-weekly Thursday 7:00 PM CST',
+      },
+      {
+        title: 'LoomX',
+        description:
+          'LoomX is a crypto AI trading platform offering automated trading bots and portfolio management. Members invest and earn through algorithmic trading strategies across multiple exchanges.',
+        category: 'CRYPTO_AI_TRADING',
+        status: 'DRAFT',
+        credibilityScore: 5,
+        minimumInvestment: 100,
+        wgoType: 'Crypto only',
+        shortDescription: 'AI algo-trading pools with variable APY returns',
+        presentationDays: 'Monthly AMA — first Saturday',
+      },
+      {
+        title: 'Coop Income',
+        description:
+          'Coop Income is a crowd-funding cooperative where members pool resources for collective investments. Returns are distributed proportionally based on contribution levels.',
+        category: 'CROWD_FUNDING',
+        status: 'DRAFT',
+        credibilityScore: 4,
+        minimumInvestment: 5,
+        wgoType: 'Fiat (Cash App / Zelle)',
+        shortDescription: 'Cooperative pooled investing with proportional profit sharing',
+        presentationDays: 'Open Zoom — Sundays 3:00 PM EST',
+      },
+    ]
+
+    for (const wgo of draftWGOs) {
+      const existing = await prisma.wealthOpportunity.findFirst({
+        where: { title: wgo.title },
+      })
+      if (!existing) {
+        await prisma.wealthOpportunity.create({
+          data: {
+            ...wgo,
+            category: wgo.category as any,
+            status: wgo.status as any,
+            creatorId: seedCreator.id,
+            involvements: {
+              create: {
+                userId: seedCreator.id,
+                role: 'LEADER',
+                status: 'ACTIVE',
+              },
+            },
+          },
+        })
+        console.log(`  ✓ Created DRAFT WGO: ${wgo.title}`)
+      } else {
+        console.log(`  ⊘ WGO already exists: ${wgo.title}`)
+      }
+    }
+    console.log('✓ DRAFT WGOs seeded')
+  }
+
+  // ── Seed Comparison Matrix ──────────────────────────────────────
+  const matrixRows = [
+    {
+      theme: 'Revenue Model',
+      sortOrder: 1,
+      similarity:
+        'All platforms offer passive or semi-passive income streams with referral-based earning structures and tiered compensation plans.',
+      difference:
+        'LiveGood uses a matrix + uni-level hybrid, Affiliate Mentor relies on recurring affiliate commissions, GGC focuses on gold-backed staking yields, LoomX uses AI algo-trading pools, and Coop Income distributes cooperative pooled returns.',
+    },
+    {
+      theme: 'AI & Technology',
+      sortOrder: 2,
+      similarity:
+        'Multiple platforms integrate AI-driven tools — Polar Tensor and LoomX for trading, Affiliate Mentor for marketing automation, and Bellator/MetaTerra for node infrastructure.',
+      difference:
+        'Polar Tensor and LoomX are fully AI-automated trading. Affiliate Mentor uses AI for content and funnel generation. Bellator and MetaTerra run decentralized node infrastructure. LiveGood, GGC, and Coop Income have minimal or no AI integration.',
+    },
+    {
+      theme: 'Payment & Accessibility',
+      sortOrder: 3,
+      similarity:
+        'All platforms accept some form of digital payment and have low-to-moderate entry costs, making them accessible to a wide range of members.',
+      difference:
+        'LiveGood and Coop Income accept fiat (Cash App, Zelle, Stripe). GGC and LoomX are crypto-only (USDT/BTC). Affiliate Mentor uses Stripe/PayPal. Polar Tensor, Aurum, and Bellator accept both crypto and fiat.',
+    },
+    {
+      theme: 'Transparency',
+      sortOrder: 4,
+      similarity:
+        'Most platforms provide some level of public-facing documentation, dashboards, or reporting for members to track performance.',
+      difference:
+        'Polar Tensor and Bellator publish real-time dashboards with verifiable on-chain data. LiveGood provides corporate earnings reports. LoomX and Coop Income have limited public transparency. GGC publishes gold reserve audits quarterly.',
+    },
+    {
+      theme: 'Communication',
+      sortOrder: 5,
+      similarity:
+        'All platforms maintain active community channels (Telegram, Discord, or Zoom) with regular scheduled calls or presentations.',
+      difference:
+        'LiveGood has the most frequent schedule (2x/week). Affiliate Mentor runs weekly webinars. GGC and Coop Income hold bi-weekly or monthly events. LoomX relies primarily on monthly AMAs with less frequent direct communication.',
+    },
+  ]
+
+  for (const row of matrixRows) {
+    const existing = await prisma.wGOComparisonMatrix.findFirst({
+      where: { theme: row.theme },
+    })
+    if (!existing) {
+      await prisma.wGOComparisonMatrix.create({ data: row })
+      console.log(`  ✓ Created matrix row: ${row.theme}`)
+    } else {
+      console.log(`  ⊘ Matrix row exists: ${row.theme}`)
+    }
+  }
+  console.log('✓ Comparison matrix seeded')
+
   console.log('Seed completed!')
 }
 

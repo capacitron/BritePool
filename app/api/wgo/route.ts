@@ -14,9 +14,9 @@ const createWGOSchema = z.object({
   title: z.string().max(200).optional().default('Untitled Opportunity'),
   description: z.string().max(5000).optional().default(''),
   category: z
-    .enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY'])
+    .enum(['CRYPTO_AI_TRADING', 'NODES', 'MEMBERSHIP', 'AI_MARKETING', 'GOLD_RWA', 'CROWD_FUNDING'])
     .optional()
-    .default('INVESTMENT'),
+    .default('CRYPTO_AI_TRADING'),
   status: z
     .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
     .optional()
@@ -32,7 +32,9 @@ const createWGOSchema = z.object({
 })
 
 const querySchema = z.object({
-  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']).optional(),
+  category: z
+    .enum(['CRYPTO_AI_TRADING', 'NODES', 'MEMBERSHIP', 'AI_MARKETING', 'GOLD_RWA', 'CROWD_FUNDING'])
+    .optional(),
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
@@ -235,7 +237,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: title || 'Untitled Opportunity',
         description: description || '',
-        category: category || 'INVESTMENT',
+        category: category || 'CRYPTO_AI_TRADING',
         status: status || 'ACTIVE',
         targetAmount: targetAmount ?? null,
         startDate: parsedStartDate,

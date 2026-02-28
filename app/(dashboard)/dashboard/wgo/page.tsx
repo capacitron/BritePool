@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   TrendingUp,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import {
@@ -25,6 +26,7 @@ import {
   WGO_CATEGORIES,
   WGO_STATUSES,
 } from '@/lib/wgo/categories'
+import WGOComparison from './WGOComparison'
 
 interface WGO {
   id: string
@@ -41,6 +43,19 @@ interface WGO {
   forumPostCount: number
   isInvolved: boolean
   createdAt: string
+  credibilityScore?: number | null
+  minimumInvestment?: number | null
+  wgoType?: string | null
+  shortDescription?: string | null
+  presentationDays?: string | null
+}
+
+interface MatrixRow {
+  id: string
+  theme: string
+  sortOrder: number
+  similarity: string
+  difference: string
 }
 
 const ADMIN_ROLES = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER']
@@ -58,6 +73,9 @@ export default function WGOPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(true) // default true to avoid flash
+  const [activeTab, setActiveTab] = useState('opportunities')
+  const [matrixRows, setMatrixRows] = useState<MatrixRow[]>([])
+  const [comparisonWGOs, setComparisonWGOs] = useState<WGO[]>([])
 
   useEffect(() => {
     setDisclaimerDismissed(localStorage.getItem('wgo-disclaimer-ack') === 'true')
@@ -100,6 +118,45 @@ export default function WGOPage() {
     }
   }
 
+  const fetchComparisonData = useCallback(async () => {
+    try {
+      const [wgoRes, matrixRes] = await Promise.all([
+        fetch('/api/wgo?status=ACTIVE&limit=100'),
+        fetch('/api/wgo/comparison-matrix'),
+      ])
+      if (wgoRes.ok) {
+        const wgoData = await wgoRes.json()
+        setComparisonWGOs(wgoData.data || [])
+      }
+      if (matrixRes.ok) {
+        const matrixData = await matrixRes.json()
+        setMatrixRows(matrixData.data || [])
+      }
+    } catch {
+      // Comparison data is non-critical
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'comparison') {
+      fetchComparisonData()
+    }
+  }, [activeTab, fetchComparisonData])
+
+  const handleMatrixUpdate = async (
+    id: string,
+    data: { similarity?: string; difference?: string }
+  ) => {
+    const res = await fetch('/api/wgo/comparison-matrix', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...data }),
+    })
+    if (res.ok) {
+      setMatrixRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...data } : row)))
+    }
+  }
+
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
   const clearFilters = () => {
@@ -127,264 +184,287 @@ export default function WGOPage() {
         </div>
       )}
 
-      {/* Risk Disclaimer Banner - inline when not yet acknowledged */}
-      {!disclaimerDismissed && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm text-amber-800 font-medium">Investment Risk Disclaimer</p>
-              <p className="text-xs text-amber-700 mt-1">
-                All opportunities listed are supported by the good faith of the membership. Higher
-                trust ratings indicate more organizational credibility, but all investments carry
-                risk. Please conduct your own due diligence before participating.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setDisclaimerDismissed(true)
-                localStorage.setItem('wgo-disclaimer-ack', 'true')
-              }}
-              className="flex-shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 border border-amber-300 rounded-md px-3 py-1.5 hover:bg-amber-100 transition-colors"
-            >
-              I Understand
-            </button>
-          </CardContent>
-        </Card>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+          <TabsTrigger value="comparison">Comparison</TabsTrigger>
+        </TabsList>
 
-      {/* Filter Toggle */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(showFilters && 'bg-forest-100')}
-        >
-          <Filter className="h-4 w-4 mr-2" />
-          Filters
-          {hasActiveFilters && (
-            <span className="ml-2 px-1.5 py-0.5 bg-forest-600 text-white text-xs rounded-full">
-              !
-            </span>
+        <TabsContent value="comparison">
+          <WGOComparison
+            activeWGOs={comparisonWGOs}
+            matrixRows={matrixRows}
+            isAdmin={isAdmin}
+            onMatrixUpdate={handleMatrixUpdate}
+          />
+        </TabsContent>
+
+        <TabsContent value="opportunities">
+          {/* Risk Disclaimer Banner - inline when not yet acknowledged */}
+          {!disclaimerDismissed && (
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-amber-800 font-medium">Investment Risk Disclaimer</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    All opportunities listed are supported by the good faith of the membership.
+                    Higher trust ratings indicate more organizational credibility, but all
+                    investments carry risk. Please conduct your own due diligence before
+                    participating.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setDisclaimerDismissed(true)
+                    localStorage.setItem('wgo-disclaimer-ack', 'true')
+                  }}
+                  className="flex-shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 border border-amber-300 rounded-md px-3 py-1.5 hover:bg-amber-100 transition-colors"
+                >
+                  I Understand
+                </button>
+              </CardContent>
+            </Card>
           )}
-        </Button>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="h-4 w-4 mr-1" />
-            Clear
-          </Button>
-        )}
-      </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <Card className="border-sand-200">
-          <CardContent className="p-4 space-y-4">
-            {/* Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-2">Category</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setCategoryFilter(null)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                    categoryFilter === null
-                      ? 'bg-forest-600 text-white'
-                      : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
-                  )}
-                >
-                  All
-                </button>
-                {WGO_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      categoryFilter === cat ? 'bg-forest-600 text-white' : WGO_CATEGORY_COLORS[cat]
-                    )}
-                  >
-                    {WGO_CATEGORY_LABELS[cat]}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Filter Toggle */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(showFilters && 'bg-forest-100')}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-2 px-1.5 py-0.5 bg-forest-600 text-white text-xs rounded-full">
+                  !
+                </span>
+              )}
+            </Button>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
 
-            {/* Status Filter */}
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-2">Status</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setStatusFilter('')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                    statusFilter === ''
-                      ? 'bg-forest-600 text-white'
-                      : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
-                  )}
-                >
-                  All
-                </button>
-                {WGO_STATUSES.map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      statusFilter === status
-                        ? 'bg-forest-600 text-white'
-                        : WGO_STATUS_COLORS[status]
-                    )}
-                  >
-                    {WGO_STATUS_LABELS[status]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Risk Tolerance Filter */}
-            <div>
-              <label className="block text-sm font-medium text-forest-700 mb-2">
-                Minimum Trust Level
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[null, 8, 6, 4, 2].map((level) => (
-                  <button
-                    key={level ?? 'all'}
-                    onClick={() => setMinRiskFilter(level)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      minRiskFilter === level
-                        ? 'bg-forest-600 text-white'
-                        : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
-                    )}
-                  >
-                    {level === null ? 'Any' : `${level}+ Trust`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Results */}
-      {loading ? (
-        <div className="text-center py-12 text-forest-500">Loading opportunities...</div>
-      ) : error ? (
-        <div className="text-center py-12 text-red-500">{error}</div>
-      ) : opportunities.length === 0 ? (
-        <Card className="border-sand-200">
-          <CardContent className="p-12 text-center">
-            <TrendingUp className="h-12 w-12 text-forest-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-forest-700 mb-2">No Opportunities Found</h3>
-            <p className="text-forest-500">
-              {hasActiveFilters
-                ? 'Try adjusting your filters to see more opportunities.'
-                : 'Check back soon for new Wealth Generation Opportunities (WGO).'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {opportunities.map((wgo) => (
-            <Link key={wgo.id} href={`/dashboard/wgo/${wgo.id}`}>
-              <Card className="border-sand-200 hover:border-emerald-300 hover:shadow-lg transition-all h-full cursor-pointer">
-                <CardContent className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-forest-800">{wgo.title}</h3>
-                        <span
-                          className={cn(
-                            'text-xs px-2 py-0.5 rounded-full',
-                            WGO_CATEGORY_COLORS[wgo.category] || 'bg-gray-100 text-gray-700'
-                          )}
-                        >
-                          {WGO_CATEGORY_LABELS[wgo.category] || wgo.category}
-                        </span>
-                      </div>
-                    </div>
-                    {wgo.isInvolved && (
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-                        Joined
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {wgo.description && (
-                    <p className="text-sm text-forest-600 line-clamp-2 mb-4">{wgo.description}</p>
-                  )}
-
-                  {/* Stats */}
-                  <div className="flex flex-wrap gap-3 text-xs text-forest-500">
-                    {wgo.targetAmount && (
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        Target: ${wgo.targetAmount.toLocaleString()}
-                      </span>
-                    )}
-                    {wgo.involvementCount > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {wgo.involvementCount} members
-                      </span>
-                    )}
-                    {wgo.startDate && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Started {new Date(wgo.startDate).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress */}
-                  {wgo.targetAmount && wgo.currentAmount > 0 && (
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs text-forest-600 mb-1">
-                        <span>${wgo.currentAmount.toLocaleString()} raised</span>
-                        <span>{Math.round((wgo.currentAmount / wgo.targetAmount) * 100)}%</span>
-                      </div>
-                      <div className="h-2 bg-sand-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{
-                            width: `${Math.min(100, (wgo.currentAmount / wgo.targetAmount) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status Badge */}
-                  {wgo.status !== 'ACTIVE' && (
-                    <div className="mt-3">
-                      <span
+          {/* Filters Panel */}
+          {showFilters && (
+            <Card className="border-sand-200">
+              <CardContent className="p-4 space-y-4">
+                {/* Category Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-forest-700 mb-2">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setCategoryFilter(null)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                        categoryFilter === null
+                          ? 'bg-forest-600 text-white'
+                          : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
+                      )}
+                    >
+                      All
+                    </button>
+                    {WGO_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setCategoryFilter(cat)}
                         className={cn(
-                          'text-xs px-2 py-0.5 rounded-full',
-                          WGO_STATUS_COLORS[wgo.status] || 'bg-gray-100 text-gray-700'
+                          'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                          categoryFilter === cat
+                            ? 'bg-forest-600 text-white'
+                            : WGO_CATEGORY_COLORS[cat]
                         )}
                       >
-                        {WGO_STATUS_LABELS[wgo.status] || wgo.status}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Footer */}
-                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-sand-100 text-xs text-forest-500">
-                    <span>{wgo.forumPostCount} discussions</span>
+                        {WGO_CATEGORY_LABELS[cat]}
+                      </button>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-forest-700 mb-2">Status</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setStatusFilter('')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                        statusFilter === ''
+                          ? 'bg-forest-600 text-white'
+                          : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
+                      )}
+                    >
+                      All
+                    </button>
+                    {WGO_STATUSES.map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setStatusFilter(status)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                          statusFilter === status
+                            ? 'bg-forest-600 text-white'
+                            : WGO_STATUS_COLORS[status]
+                        )}
+                      >
+                        {WGO_STATUS_LABELS[status]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Risk Tolerance Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-forest-700 mb-2">
+                    Minimum Trust Level
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[null, 8, 6, 4, 2].map((level) => (
+                      <button
+                        key={level ?? 'all'}
+                        onClick={() => setMinRiskFilter(level)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                          minRiskFilter === level
+                            ? 'bg-forest-600 text-white'
+                            : 'bg-sand-100 text-forest-700 hover:bg-sand-200'
+                        )}
+                      >
+                        {level === null ? 'Any' : `${level}+ Trust`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Results */}
+          {loading ? (
+            <div className="text-center py-12 text-forest-500">Loading opportunities...</div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-500">{error}</div>
+          ) : opportunities.length === 0 ? (
+            <Card className="border-sand-200">
+              <CardContent className="p-12 text-center">
+                <TrendingUp className="h-12 w-12 text-forest-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-forest-700 mb-2">No Opportunities Found</h3>
+                <p className="text-forest-500">
+                  {hasActiveFilters
+                    ? 'Try adjusting your filters to see more opportunities.'
+                    : 'Check back soon for new Wealth Generation Opportunities (WGO).'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {opportunities.map((wgo) => (
+                <Link key={wgo.id} href={`/dashboard/wgo/${wgo.id}`}>
+                  <Card className="border-sand-200 hover:border-emerald-300 hover:shadow-lg transition-all h-full cursor-pointer">
+                    <CardContent className="p-6">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <TrendingUp className="h-6 w-6 text-emerald-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-forest-800">{wgo.title}</h3>
+                            <span
+                              className={cn(
+                                'text-xs px-2 py-0.5 rounded-full',
+                                WGO_CATEGORY_COLORS[wgo.category] || 'bg-gray-100 text-gray-700'
+                              )}
+                            >
+                              {WGO_CATEGORY_LABELS[wgo.category] || wgo.category}
+                            </span>
+                          </div>
+                        </div>
+                        {wgo.isInvolved && (
+                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                            Joined
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      {wgo.description && (
+                        <p className="text-sm text-forest-600 line-clamp-2 mb-4">
+                          {wgo.description}
+                        </p>
+                      )}
+
+                      {/* Stats */}
+                      <div className="flex flex-wrap gap-3 text-xs text-forest-500">
+                        {wgo.targetAmount && (
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            Target: ${wgo.targetAmount.toLocaleString()}
+                          </span>
+                        )}
+                        {wgo.involvementCount > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {wgo.involvementCount} members
+                          </span>
+                        )}
+                        {wgo.startDate && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Started {new Date(wgo.startDate).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Progress */}
+                      {wgo.targetAmount && wgo.currentAmount > 0 && (
+                        <div className="mt-3">
+                          <div className="flex justify-between text-xs text-forest-600 mb-1">
+                            <span>${wgo.currentAmount.toLocaleString()} raised</span>
+                            <span>{Math.round((wgo.currentAmount / wgo.targetAmount) * 100)}%</span>
+                          </div>
+                          <div className="h-2 bg-sand-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 rounded-full"
+                              style={{
+                                width: `${Math.min(100, (wgo.currentAmount / wgo.targetAmount) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status Badge */}
+                      {wgo.status !== 'ACTIVE' && (
+                        <div className="mt-3">
+                          <span
+                            className={cn(
+                              'text-xs px-2 py-0.5 rounded-full',
+                              WGO_STATUS_COLORS[wgo.status] || 'bg-gray-100 text-gray-700'
+                            )}
+                          >
+                            {WGO_STATUS_LABELS[wgo.status] || wgo.status}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Footer */}
+                      <div className="flex items-center gap-3 mt-4 pt-4 border-t border-sand-100 text-xs text-forest-500">
+                        <span>{wgo.forumPostCount} discussions</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Add Modal - Simplified inline form */}
       {showAddModal && (
@@ -438,7 +518,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'INVESTMENT',
+    category: 'CRYPTO_AI_TRADING',
     status: 'DRAFT',
     targetAmount: '',
     startDate: '',
@@ -488,7 +568,7 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       const payload: Record<string, unknown> = {
         title: formData.title.trim() || 'Untitled Opportunity',
         description: formData.description.trim() || '',
-        category: formData.category || 'INVESTMENT',
+        category: formData.category || 'CRYPTO_AI_TRADING',
         status: formData.status || 'ACTIVE',
         targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : null,
         minimumInvestment: formData.minimumInvestment
@@ -543,7 +623,14 @@ function AddWGOModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     }
   }
 
-  const API_CATEGORIES = ['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']
+  const API_CATEGORIES = [
+    'CRYPTO_AI_TRADING',
+    'NODES',
+    'MEMBERSHIP',
+    'AI_MARKETING',
+    'GOLD_RWA',
+    'CROWD_FUNDING',
+  ]
   const API_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']
 
   return (
