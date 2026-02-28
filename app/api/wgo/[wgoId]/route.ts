@@ -12,7 +12,9 @@ export const runtime = 'nodejs'
 const updateWGOSchema = z.object({
   title: z.string().max(200).optional(),
   description: z.string().max(5000).optional(),
-  category: z.enum(['REAL_ESTATE', 'BUSINESS', 'INVESTMENT', 'EDUCATION', 'COMMUNITY']).optional(),
+  category: z
+    .enum(['CRYPTO_AI_TRADING', 'NODES', 'MEMBERSHIP', 'AI_MARKETING', 'GOLD_RWA', 'CROWD_FUNDING'])
+    .optional(),
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
   targetAmount: z.number().optional().nullable(),
   currentAmount: z.number().optional(),

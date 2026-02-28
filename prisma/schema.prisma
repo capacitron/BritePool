@@ -1147,12 +1147,25 @@ model WGOForumPost {
   @@index([createdAt])
 }
 
+model WGOComparisonMatrix {
+  id         String   @id @default(cuid())
+  theme      String
+  sortOrder  Int      @default(0)
+  similarity String
+  difference String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
 enum WGOCategory {
-  REAL_ESTATE
-  BUSINESS
-  INVESTMENT
-  EDUCATION
-  COMMUNITY
+  CRYPTO_AI_TRADING
+  NODES
+  MEMBERSHIP
+  AI_MARKETING
+  GOLD_RWA
+  CROWD_FUNDING
 }
 
 enum WGOStatus {

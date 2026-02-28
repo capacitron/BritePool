@@ -28,39 +28,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-// WGO Category and Status labels
-const WGO_CATEGORY_LABELS: Record<string, string> = {
-  REAL_ESTATE: 'Real Estate',
-  BUSINESS: 'Business',
-  INVESTMENT: 'Investment',
-  EDUCATION: 'Education',
-  COMMUNITY: 'Community',
-}
-
-const WGO_CATEGORY_COLORS: Record<string, string> = {
-  REAL_ESTATE: 'bg-blue-100 text-blue-800',
-  BUSINESS: 'bg-purple-100 text-purple-800',
-  INVESTMENT: 'bg-green-100 text-green-800',
-  EDUCATION: 'bg-yellow-100 text-yellow-800',
-  COMMUNITY: 'bg-pink-100 text-pink-800',
-}
-
-const WGO_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Draft',
-  ACTIVE: 'Active',
-  PAUSED: 'Paused',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
-}
-
-const WGO_STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  ACTIVE: 'bg-emerald-100 text-emerald-800',
-  PAUSED: 'bg-amber-100 text-amber-800',
-  COMPLETED: 'bg-blue-100 text-blue-800',
-  CANCELLED: 'bg-red-100 text-red-800',
-}
+import {
+  WGO_CATEGORY_LABELS,
+  WGO_CATEGORY_COLORS,
+  WGO_STATUS_LABELS,
+  WGO_STATUS_COLORS,
+} from '@/lib/wgo/categories'
 
 const WGO_ROLE_LABELS: Record<string, string> = {
   LEADER: 'Leader',
