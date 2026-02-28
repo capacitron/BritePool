@@ -1105,8 +1105,8 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-gold-100 flex items-center justify-center">
-                    <Link2 className="h-5 w-5 text-gold-600" />
+                  <div className="h-10 w-10 rounded-lg bg-sand-100 flex items-center justify-center">
+                    <Link2 className="h-5 w-5 text-sand-600" />
                   </div>
                   <h3 className="text-lg font-bold text-forest-900">Add Your Affiliate Link</h3>
                 </div>
@@ -1129,7 +1129,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 value={affiliateLinkInput}
                 onChange={(e) => setAffiliateLinkInput(e.target.value)}
                 placeholder="https://example.com/ref/your-id"
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 text-sm mb-4"
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-sand-500 focus:border-sand-500 text-sm mb-4"
                 autoFocus
               />
               <div className="flex gap-3">
@@ -1144,7 +1144,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                   Skip for Now
                 </Button>
                 <Button
-                  className="flex-1 bg-gold-500 hover:bg-gold-600 text-white"
+                  className="flex-1 bg-sand-500 hover:bg-sand-600 text-white"
                   onClick={handleSaveAffiliateLinkPrompt}
                   disabled={affiliateLinkSaving || !affiliateLinkInput.trim()}
                 >
