@@ -12,6 +12,7 @@ import Link from 'next/link'
 export default function OutreachPage() {
   const router = useRouter()
   const [username, setUsername] = useState<string | null>(null)
+  const [fullName, setFullName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function OutreachPage() {
         }
         const data = await res.json()
         setUsername(data.username || null)
+        setFullName(data.name || null)
       } catch {
         // Profile fetch failed
       } finally {
@@ -66,7 +68,7 @@ export default function OutreachPage() {
               automatically included in all templates below.
             </p>
           </div>
-          <OutreachTemplates username={username} />
+          <OutreachTemplates username={username} fullName={fullName} />
         </>
       ) : (
         <Card className="border-sand-200">

@@ -21,6 +21,7 @@ import {
 
 interface OutreachTemplatesProps {
   username: string
+  fullName?: string | null
 }
 
 type TabId = 'email' | 'x' | 'ig' | 'tips'
@@ -43,8 +44,9 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'tips', label: 'Tips', icon: '💡' },
 ]
 
-function getTemplates(username: string) {
+function getTemplates(username: string, fullName?: string | null) {
   const link = `https://britepool.org/${username}`
+  const signOff = fullName || '[Your Name]'
 
   const emailTemplates: TemplateData[] = [
     {
@@ -69,7 +71,7 @@ If you're curious, here's where you can check it out and get started:
 No pressure at all — just wanted to make sure this landed in front of the right people. I'd love to walk you through it if you want to hop on a quick call.
 
 Talk soon,
-[Your Name]`,
+${signOff}`,
       note: "Best for: Close friends, people you've had real conversations with about health or finances, anyone who values personal recommendations over mass messaging.",
     },
     {
@@ -100,7 +102,7 @@ If that sounds like you, take 5 minutes and check this out:
 
 Happy to answer any questions — just hit reply.
 
-[Your Name]`,
+${signOff}`,
       note: "Best for: Acquaintances who've expressed interest in side income, entrepreneurship, or financial freedom. People who respond well to clear value propositions.",
     },
     {
@@ -125,7 +127,7 @@ If that resonates, here's the link to explore:
 Would love to hear your thoughts.
 
 Warmly,
-[Your Name]`,
+${signOff}`,
       note: 'Best for: People who are more community-oriented, skeptical of "opportunity" pitches, or who you\'d approach more gently. Great for spiritual/wellness-minded contacts.',
     },
   ]
@@ -418,10 +420,10 @@ function TemplateCard({ template }: { template: TemplateData }) {
   )
 }
 
-export function OutreachTemplates({ username }: OutreachTemplatesProps) {
+export function OutreachTemplates({ username, fullName }: OutreachTemplatesProps) {
   const [activeTab, setActiveTab] = useState<TabId>('email')
   const [hashtagCopied, setHashtagCopied] = useState<string | null>(null)
-  const { emailTemplates, xTemplates, igTemplates } = getTemplates(username)
+  const { emailTemplates, xTemplates, igTemplates } = getTemplates(username, fullName)
 
   function copyHashtag(tag: string) {
     navigator.clipboard.writeText(tag)
