@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
   {
     title: 'Resources',
     items: [
+      { href: '/dashboard/outreach', label: 'Outreach', icon: Megaphone },
       { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, locked: true },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText, locked: true },
       { href: '/dashboard/media', label: 'Media', icon: Image, locked: true },

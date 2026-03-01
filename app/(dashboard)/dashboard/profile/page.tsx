@@ -628,6 +628,14 @@ export default function ProfilePage() {
                 Share this link with prospective members. When they register, they will be
                 automatically linked to you.
               </p>
+              <div className="pt-2 border-t border-sand-200 mt-3">
+                <a
+                  href="/dashboard/outreach"
+                  className="text-sm text-forest-600 hover:text-forest-800 font-medium font-body inline-flex items-center gap-1.5 transition-colors"
+                >
+                  Need ready-to-use templates? Browse your Outreach Toolkit →
+                </a>
+              </div>
             </div>
           )}
         </CardContent>
