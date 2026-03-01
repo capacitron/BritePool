@@ -59,7 +59,7 @@ I hope you're doing well! I've been meaning to reach out because I recently conn
 
 It's called BRITE POOL — Building Resources Investing Together for Empowerment. It's a ministerium-based collective focused on two things most people are quietly seeking: better health and real wealth.
 
-What drew me in is that it's not just one opportunity or one product. It's a platform designed to help people build a diversified income portfolio — think multiple streams working together — along with healing center projects and community-driven growth. There's governance, education, equity-building through what they call the Sacred Ledger, and a community of 500+ members who are actively investing in each other.
+What drew me in is that it's not just one opportunity or one product. It's a platform designed to help people build a diversified income portfolio — think multiple streams working together — along with healing center projects and community-driven growth. There's governance, education, equity-building through what they call the Sacred Ledger, and a growing community of people who are actively investing in each other.
 
 I know you've always been someone who thinks seriously about where you put your time and energy, so I wanted to share this with you directly rather than just post about it.
 
@@ -90,7 +90,7 @@ Here's why it caught my attention:
 
 • It's community-governed — members actually shape the direction through committees
 • There's a built-in equity system (the Sacred Ledger) where your contributions grow
-• Over $2M invested collectively, 500+ members, and 12 active committees
+• A growing collective with active committees shaping the direction together
 • It addresses both health AND wealth — because what good is one without the other?
 
 This is for people who are serious. Serious about their health. Serious about their financial future. Serious about building something alongside like-minded people.
@@ -153,14 +153,14 @@ Serious people only 👉 ${link}`,
       title: 'The Personal Thread Opener',
       body: `I used to think building wealth meant doing everything alone.
 
-Then I found a collective of 500+ people who invest in each other, build together, and share in the growth.
+Then I found a collective of people who invest in each other, build together, and share in the growth.
 
 BRITE POOL changed how I think about money AND community.
 
 Here's what it is 🧵👇`,
       charCount: '~271 characters — follow with thread',
       note:
-        "Thread idea: 2/ BRITE POOL = Building Resources Investing Together for Empowerment. It's a ministerium-based platform where you can build a diversified income portfolio. 3/ They're also building healing center projects — because real wealth isn't just financial. 4/ 500+ members. $2M+ invested collectively. 12 committees where YOU help govern the direction. → " +
+        "Thread idea: 2/ BRITE POOL = Building Resources Investing Together for Empowerment. It's a ministerium-based platform where you can build a diversified income portfolio. 3/ They're also building healing center projects — because real wealth isn't just financial. 4/ A growing collective with active committees where YOU help govern the direction. → " +
         link,
     },
     {
@@ -187,7 +187,7 @@ ${link}`,
 
 If there was a community that helped you build multiple income streams AND invested in your health and personal growth — would you take it seriously?
 
-That's what BRITE POOL is doing. 500+ members. $2M+ invested together.
+That's what BRITE POOL is doing. A growing collective building real wealth together.
 
 DM me or check it out 👉 ${link}`,
       charCount: '~279 characters',
@@ -209,7 +209,7 @@ BRITE POOL — Building Resources Investing Together for Empowerment — is a co
 
 This isn't about chasing one thing and hoping it works. It's about building a foundation — multiple streams, community governance, equity through contribution, and education that actually empowers you.
 
-500+ members. $2M+ invested collectively. 12 committees shaping the future together.
+An active, growing collective with committees shaping the future together.
 
 If you're serious about your health AND your wealth, this deserves your attention.
 
@@ -228,7 +228,7 @@ Link in bio or DM me "BRITE" and I'll send you the details 👉
 [Use question sticker: "Would you join? YES / TELL ME MORE"]
 
 STORY 2:
-"BRITE POOL is a collective empowerment platform — diversified income, healing projects, and community equity. 500+ members strong."
+"BRITE POOL is a collective empowerment platform — diversified income, healing projects, and community equity. Growing stronger every day."
 [Use plain background with bold text]
 
 STORY 3:
@@ -258,16 +258,16 @@ SLIDE 3:
 "What you get access to:"
 ✦ Diversified income portfolio building
 ✦ Healing center projects
-✦ Community governance (12 committees)
+✦ Community governance (active committees)
 ✦ Equity through the Sacred Ledger
 ✦ Courses & resources for personal growth
 
 SLIDE 4:
-"The numbers speak:"
-500+ Members
-$2M+ Invested Collectively
-12 Active Committees
-Growing since 2024
+"Why it works:"
+A growing collective of committed members
+Active committees where YOU shape the direction
+Community-governed and transparent
+Building together since day one
 
 SLIDE 5 (CTA):
 "Ready to build with us?"
@@ -375,14 +375,17 @@ function TemplateCard({ template }: { template: TemplateData }) {
     : template.body
 
   return (
-    <Card className="border-sand-200 hover:shadow-warm-md transition-shadow">
-      <CardHeader className="bg-sand-50 border-b border-sand-200 py-4">
+    <Card className="border-sand-200 hover:shadow-warm-md transition-shadow overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-forest-50 to-sand-50 border-b border-sand-200 py-5 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className={cn('text-xs font-mono', template.tagStyle)}>
+            <Badge
+              variant="outline"
+              className={cn('text-xs font-mono px-2.5 py-0.5', template.tagStyle)}
+            >
               {template.tag}
             </Badge>
-            <CardTitle className="text-sm font-bold text-forest-800 font-body">
+            <CardTitle className="text-base font-display font-bold text-forest-900 tracking-tight">
               {template.title}
             </CardTitle>
           </div>
@@ -523,7 +526,7 @@ export function OutreachTemplates({ username }: OutreachTemplatesProps) {
                   >
                     Resource
                   </Badge>
-                  <CardTitle className="text-sm font-bold text-forest-800 font-body">
+                  <CardTitle className="text-base font-display font-bold text-forest-900 tracking-tight">
                     Hashtag Bank — Copy & Mix
                   </CardTitle>
                 </div>
