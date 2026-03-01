@@ -121,36 +121,30 @@ export function MobileSidebar({ userRole }: MobileSidebarProps) {
   const { isOpen, close } = useMobileSidebar()
   const isAdmin = userRole && adminRoles.includes(userRole)
 
-  // Initialize expanded sections - auto-expand section with active route
+  // Initialize expanded sections - merge saved preferences with active route
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = { Admin: true }
     navGroups.forEach((group) => {
       initial[group.title] = isRouteInGroup(pathname, group.items)
     })
-    return initial
-  })
-
-  // Load saved preferences on mount
-  useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
       if (saved) {
         const parsed = JSON.parse(saved)
-        setExpandedSections((prev) => {
-          const merged = { ...parsed }
-          navGroups.forEach((group) => {
-            if (isRouteInGroup(pathname, group.items)) {
-              merged[group.title] = true
-            }
-          })
-          if (isAdmin && isRouteInGroup(pathname, adminNavItems)) {
-            merged.Admin = true
+        const merged = { ...parsed }
+        navGroups.forEach((group) => {
+          if (isRouteInGroup(pathname, group.items)) {
+            merged[group.title] = true
           }
-          return merged
         })
+        if (isAdmin && isRouteInGroup(pathname, adminNavItems)) {
+          merged.Admin = true
+        }
+        return merged
       }
     } catch {}
-  }, [pathname, isAdmin])
+    return initial
+  })
 
   // Save preferences when changed
   const toggleSection = (title: string) => {

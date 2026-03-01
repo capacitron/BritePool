@@ -78,11 +78,13 @@ export default function ForgotPasswordPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-forest-50 border border-forest-200 text-forest-700 px-4 py-3 rounded-lg text-sm font-body">
-            {sentMessage || "If an account with that email exists, you'll receive an email with instructions to reset your password. The link will expire in 1 hour."}
+            {sentMessage ||
+              "If an account with that email exists, you'll receive an email with instructions to reset your password. The link will expire in 1 hour."}
           </div>
           <div className="text-sm text-forest-600 font-body space-y-2">
             <p>
-              Didn't receive the email? Check your <strong>spam/junk folder</strong> first, then{' '}
+              Didn&apos;t receive the email? Check your <strong>spam/junk folder</strong> first,
+              then{' '}
               <button
                 onClick={() => {
                   setSuccess(false)
@@ -110,7 +112,7 @@ export default function ForgotPasswordPage() {
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle>Forgot Password</CardTitle>
-        <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
+        <CardDescription>Enter your email and we&apos;ll send you a reset link</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">

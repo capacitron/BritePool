@@ -172,7 +172,7 @@ function LoginForm() {
             )}
           </Button>
           <p className="text-sm text-forest-600 text-center font-body">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="text-forest-700 hover:text-forest-800 hover:underline font-medium"

@@ -178,7 +178,9 @@ export function CommitteeSummary({ committeeId, isLeader }: CommitteeSummaryProp
             <Sparkles className="h-12 w-12 mb-2" />
             <p className="font-body">No summaries generated yet</p>
             {isLeader ? (
-              <p className="text-sm">Click "Generate Summary" to create one from this week's chat</p>
+              <p className="text-sm">
+                Click &ldquo;Generate Summary&rdquo; to create one from this week&apos;s chat
+              </p>
             ) : (
               <p className="text-sm">Committee leaders can generate weekly summaries</p>
             )}
@@ -186,15 +188,12 @@ export function CommitteeSummary({ committeeId, isLeader }: CommitteeSummaryProp
         ) : (
           <div className="space-y-4">
             {summaries.map((summary) => (
-              <div
-                key={summary.id}
-                className="border border-sand-200 rounded-xl overflow-hidden"
-              >
+              <div key={summary.id} className="border border-sand-200 rounded-xl overflow-hidden">
                 {/* Summary Header */}
                 <button
-                  onClick={() => setExpandedSummary(
-                    expandedSummary === summary.id ? null : summary.id
-                  )}
+                  onClick={() =>
+                    setExpandedSummary(expandedSummary === summary.id ? null : summary.id)
+                  }
                   className="w-full flex items-center justify-between p-4 bg-sand-50 hover:bg-sand-100 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -204,7 +203,8 @@ export function CommitteeSummary({ committeeId, isLeader }: CommitteeSummaryProp
                         Week of {formatWeekRange(summary.weekStarting, summary.weekEnding)}
                       </h4>
                       <p className="text-xs text-forest-400 font-body">
-                        Generated {formatDate(summary.generatedAt)} • {summary.tasks.length} tasks extracted
+                        Generated {formatDate(summary.generatedAt)} • {summary.tasks.length} tasks
+                        extracted
                       </p>
                     </div>
                   </div>
@@ -244,10 +244,14 @@ export function CommitteeSummary({ committeeId, isLeader }: CommitteeSummaryProp
                             >
                               {getTaskStatusIcon(task.status)}
                               <div className="flex-1">
-                                <p className={cn(
-                                  'text-sm font-medium font-body',
-                                  task.status === 'DISMISSED' ? 'text-forest-400 line-through' : 'text-forest-800'
-                                )}>
+                                <p
+                                  className={cn(
+                                    'text-sm font-medium font-body',
+                                    task.status === 'DISMISSED'
+                                      ? 'text-forest-400 line-through'
+                                      : 'text-forest-800'
+                                  )}
+                                >
                                   {task.taskTitle}
                                 </p>
                                 {task.taskDescription && (
@@ -270,12 +274,14 @@ export function CommitteeSummary({ committeeId, isLeader }: CommitteeSummaryProp
                                   )}
                                 </div>
                               </div>
-                              <span className={cn(
-                                'text-xs px-2 py-0.5 rounded-full font-body',
-                                task.status === 'PENDING' && 'bg-sand-100 text-sand-700',
-                                task.status === 'CONVERTED' && 'bg-forest-100 text-forest-700',
-                                task.status === 'DISMISSED' && 'bg-earth-50 text-earth-600'
-                              )}>
+                              <span
+                                className={cn(
+                                  'text-xs px-2 py-0.5 rounded-full font-body',
+                                  task.status === 'PENDING' && 'bg-sand-100 text-sand-700',
+                                  task.status === 'CONVERTED' && 'bg-forest-100 text-forest-700',
+                                  task.status === 'DISMISSED' && 'bg-earth-50 text-earth-600'
+                                )}
+                              >
                                 {task.status.toLowerCase()}
                               </span>
                             </div>

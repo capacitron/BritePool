@@ -93,9 +93,9 @@ interface RedisRateLimitResult {
 class RedisBackend implements RateLimitBackend {
   private initialized = false
   private initPromise: Promise<void> | null = null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   private client: any = null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   private Ratelimit: any = null
 
   constructor() {
@@ -117,10 +117,19 @@ class RedisBackend implements RateLimitBackend {
     try {
       // Try to require the packages - they may not be installed
       // Using eval to prevent TypeScript from checking the import
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
-      const upstashRedis = await (new Function('return import("@upstash/redis")'))() as { Redis: new (config: { url: string; token: string }) => unknown }
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
-      const upstashRatelimit = await (new Function('return import("@upstash/ratelimit")'))() as { Ratelimit: { slidingWindow: (count: number, window: string) => unknown } & (new (config: { redis: unknown; limiter: unknown; analytics: boolean; prefix: string }) => { limit: (key: string) => Promise<RedisRateLimitResult> }) }
+
+      const upstashRedis = (await new Function('return import("@upstash/redis")')()) as {
+        Redis: new (config: { url: string; token: string }) => unknown
+      }
+
+      const upstashRatelimit = (await new Function('return import("@upstash/ratelimit")')()) as {
+        Ratelimit: { slidingWindow: (count: number, window: string) => unknown } & (new (config: {
+          redis: unknown
+          limiter: unknown
+          analytics: boolean
+          prefix: string
+        }) => { limit: (key: string) => Promise<RedisRateLimitResult> })
+      }
 
       const { Redis } = upstashRedis
       this.Ratelimit = upstashRatelimit.Ratelimit

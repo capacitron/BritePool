@@ -239,7 +239,9 @@ export function CommitteesContent() {
           <Card className="border-sand-200">
             <CardContent className="py-8 text-center">
               <CheckCircle2 className="h-10 w-10 mx-auto text-forest-400 mb-3" />
-              <p className="text-forest-500 font-body">You've joined all available committees!</p>
+              <p className="text-forest-500 font-body">
+                You&apos;ve joined all available committees!
+              </p>
             </CardContent>
           </Card>
         ) : (

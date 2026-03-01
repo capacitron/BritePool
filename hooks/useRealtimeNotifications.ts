@@ -157,6 +157,9 @@ export function useRealtimeNotifications(
     updateConnectionState('disconnected')
   }, [cleanup, updateConnectionState])
 
+  // Use a ref to allow the connect function to reference itself for reconnection
+  const connectRef = useRef<() => void>(() => {})
+
   // Connect function
   const connect = useCallback(() => {
     // Don't connect if disabled or already connected
@@ -240,7 +243,7 @@ export function useRealtimeNotifications(
           )
 
           reconnectTimeoutRef.current = setTimeout(() => {
-            connect()
+            connectRef.current()
           }, delay)
         } else {
           console.error('SSE max reconnection attempts reached')
@@ -262,16 +265,23 @@ export function useRealtimeNotifications(
     onUpdate,
   ])
 
+  // Keep ref in sync with latest connect
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
+
   // Reconnect function (public API)
   const reconnect = useCallback(() => {
     isManualDisconnectRef.current = false
     reconnectAttemptsRef.current = 0
-    connect()
-  }, [connect])
+    connectRef.current()
+  }, [])
 
   // Set up connection on mount and cleanup on unmount
   useEffect(() => {
     if (enabled) {
+      // Connection setup intentionally updates state (connecting -> connected)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       connect()
     }
 

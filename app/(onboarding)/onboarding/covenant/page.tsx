@@ -172,14 +172,15 @@ export default function CovenantPage() {
             {/* Opening proclamation */}
             <div className="text-center mb-8 pb-8 border-b border-dashed border-earth-200">
               <p className="text-lg text-forest-700 font-body italic leading-relaxed">
-                "Let it be known to all who enter these sacred halls of fellowship,
-                that by reading and acknowledging this covenant, you join a community
-                bound by honor, mutual respect, and collective prosperity."
+                &ldquo;Let it be known to all who enter these sacred halls of fellowship, that by
+                reading and acknowledging this covenant, you join a community bound by honor, mutual
+                respect, and collective prosperity.&rdquo;
               </p>
             </div>
 
             {/* Main document content */}
-            <div className="prose prose-lg prose-forest max-w-none
+            <div
+              className="prose prose-lg prose-forest max-w-none
               prose-headings:font-display prose-headings:text-forest-800 prose-headings:font-bold
               prose-h1:text-2xl prose-h1:text-center prose-h1:mb-6
               prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-earth-200
@@ -190,7 +191,8 @@ export default function CovenantPage() {
               prose-strong:text-forest-800 prose-strong:font-semibold
               prose-em:text-earth-600
               font-body
-            ">
+            "
+            >
               <ReactMarkdown>{contract?.content || ''}</ReactMarkdown>
             </div>
 
@@ -242,8 +244,7 @@ export default function CovenantPage() {
                 </span>
               ) : (
                 <span className="flex items-center justify-center relative">
-                  <Shield className="w-7 h-7 mr-3" />
-                  I ACKNOWLEDGE THIS SACRED COVENANT
+                  <Shield className="w-7 h-7 mr-3" />I ACKNOWLEDGE THIS SACRED COVENANT
                 </span>
               )}
             </Button>
