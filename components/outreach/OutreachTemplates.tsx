@@ -31,6 +31,7 @@ interface TemplateData {
   tag: string
   tagStyle: string
   title: string
+  subtitle?: string
   subjectLine?: string
   body: string
   note: string
@@ -72,7 +73,9 @@ No pressure at all — just wanted to make sure this landed in front of the righ
 
 Talk soon,
 ${signOff}`,
-      note: "Best for: Close friends, people you've had real conversations with about health or finances, anyone who values personal recommendations over mass messaging.",
+      subtitle:
+        "Best for: Close friends, people you've had real conversations with about health or finances, anyone who values personal recommendations over mass messaging.",
+      note: 'Tip: Mention a specific past conversation or shared interest to make this feel genuine, not templated.',
     },
     {
       id: 'email2',
@@ -103,7 +106,9 @@ If that sounds like you, take 5 minutes and check this out:
 Happy to answer any questions — just hit reply.
 
 ${signOff}`,
-      note: "Best for: Acquaintances who've expressed interest in side income, entrepreneurship, or financial freedom. People who respond well to clear value propositions.",
+      subtitle:
+        "Best for: Acquaintances who've expressed interest in side income, entrepreneurship, or financial freedom. People who respond well to clear value propositions.",
+      note: 'Tip: This direct tone works best when the person has already shown interest in new opportunities. Avoid using it as a cold open.',
     },
     {
       id: 'email3',
@@ -128,7 +133,9 @@ Would love to hear your thoughts.
 
 Warmly,
 ${signOff}`,
-      note: 'Best for: People who are more community-oriented, skeptical of "opportunity" pitches, or who you\'d approach more gently. Great for spiritual/wellness-minded contacts.',
+      subtitle:
+        'Best for: People who are more community-oriented, skeptical of "opportunity" pitches, or who you\'d approach more gently. Great for spiritual/wellness-minded contacts.',
+      note: 'Tip: Lean into shared values and common ground. This tone works especially well when paired with a genuine personal touch.',
     },
   ]
 
@@ -146,7 +153,9 @@ BRITE POOL is building a community where both are the standard — diversified i
 
 Serious people only 👉 ${link}`,
       charCount: '~253 characters',
-      note: 'Strong opener for general audience. Works well as a standalone post or quote-tweet.',
+      subtitle:
+        'Best for: General audience. Works well as a standalone post or a quote-tweet to spark curiosity.',
+      note: 'Tip: Pin this post to your profile for ongoing visibility. Pair it with a bold image or graphic for higher engagement.',
     },
     {
       id: 'x2',
@@ -161,6 +170,8 @@ BRITE POOL changed how I think about money AND community.
 
 Here's what it is 🧵👇`,
       charCount: '~271 characters — follow with thread',
+      subtitle:
+        'Best for: Followers who engage with personal stories. Ideal as a thread opener to build narrative momentum.',
       note:
         "Thread idea: 2/ BRITE POOL = Building Resources Investing Together for Empowerment. It's a ministerium-based platform where you can build a diversified income portfolio. 3/ They're also building healing center projects — because real wealth isn't just financial. 4/ A growing collective with active committees where YOU help govern the direction. → " +
         link,
@@ -178,7 +189,9 @@ BRITE POOL → diversified income, healing projects, collective equity.
 
 ${link}`,
       charCount: '~186 characters',
-      note: 'Minimal and effective. Great for reposting or when you want something clean.',
+      subtitle:
+        'Best for: Quick reposts, clean timelines, or audiences that prefer brevity over detail.',
+      note: 'Tip: Minimal and effective. Great for reposting or when you want something clean without a hard sell.',
     },
     {
       id: 'x4',
@@ -193,7 +206,9 @@ That's what BRITE POOL is doing. A growing collective building real wealth toget
 
 DM me or check it out 👉 ${link}`,
       charCount: '~279 characters',
-      note: 'Question format drives replies and engagement. Great for building conversation.',
+      subtitle:
+        'Best for: Driving replies and conversation. Ideal when you want to open a dialogue, not just broadcast.',
+      note: 'Tip: Question-format posts get higher reply rates. Respond to every comment to keep the thread active and visible.',
     },
   ]
 
@@ -218,6 +233,8 @@ If you're serious about your health AND your wealth, this deserves your attentio
 Link in bio or DM me "BRITE" and I'll send you the details 👉
 
 #BritePool #CollectiveProsperity #WealthBuilding #HealthAndWealth #DiversifiedIncome #CommunityEmpowerment #BuildTogether #HealingCenter #FinancialFreedom #Ministerium #SacredLedger #InvestInYourself #MultipleIncomeStreams #EmpowermentJourney`,
+      subtitle:
+        'Best for: Your main feed. A comprehensive caption for followers who read full posts and engage with longer content.',
       note: 'Image ideas: Clean graphic with "Health + Wealth = Freedom" text overlay, a community gathering photo, or a branded BRITE POOL visual.',
     },
     {
@@ -240,7 +257,9 @@ STORY 3:
 STORY 4:
 "DM me 'BRITE' or tap the link to start your journey 👉"
 [Add link sticker → ${link}]`,
-      note: 'Pro tip: Use the poll/question stickers to drive engagement before the CTA. Stories with interaction get 2–3x more reach.',
+      subtitle:
+        'Best for: Casual, high-frequency reach. Stories disappear in 24 hours, so use them to create urgency and spark quick DMs.',
+      note: 'Pro tip: Use the poll/question stickers to drive engagement before the CTA. Stories with interaction get 2-3x more reach.',
     },
     {
       id: 'ig3',
@@ -275,7 +294,9 @@ SLIDE 5 (CTA):
 "Ready to build with us?"
 Link in bio or DM me "BRITE"
 👉 ${link}`,
-      note: 'Design tip: Use consistent brand colors (dark background + teal + gold accents). Keep each slide to one key idea. Carousel format gets highest save rates on Instagram.',
+      subtitle:
+        'Best for: Educating new audiences. Carousels get the highest save and share rates on Instagram — perfect for evergreen content.',
+      note: 'Design tip: Use consistent brand colors (dark background + teal + gold accents). Keep each slide to one key idea for maximum clarity.',
     },
   ]
 
@@ -393,6 +414,9 @@ function TemplateCard({ template }: { template: TemplateData }) {
           </div>
           <CopyButton text={copyText} />
         </div>
+        {template.subtitle && (
+          <p className="text-sm text-forest-600 font-body mt-2 leading-snug">{template.subtitle}</p>
+        )}
       </CardHeader>
       <CardContent className="pt-5 space-y-4">
         {template.subjectLine && (
