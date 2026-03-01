@@ -142,6 +142,14 @@ export const PAGE_DESCRIPTIONS: Record<
     terms: ['Course', 'Module', 'Empowerment', 'Leadership'],
   },
 
+  // Outreach
+  outreach: {
+    title: 'Outreach Toolkit',
+    description:
+      'Ready-to-use invitation templates for email, X (Twitter), and Instagram. Each template includes your personal referral link so you can invite others into the movement.',
+    terms: ['Email', 'Social Media', 'Referral', 'Templates'],
+  },
+
   // Documents
   documents: {
     title: 'Document Library',
