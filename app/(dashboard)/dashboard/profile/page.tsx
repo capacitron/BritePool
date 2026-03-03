@@ -133,9 +133,9 @@ export default function ProfilePage() {
     newPassword: '',
     confirmPassword: '',
   })
-  const [showCurrentPassword, setShowCurrentPassword] = useState(true)
-  const [showNewPassword, setShowNewPassword] = useState(true)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(true)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -804,9 +804,9 @@ export default function ProfilePage() {
                     tabIndex={-1}
                   >
                     {showCurrentPassword ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
                       <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -833,7 +833,7 @@ export default function ProfilePage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     tabIndex={-1}
                   >
-                    {showNewPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -860,9 +860,9 @@ export default function ProfilePage() {
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
                       <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
                     )}
                   </button>
                 </div>
