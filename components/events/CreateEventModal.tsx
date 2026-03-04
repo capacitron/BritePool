@@ -16,6 +16,8 @@ interface EventInitialData {
   title?: string
   description?: string
   type?: string
+  startTime?: string
+  endTime?: string
   location?: string
   virtualLink?: string
   capacity?: number | null
@@ -29,6 +31,8 @@ interface CreateEventModalProps {
   userCommittees: UserCommittee[]
   userRole: string
   initialData?: EventInitialData
+  /** When provided, the modal operates in edit mode (PATCH instead of POST) */
+  editEventId?: string
 }
 
 const EVENT_TYPES = [
@@ -52,18 +56,36 @@ export function CreateEventModal({
   userCommittees,
   userRole,
   initialData,
+  editEventId,
 }: CreateEventModalProps) {
+  const isEditMode = !!editEventId
+  const isDuplicateMode = !!initialData && !editEventId
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Form state - pre-fill from initialData when duplicating
-  const [title, setTitle] = useState(initialData?.title ? `${initialData.title} (Copy)` : '')
+  // Parse existing dates for edit/duplicate mode
+  const initStartDate = initialData?.startTime ? new Date(initialData.startTime) : null
+  const initEndDate = initialData?.endTime ? new Date(initialData.endTime) : null
+
+  // Form state - pre-fill from initialData when editing or duplicating
+  const [title, setTitle] = useState(
+    isDuplicateMode ? `${initialData?.title || ''} (Copy)` : initialData?.title || ''
+  )
   const [description, setDescription] = useState(initialData?.description || '')
   const [type, setType] = useState(initialData?.type || 'COMMITTEE_MEETING')
-  const [startDate, setStartDate] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [endTime, setEndTime] = useState('')
+  const [startDate, setStartDate] = useState(
+    initStartDate && isEditMode ? initStartDate.toISOString().split('T')[0] : ''
+  )
+  const [startTime, setStartTime] = useState(
+    initStartDate && isEditMode ? initStartDate.toTimeString().slice(0, 5) : ''
+  )
+  const [endDate, setEndDate] = useState(
+    initEndDate && isEditMode ? initEndDate.toISOString().split('T')[0] : ''
+  )
+  const [endTime, setEndTime] = useState(
+    initEndDate && isEditMode ? initEndDate.toTimeString().slice(0, 5) : ''
+  )
   const [location, setLocation] = useState(initialData?.location || '')
   const [virtualLink, setVirtualLink] = useState(initialData?.virtualLink || '')
   const [capacity, setCapacity] = useState(
@@ -114,15 +136,20 @@ export function CreateEventModal({
         }
       }
 
-      const response = await fetch('/api/events', {
-        method: 'POST',
+      const url = isEditMode ? `/api/events/${editEventId}` : '/api/events'
+      const method = isEditMode ? 'PATCH' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to create event')
+        throw new Error(
+          data.error || (isEditMode ? 'Failed to update event' : 'Failed to create event')
+        )
       }
 
       onSuccess()
@@ -140,7 +167,7 @@ export function CreateEventModal({
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
         <CardHeader className="flex flex-row items-center justify-between border-b border-sand-200">
           <CardTitle className="font-display text-forest-800">
-            {initialData ? 'Duplicate Event' : 'Create Event'}
+            {isEditMode ? 'Edit Event' : isDuplicateMode ? 'Duplicate Event' : 'Create Event'}
           </CardTitle>
           <button onClick={onClose} className="p-1 hover:bg-sand-100 rounded">
             <X className="h-5 w-5 text-forest-500" />
@@ -276,59 +303,63 @@ export function CreateEventModal({
               </div>
             </div>
 
-            {/* Recurrence */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-forest-700 mb-1">
-                  <Repeat className="inline h-4 w-4 mr-1" />
-                  Repeat
-                </label>
-                <select
-                  value={recurrence}
-                  onChange={(e) => setRecurrence(e.target.value)}
-                  className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
-                >
-                  {RECURRENCE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {recurrence && (
-                <div>
-                  <label className="block text-sm font-medium text-forest-700 mb-1">
-                    Repeat Until *
-                  </label>
-                  <input
-                    type="date"
-                    value={recurrenceUntil}
-                    onChange={(e) => setRecurrenceUntil(e.target.value)}
-                    min={startDate}
-                    className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
-                    required
-                  />
+            {/* Recurrence (not shown in edit mode) */}
+            {!isEditMode && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-forest-700 mb-1">
+                      <Repeat className="inline h-4 w-4 mr-1" />
+                      Repeat
+                    </label>
+                    <select
+                      value={recurrence}
+                      onChange={(e) => setRecurrence(e.target.value)}
+                      className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                    >
+                      {RECURRENCE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {recurrence && (
+                    <div>
+                      <label className="block text-sm font-medium text-forest-700 mb-1">
+                        Repeat Until *
+                      </label>
+                      <input
+                        type="date"
+                        value={recurrenceUntil}
+                        onChange={(e) => setRecurrenceUntil(e.target.value)}
+                        min={startDate}
+                        className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {recurrence && recurrenceUntil && startDate && (
-              <p className="text-sm text-forest-600 bg-forest-50 rounded-lg px-3 py-2">
-                <Repeat className="inline h-3.5 w-3.5 mr-1" />
-                This will create multiple events repeating{' '}
-                {recurrence === 'WEEKLY'
-                  ? 'every week'
-                  : recurrence === 'BIWEEKLY'
-                    ? 'every 2 weeks'
-                    : 'every month'}{' '}
-                until{' '}
-                {new Date(recurrenceUntil + 'T00:00:00').toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-                .
-              </p>
+                {recurrence && recurrenceUntil && startDate && (
+                  <p className="text-sm text-forest-600 bg-forest-50 rounded-lg px-3 py-2">
+                    <Repeat className="inline h-3.5 w-3.5 mr-1" />
+                    This will create multiple events repeating{' '}
+                    {recurrence === 'WEEKLY'
+                      ? 'every week'
+                      : recurrence === 'BIWEEKLY'
+                        ? 'every 2 weeks'
+                        : 'every month'}{' '}
+                    until{' '}
+                    {new Date(recurrenceUntil + 'T00:00:00').toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                    .
+                  </p>
+                )}
+              </>
             )}
 
             {/* Location */}
@@ -388,12 +419,16 @@ export function CreateEventModal({
                 disabled={loading}
               >
                 {loading
-                  ? 'Creating...'
-                  : recurrence
-                    ? 'Create Recurring Events'
-                    : initialData
-                      ? 'Duplicate Event'
-                      : 'Create Event'}
+                  ? isEditMode
+                    ? 'Saving...'
+                    : 'Creating...'
+                  : isEditMode
+                    ? 'Save Changes'
+                    : recurrence
+                      ? 'Create Recurring Events'
+                      : isDuplicateMode
+                        ? 'Duplicate Event'
+                        : 'Create Event'}
               </Button>
             </div>
           </form>

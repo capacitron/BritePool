@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Trash2,
   Copy,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -107,10 +108,17 @@ export function EventDetailClient({
   const [isRegistered, setIsRegistered] = useState(event.isRegistered)
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const isPastEvent = new Date(event.startTime) < new Date()
   const isAtCapacity = event.capacity ? attendeeCount >= event.capacity : false
-  const canDelete = ADMIN_ROLES.includes(userRole)
+  const isSystemAdmin = ADMIN_ROLES.includes(userRole)
+  // Also allow users who are LEADER/CHAIR in the event's committee to manage it
+  const isCommitteeLeader = event.committee
+    ? userCommittees.some((c) => c.id === event.committee!.id && c.role === 'LEADER')
+    : false
+  const canManage = isSystemAdmin || isCommitteeLeader
+  const canDelete = canManage
 
   const handleRegister = async () => {
     setIsLoading(true)
@@ -377,9 +385,13 @@ export function EventDetailClient({
             </CardContent>
           </Card>
 
-          {canDelete && (
+          {canManage && (
             <Card>
               <CardContent className="p-4 space-y-3">
+                <Button variant="outline" className="w-full" onClick={() => setShowEditModal(true)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Event
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full"
@@ -402,6 +414,31 @@ export function EventDetailClient({
           )}
         </div>
       </div>
+
+      {showEditModal && (
+        <CreateEventModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            setShowEditModal(false)
+            router.refresh()
+          }}
+          userCommittees={userCommittees}
+          userRole={userRole}
+          editEventId={event.id}
+          initialData={{
+            title: event.title,
+            description: event.description || undefined,
+            type: event.type,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            location: event.location || undefined,
+            virtualLink: event.virtualLink || undefined,
+            capacity: event.capacity,
+            committeeId: event.committee?.id,
+          }}
+        />
+      )}
 
       {showDuplicateModal && (
         <CreateEventModal

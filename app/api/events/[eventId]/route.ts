@@ -12,7 +12,7 @@ const updateEventSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   location: z.string().max(500).optional(),
-  virtualLink: z.string().url().optional(),
+  virtualLink: z.string().url().optional().nullable().or(z.literal('')),
   capacity: z.number().int().positive().optional(),
   committeeId: z.string().optional().nullable(),
 })
@@ -77,10 +77,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!canManageCommittees(session.user.role)) {
-      return NextResponse.json({ error: 'Only administrators can update events' }, { status: 403 })
-    }
-
     const { eventId } = await params
 
     const existingEvent = await prisma.event.findUnique({
@@ -89,6 +85,27 @@ export async function PATCH(
 
     if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+    }
+
+    // Allow system admins OR leaders of the event's committee
+    const isSystemAdmin = canManageCommittees(session.user.role)
+    let isCommitteeLeader = false
+    if (existingEvent.committeeId) {
+      const membership = await prisma.committeeMember.findFirst({
+        where: {
+          userId: session.user.id,
+          committeeId: existingEvent.committeeId,
+          role: 'LEADER',
+        },
+      })
+      isCommitteeLeader = !!membership
+    }
+
+    if (!isSystemAdmin && !isCommitteeLeader) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this event' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -108,8 +125,9 @@ export async function PATCH(
     if (parsed.data.type) updateData.type = parsed.data.type
     if (parsed.data.startTime) updateData.startTime = new Date(parsed.data.startTime)
     if (parsed.data.endTime) updateData.endTime = new Date(parsed.data.endTime)
-    if (parsed.data.location !== undefined) updateData.location = parsed.data.location
-    if (parsed.data.virtualLink !== undefined) updateData.virtualLink = parsed.data.virtualLink
+    if (parsed.data.location !== undefined) updateData.location = parsed.data.location || null
+    if (parsed.data.virtualLink !== undefined)
+      updateData.virtualLink = parsed.data.virtualLink || null
     if (parsed.data.capacity !== undefined) updateData.capacity = parsed.data.capacity
     if (parsed.data.committeeId !== undefined) updateData.committeeId = parsed.data.committeeId
 

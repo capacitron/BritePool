@@ -2,7 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Calendar as CalendarIcon, List, MapPin, Clock, Users, Video, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  Calendar as CalendarIcon,
+  List,
+  MapPin,
+  Clock,
+  Users,
+  Video,
+  Plus,
+  Pencil,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
@@ -96,15 +106,18 @@ export function EventsClient({
   userRole,
   userCommittees,
 }: EventsClientProps) {
+  const router = useRouter()
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [selectedDayEvents, setSelectedDayEvents] = useState<EventData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<EventData | null>(null)
 
   // Check if user can create events (is a member of at least one committee or is admin)
   const canCreateEvents =
     userCommittees.length > 0 || ['WEB_STEWARD', 'BOARD_CHAIR'].includes(userRole)
+  const canManageEvents = ['WEB_STEWARD', 'BOARD_CHAIR', 'COMMITTEE_LEADER'].includes(userRole)
 
   const filteredEvents = events.filter((e) => {
     if (selectedType && e.type !== selectedType) return false
@@ -260,14 +273,29 @@ export function EventsClient({
                                   )}
                                 </div>
                               </div>
-                              <span
-                                className={cn(
-                                  'px-2 py-0.5 rounded text-xs font-medium font-body',
-                                  EVENT_TYPE_COLORS[event.type]
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cn(
+                                    'px-2 py-0.5 rounded text-xs font-medium font-body',
+                                    EVENT_TYPE_COLORS[event.type]
+                                  )}
+                                >
+                                  {EVENT_TYPE_LABELS[event.type]}
+                                </span>
+                                {canManageEvents && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      setEditingEvent(event)
+                                    }}
+                                    className="p-1 rounded text-forest-500 hover:bg-forest-100 transition-colors"
+                                    title="Edit event"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
                                 )}
-                              >
-                                {EVENT_TYPE_LABELS[event.type]}
-                              </span>
+                              </div>
                             </div>
                           </Link>
                         ))}
@@ -353,14 +381,30 @@ export function EventsClient({
                                 </div>
                               )}
                             </div>
-                            <span
-                              className={cn(
-                                'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
-                                EVENT_TYPE_COLORS[event.type]
+                            <div className="flex flex-col items-end gap-2">
+                              <span
+                                className={cn(
+                                  'px-2 py-1 rounded text-xs font-medium whitespace-nowrap font-body',
+                                  EVENT_TYPE_COLORS[event.type]
+                                )}
+                              >
+                                {EVENT_TYPE_LABELS[event.type]}
+                              </span>
+                              {canManageEvents && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setEditingEvent(event)
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-forest-600 hover:bg-forest-100 transition-colors font-body"
+                                  title="Edit event"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  Edit
+                                </button>
                               )}
-                            >
-                              {EVENT_TYPE_LABELS[event.type]}
-                            </span>
+                            </div>
                           </div>
                         </Link>
                       )
@@ -428,6 +472,33 @@ export function EventsClient({
           onSuccess={handleEventCreated}
           userCommittees={userCommittees}
           userRole={userRole}
+        />
+      )}
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <CreateEventModal
+          isOpen={!!editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSuccess={() => {
+            setEditingEvent(null)
+            router.refresh()
+            window.location.reload()
+          }}
+          userCommittees={userCommittees}
+          userRole={userRole}
+          editEventId={editingEvent.id}
+          initialData={{
+            title: editingEvent.title,
+            description: editingEvent.description || undefined,
+            type: editingEvent.type,
+            startTime: editingEvent.startTime,
+            endTime: editingEvent.endTime,
+            location: editingEvent.location || undefined,
+            virtualLink: editingEvent.virtualLink || undefined,
+            capacity: editingEvent.capacity,
+            committeeId: editingEvent.committee?.id,
+          }}
         />
       )}
     </div>
