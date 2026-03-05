@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Eye, X, Loader2 } from 'lucide-react'
 
 interface ImpersonationBannerProps {
@@ -9,15 +8,17 @@ interface ImpersonationBannerProps {
 }
 
 export function ImpersonationBanner({ userName }: ImpersonationBannerProps) {
-  const router = useRouter()
   const [stopping, setStopping] = useState(false)
 
   const handleStop = async () => {
     setStopping(true)
     try {
-      await fetch('/api/admin/impersonate', { method: 'DELETE' })
-      router.push('/dashboard/admin/users')
-      router.refresh()
+      const res = await fetch('/api/admin/impersonate', { method: 'DELETE' })
+      if (res.ok) {
+        window.location.href = '/dashboard/admin/users'
+      } else {
+        setStopping(false)
+      }
     } catch {
       setStopping(false)
     }

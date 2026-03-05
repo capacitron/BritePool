@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
+import { getImpersonatingUserId } from '@/lib/impersonation'
 import { prisma } from '@/lib/prisma'
+import { UserRole } from '@prisma/client'
 import { getGreeting, formatDate, cn } from '@/lib/utils'
 import { getRoleBadgeStyles, getRoleDisplayName } from '@/lib/auth/roles'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,8 +32,18 @@ export default async function DashboardPage({
     redirect('/login')
   }
 
+  // Determine effective user ID (impersonated user if admin is impersonating)
+  const isAdminUser = isAdmin(session.user.role as UserRole)
+  let effectiveUserId = session.user.id
+  if (isAdminUser) {
+    const impersonatingId = await getImpersonatingUserId()
+    if (impersonatingId && impersonatingId !== session.user.id) {
+      effectiveUserId = impersonatingId
+    }
+  }
+
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: effectiveUserId },
     select: {
       id: true,
       name: true,
@@ -59,7 +72,6 @@ export default async function DashboardPage({
   // Skip for admin users (WEB_STEWARD, BOARD_CHAIR)
   const params = await searchParams
   const justCompletedOnboarding = params?.onboarding_complete === 'true'
-  const isAdminUser = user.role === 'WEB_STEWARD' || user.role === 'BOARD_CHAIR'
 
   if (!user.onboardingCompleted && !justCompletedOnboarding && !isAdminUser) {
     redirect('/onboarding')

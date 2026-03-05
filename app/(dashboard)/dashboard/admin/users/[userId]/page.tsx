@@ -186,8 +186,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
         body: JSON.stringify({ userId: user.id }),
       })
       if (res.ok) {
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       } else {
         const data = await res.json().catch(() => ({}))
         setFeedback({ type: 'error', message: data.error || 'Failed to impersonate user' })

@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
+import { getEffectiveUserId } from '@/lib/impersonation'
+import { UserRole } from '@prisma/client'
 
 // GET: Fetch user's notifications with pagination and filtering
 export async function GET(request: NextRequest) {
@@ -17,6 +19,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use effective user ID for READ (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1', 10)
     const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: { userId: string; isRead?: boolean } = {
-      userId: session.user.id,
+      userId: effectiveUserId,
     }
 
     // Filter by read status if provided
@@ -57,7 +62,7 @@ export async function GET(request: NextRequest) {
       prisma.notification.count({ where }),
       prisma.notification.count({
         where: {
-          userId: session.user.id,
+          userId: effectiveUserId,
           isRead: false,
         },
       }),

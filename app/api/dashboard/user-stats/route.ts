@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
+import { UserRole } from '@prisma/client'
 
 export async function GET() {
   try {
@@ -11,7 +13,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    // Use effective user ID (impersonated user if admin is impersonating)
+    const userId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
     const now = new Date()
 
     // Fetch all user-specific stats in parallel

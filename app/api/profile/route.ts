@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { usernameSchema } from '@/lib/validations/username'
+import { UserRole } from '@prisma/client'
 
 const availabilityDaySchema = z.object({
   enabled: z.boolean(),
@@ -30,8 +32,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use effective user ID for READ (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: {
         id: true,
         email: true,

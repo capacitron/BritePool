@@ -96,6 +96,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const cookieStore = await cookies()
     const impersonatingId = cookieStore.get(COOKIE_NAME)?.value
 

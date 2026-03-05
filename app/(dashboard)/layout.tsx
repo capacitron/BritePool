@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth/roles'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardClientWrapper } from '@/components/dashboard/DashboardClientWrapper'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
-import { getEffectiveUserId, getImpersonatingUserId } from '@/lib/impersonation'
+import { getImpersonatingUserId } from '@/lib/impersonation'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -29,23 +30,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
-  const isAdminUser = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
+  const isAdminUser = isAdmin(dbUser.role as UserRole)
   if (!dbUser.onboardingCompleted && !isAdminUser) {
     redirect('/onboarding/welcome')
   }
 
-  // Check for impersonation
-  const effectiveUserId = await getEffectiveUserId(session.user.id, dbUser.role as UserRole)
-  const impersonatingId = await getImpersonatingUserId()
-  const isImpersonating =
-    isAdminUser && impersonatingId !== null && impersonatingId !== session.user.id
+  // Check for impersonation (single cookie read)
+  const impersonatingId = isAdminUser ? await getImpersonatingUserId() : null
+  const isImpersonating = impersonatingId !== null && impersonatingId !== session.user.id
 
   let user = dbUser
   let impersonatedUserName: string | undefined
 
   if (isImpersonating) {
     const impersonatedUser = await prisma.user.findUnique({
-      where: { id: effectiveUserId },
+      where: { id: impersonatingId },
       select: {
         name: true,
         email: true,

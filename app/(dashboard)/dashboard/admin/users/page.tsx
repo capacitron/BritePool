@@ -151,8 +151,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId }),
       })
       if (res.ok) {
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       } else {
         const data = await res.json().catch(() => ({}))
         alert(data.error || 'Failed to impersonate user')
