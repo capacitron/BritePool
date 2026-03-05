@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 const joinWGOSchema = z.object({
   wgoId: z.string().min(1),
   role: z.enum(['PARTICIPANT', 'OBSERVER']).optional().default('PARTICIPANT'),
-  affiliateLink: z.string().max(2000).optional().nullable(),
+  affiliateLink: z.string().url('Please enter a valid URL').max(2000),
 })
 
 const updateInvolvementSchema = z.object({

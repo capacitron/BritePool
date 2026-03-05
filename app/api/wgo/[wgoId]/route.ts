@@ -106,6 +106,13 @@ export async function GET(
       }
     }
 
+    // Fallback affiliate link: if user has no referrer, use WGO creator's affiliate link
+    let fallbackAffiliateLink: string | null = null
+    if (!currentUser?.referredById) {
+      const creatorInvolvement = wgo.involvements.find((inv) => inv.userId === wgo.creatorId)
+      fallbackAffiliateLink = creatorInvolvement?.affiliateLink || wgo.defaultAffiliateLink || null
+    }
+
     return NextResponse.json({
       ...wgo,
       involvementCount: wgo._count.involvements,
@@ -117,6 +124,7 @@ export async function GET(
       isCoordinator: userInvolvement?.role === 'COORDINATOR',
       referrerAffiliateLink,
       referrerName,
+      fallbackAffiliateLink,
     })
   } catch (error) {
     logError(error, { action: 'fetch_wgo' })

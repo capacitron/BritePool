@@ -3,16 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { WGO_CATEGORY_LABELS, WGO_CATEGORY_COLORS } from '@/lib/wgo/categories'
 import {
   TrendingUp,
-  Plus,
   ExternalLink,
   Link2,
   Loader2,
-  X,
   AlertCircle,
   CheckCircle,
   Trash2,
@@ -38,28 +35,13 @@ interface WGOInvolvement {
   }
 }
 
-interface WGO {
-  id: string
-  title: string
-  category: string
-}
-
 export function WGOInvolvementsSection() {
   const [involvements, setInvolvements] = useState<WGOInvolvement[]>([])
-  const [availableWGOs, setAvailableWGOs] = useState<WGO[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [adding, setAdding] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [affiliateLinks, setAffiliateLinks] = useState<Record<string, string>>({})
   const [affiliateSaving, setAffiliateSaving] = useState<Record<string, boolean>>({})
   const [affiliateSaved, setAffiliateSaved] = useState<Record<string, boolean>>({})
-  const [selectedWgoId, setSelectedWgoId] = useState('')
-  const [showAffiliateLinkPrompt, setShowAffiliateLinkPrompt] = useState(false)
-  const [affiliateLinkPromptWgoId, setAffiliateLinkPromptWgoId] = useState('')
-  const [affiliateLinkPromptWgoTitle, setAffiliateLinkPromptWgoTitle] = useState('')
-  const [affiliateLinkPromptValue, setAffiliateLinkPromptValue] = useState('')
-  const [affiliateLinkPromptSaving, setAffiliateLinkPromptSaving] = useState(false)
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({})
 
   useEffect(() => {
@@ -68,10 +50,7 @@ export function WGOInvolvementsSection() {
 
   async function fetchData() {
     try {
-      const [invRes, wgoRes] = await Promise.all([
-        fetch('/api/wgo/involvement'),
-        fetch('/api/wgo?status=ACTIVE'),
-      ])
+      const invRes = await fetch('/api/wgo/involvement')
 
       if (invRes.ok) {
         const data = await invRes.json()
@@ -82,60 +61,10 @@ export function WGOInvolvementsSection() {
         }
         setAffiliateLinks(links)
       }
-
-      if (wgoRes.ok) {
-        const data = await wgoRes.json()
-        setAvailableWGOs(data.data || [])
-      }
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleAddInvolvement(e: React.FormEvent) {
-    e.preventDefault()
-    setAdding(true)
-    setMessage(null)
-
-    try {
-      const response = await fetch('/api/wgo/involvement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wgoId: selectedWgoId,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to add involvement')
-      }
-
-      // Capture WGO title before resetting selection
-      const addedWgo = safeAvailableWGOs.find((w) => w.id === selectedWgoId)
-      const addedWgoTitle = addedWgo?.title || 'this opportunity'
-      const addedWgoId = selectedWgoId
-
-      setMessage({ type: 'success', text: 'WGO involvement added successfully!' })
-      setTimeout(() => setMessage(null), 3000)
-      setShowAddModal(false)
-      setSelectedWgoId('')
-      await fetchData()
-
-      // Show affiliate link prompt
-      setAffiliateLinkPromptWgoId(addedWgoId)
-      setAffiliateLinkPromptWgoTitle(addedWgoTitle)
-      setAffiliateLinkPromptValue('')
-      setShowAffiliateLinkPrompt(true)
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'An error occurred',
-      })
-    } finally {
-      setAdding(false)
     }
   }
 
@@ -202,47 +131,7 @@ export function WGOInvolvementsSection() {
     }, 1500)
   }
 
-  const handleSaveAffiliateLinkPrompt = async () => {
-    if (!affiliateLinkPromptValue.trim() || !affiliateLinkPromptWgoId) return
-    setAffiliateLinkPromptSaving(true)
-    try {
-      const response = await fetch('/api/wgo/involvement', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wgoId: affiliateLinkPromptWgoId,
-          affiliateLink: affiliateLinkPromptValue.trim(),
-        }),
-      })
-      if (response.ok) {
-        // Update local state so the inline input reflects the saved value
-        setAffiliateLinks((prev) => ({
-          ...prev,
-          [affiliateLinkPromptWgoId]: affiliateLinkPromptValue.trim(),
-        }))
-        setAffiliateSaved((prev) => ({ ...prev, [affiliateLinkPromptWgoId]: true }))
-        setTimeout(
-          () => setAffiliateSaved((prev) => ({ ...prev, [affiliateLinkPromptWgoId]: false })),
-          3000
-        )
-        setShowAffiliateLinkPrompt(false)
-        setAffiliateLinkPromptValue('')
-      } else {
-        const data = await response.json()
-        setMessage({ type: 'error', text: data.error || 'Failed to save affiliate link' })
-      }
-    } catch (error) {
-      console.error('Error saving affiliate link:', error)
-      setMessage({ type: 'error', text: 'Failed to save affiliate link' })
-    } finally {
-      setAffiliateLinkPromptSaving(false)
-    }
-  }
-
   const safeInvolvements = Array.isArray(involvements) ? involvements : []
-  const safeAvailableWGOs = Array.isArray(availableWGOs) ? availableWGOs : []
-  const involvedWgoIds = safeInvolvements.map((i) => i.wgoId)
-  const availableToAdd = safeAvailableWGOs.filter((w) => !involvedWgoIds.includes(w.id))
 
   if (loading) {
     return (
@@ -266,27 +155,14 @@ export function WGOInvolvementsSection() {
     <>
       <Card className="border-sand-200">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 font-display text-forest-800">
-                <TrendingUp className="h-5 w-5 text-gold-500" />
-                Wealth Generation Opportunities (WGO)
-              </CardTitle>
-              <CardDescription className="text-forest-500 font-body">
-                WGOs appear here when you sign up or join through an affiliate link, indicating your
-                active participation in that opportunity
-              </CardDescription>
-            </div>
-            {availableToAdd.length > 0 && (
-              <Button
-                size="sm"
-                onClick={() => setShowAddModal(true)}
-                className="bg-gold-500 hover:bg-gold-600 text-white"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            )}
+          <div>
+            <CardTitle className="flex items-center gap-2 font-display text-forest-800">
+              <TrendingUp className="h-5 w-5 text-gold-500" />
+              Wealth Generation Opportunities (WGO)
+            </CardTitle>
+            <CardDescription className="text-forest-500 font-body">
+              WGOs appear here when you activate your membership through an affiliate link
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -310,15 +186,6 @@ export function WGOInvolvementsSection() {
             <div className="text-center py-8">
               <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <p className="text-forest-600 mb-4 font-body">No WGO involvements yet</p>
-              {availableToAdd.length > 0 && (
-                <Button
-                  onClick={() => setShowAddModal(true)}
-                  className="bg-gold-500 hover:bg-gold-600 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Involvement
-                </Button>
-              )}
               <p className="text-sm text-forest-400 mt-4">
                 <Link href="/dashboard/wgo" className="text-gold-600 hover:underline">
                   Browse available opportunities
@@ -468,137 +335,6 @@ export function WGOInvolvementsSection() {
           )}
         </CardContent>
       </Card>
-
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-forest-900">Add WGO Involvement</h3>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddInvolvement} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-forest-700 mb-1">
-                    Select Opportunity *
-                  </label>
-                  <select
-                    required
-                    value={selectedWgoId}
-                    onChange={(e) => setSelectedWgoId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
-                  >
-                    <option value="">Choose a WGO...</option>
-                    {availableToAdd.map((wgo) => (
-                      <option key={wgo.id} value={wgo.id}>
-                        {wgo.title} - {WGO_CATEGORY_LABELS[wgo.category]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={adding || !selectedWgoId}
-                    className="flex-1 bg-gold-500 hover:bg-gold-600 text-white"
-                  >
-                    {adding ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      'Add Involvement'
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Affiliate Link Prompt Modal */}
-      {showAffiliateLinkPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-gold-100 flex items-center justify-center">
-                    <Link2 className="h-5 w-5 text-gold-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-forest-900">Add Your Affiliate Link</h3>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowAffiliateLinkPrompt(false)
-                    setAffiliateLinkPromptValue('')
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <p className="text-sm text-forest-600 mb-4">
-                Add your personal affiliate or referral link for{' '}
-                <strong>{affiliateLinkPromptWgoTitle}</strong>. This link will be shared with
-                members you invite so they can sign up through you.
-              </p>
-              <input
-                type="url"
-                value={affiliateLinkPromptValue}
-                onChange={(e) => setAffiliateLinkPromptValue(e.target.value)}
-                placeholder="https://example.com/ref/your-id"
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 text-sm mb-4"
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowAffiliateLinkPrompt(false)
-                    setAffiliateLinkPromptValue('')
-                  }}
-                >
-                  Skip for Now
-                </Button>
-                <Button
-                  className="flex-1 bg-gold-500 hover:bg-gold-600 text-white"
-                  onClick={handleSaveAffiliateLinkPrompt}
-                  disabled={affiliateLinkPromptSaving || !affiliateLinkPromptValue.trim()}
-                >
-                  {affiliateLinkPromptSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Link'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
