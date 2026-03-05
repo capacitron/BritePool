@@ -13,7 +13,6 @@ import {
   Pencil,
   Trash2,
   MessageSquare,
-  UserPlus,
   UserMinus,
   Pin,
   Loader2,
@@ -23,7 +22,6 @@ import {
   ExternalLink,
   Video,
   Copy,
-  Link2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -103,6 +101,7 @@ interface WGO {
   isCoordinator: boolean
   referrerAffiliateLink: string | null
   referrerName: string | null
+  fallbackAffiliateLink: string | null
 }
 
 interface RelatedEvent {
@@ -138,9 +137,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [duplicating, setDuplicating] = useState(false)
   const [publishLoading, setPublishLoading] = useState(false)
   const [eventsPage, setEventsPage] = useState(1)
-  const [showAffiliateLinkPrompt, setShowAffiliateLinkPrompt] = useState(false)
   const [affiliateLinkInput, setAffiliateLinkInput] = useState('')
-  const [affiliateLinkSaving, setAffiliateLinkSaving] = useState(false)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -226,53 +223,41 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     fetchRelatedEvents()
   }, [wgo?.title])
 
-  const handleJoin = async () => {
+  const [affiliateLinkError, setAffiliateLinkError] = useState('')
+
+  const handleJoinWithAffiliateLink = async () => {
+    const link = affiliateLinkInput.trim()
+    if (!link) return
+
+    // Basic URL validation
+    try {
+      new URL(link)
+    } catch {
+      setAffiliateLinkError('Please enter a valid URL (e.g. https://example.com/ref/your-id)')
+      return
+    }
+
+    setAffiliateLinkError('')
     setActionLoading(true)
     try {
       const res = await fetch('/api/wgo/involvement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wgoId, role: 'PARTICIPANT' }),
+        body: JSON.stringify({ wgoId, role: 'PARTICIPANT', affiliateLink: link }),
       })
 
       if (res.ok) {
         await fetchWGO()
         setAffiliateLinkInput('')
-        setShowAffiliateLinkPrompt(true)
       } else {
         const data = await res.json()
-        alert(data.error || 'Failed to join')
+        setAffiliateLinkError(data.error || 'Failed to activate membership')
       }
     } catch (err) {
       console.error('Error joining WGO:', err)
-      alert('Failed to join. Please try again.')
+      setAffiliateLinkError('Failed to activate. Please try again.')
     } finally {
       setActionLoading(false)
-    }
-  }
-
-  const handleSaveAffiliateLinkPrompt = async () => {
-    if (!affiliateLinkInput.trim()) return
-    setAffiliateLinkSaving(true)
-    try {
-      const res = await fetch('/api/wgo/involvement', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wgoId, affiliateLink: affiliateLinkInput.trim() }),
-      })
-      if (res.ok) {
-        await fetchWGO()
-        setShowAffiliateLinkPrompt(false)
-        setAffiliateLinkInput('')
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to save affiliate link')
-      }
-    } catch (err) {
-      console.error('Error saving affiliate link:', err)
-      alert('Failed to save. Please try again.')
-    } finally {
-      setAffiliateLinkSaving(false)
     }
   }
 
@@ -638,41 +623,120 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
 
               <p className="text-forest-700 whitespace-pre-wrap">{wgo.description}</p>
 
-              {/* Your BritePool Partner */}
-              <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-forest-800 mb-2 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-emerald-600" />
-                  Your BritePool Partner
-                </h4>
-                {wgo.referrerName && wgo.referrerAffiliateLink ? (
-                  <div>
-                    <p className="text-sm text-forest-600 mb-3">
-                      {wgo.referrerName} shared this opportunity with you. Use their link below to
-                      get started.
-                    </p>
-                    <a
-                      href={wgo.referrerAffiliateLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Sign Up with {wgo.title}
-                    </a>
+              {/* Get Started — only shown when user has NOT joined */}
+              {!wgo.isInvolved && (
+                <div className="mt-6 p-5 bg-emerald-50 border border-emerald-200 rounded-lg space-y-5">
+                  <h4 className="text-base font-semibold text-forest-800 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    Get Started
+                  </h4>
+
+                  {/* Step 1: Sign Up */}
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="text-sm font-semibold text-forest-800 mb-1">
+                        Sign up for {wgo.title}
+                      </h5>
+                      {wgo.referrerName && wgo.referrerAffiliateLink ? (
+                        <div>
+                          <p className="text-sm text-forest-600 mb-2">
+                            {wgo.referrerName} shared this opportunity with you. Click their link
+                            below to create your account.
+                          </p>
+                          <a
+                            href={wgo.referrerAffiliateLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Sign Up with {wgo.referrerName}
+                          </a>
+                        </div>
+                      ) : wgo.referrerName ? (
+                        <p className="text-sm text-forest-600">
+                          Your BritePool Partner is{' '}
+                          <span className="font-semibold">{wgo.referrerName}</span>. Reach out to
+                          them for a referral link to this opportunity.
+                        </p>
+                      ) : wgo.fallbackAffiliateLink ? (
+                        <div>
+                          <p className="text-sm text-forest-600 mb-2">
+                            Click the link below to create your account.
+                          </p>
+                          <a
+                            href={wgo.fallbackAffiliateLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Sign Up with {wgo.title}
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-forest-500">
+                          No sign-up link is available yet. Check back soon.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                ) : wgo.referrerName ? (
-                  <p className="text-sm text-forest-600">
-                    Your BritePool Partner is{' '}
-                    <span className="font-semibold">{wgo.referrerName}</span>. Reach out to them for
-                    a referral link to this opportunity.
-                  </p>
-                ) : (
-                  <p className="text-sm text-forest-500">
-                    No BritePool Partner linked to your account yet. Connect with a partner to
-                    receive their referral link for this opportunity.
-                  </p>
-                )}
-              </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-emerald-200" />
+
+                  {/* Step 2: Paste Affiliate Link */}
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="text-sm font-semibold text-forest-800 mb-1">
+                        Paste your affiliate link
+                      </h5>
+                      <p className="text-sm text-forest-600 mb-2">
+                        After signing up, you&apos;ll receive your own referral link. Paste it below
+                        to activate your membership.
+                      </p>
+                      {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
+                        <div className="space-y-2">
+                          <input
+                            type="url"
+                            value={affiliateLinkInput}
+                            onChange={(e) => {
+                              setAffiliateLinkInput(e.target.value)
+                              setAffiliateLinkError('')
+                            }}
+                            placeholder="https://example.com/ref/your-id"
+                            className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white"
+                          />
+                          {affiliateLinkError && (
+                            <p className="text-xs text-red-600 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {affiliateLinkError}
+                            </p>
+                          )}
+                          <Button
+                            className="w-full bg-emerald-600 hover:bg-emerald-700"
+                            onClick={handleJoinWithAffiliateLink}
+                            disabled={actionLoading || !affiliateLinkInput.trim()}
+                          >
+                            {actionLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                            )}
+                            Activate Membership
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -946,24 +1010,11 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                 </>
               ) : (
                 <>
-                  <h3 className="font-medium text-forest-800">Join the Discussion</h3>
+                  <h3 className="font-medium text-forest-800">Membership</h3>
                   <p className="text-sm text-forest-600">
-                    Join this WGO group to access the forum and collaborate with other members.
+                    Follow the steps in the &quot;Get Started&quot; section to activate your
+                    membership for this opportunity.
                   </p>
-                  {(wgo.status === 'ACTIVE' || wgo.status === 'DRAFT') && (
-                    <Button
-                      className="w-full bg-emerald-600 hover:bg-emerald-700"
-                      onClick={handleJoin}
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <UserPlus className="h-4 w-4 mr-2" />
-                      )}
-                      Join Discussion Group
-                    </Button>
-                  )}
                 </>
               )}
             </CardContent>
@@ -1095,71 +1146,6 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* Affiliate Link Prompt Modal */}
-      {showAffiliateLinkPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-sand-100 flex items-center justify-center">
-                    <Link2 className="h-5 w-5 text-sand-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-forest-900">Add Your Affiliate Link</h3>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowAffiliateLinkPrompt(false)
-                    setAffiliateLinkInput('')
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <p className="text-sm text-forest-600 mb-4">
-                Add your personal affiliate or referral link for this opportunity. This link will be
-                shared with members you invite so they can sign up through you.
-              </p>
-              <input
-                type="url"
-                value={affiliateLinkInput}
-                onChange={(e) => setAffiliateLinkInput(e.target.value)}
-                placeholder="https://example.com/ref/your-id"
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-2 focus:ring-sand-500 focus:border-sand-500 text-sm mb-4"
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowAffiliateLinkPrompt(false)
-                    setAffiliateLinkInput('')
-                  }}
-                >
-                  Skip for Now
-                </Button>
-                <Button
-                  className="flex-1 bg-sand-500 hover:bg-sand-600 text-white"
-                  onClick={handleSaveAffiliateLinkPrompt}
-                  disabled={affiliateLinkSaving || !affiliateLinkInput.trim()}
-                >
-                  {affiliateLinkSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Link'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
