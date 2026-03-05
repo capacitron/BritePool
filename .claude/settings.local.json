@@ -87,7 +87,8 @@
       "Bash(npx prisma db execute --stdin 2>&1 <<'SQL'\nSELECT column_name FROM information_schema.columns WHERE table_name = 'WealthOpportunity';)",
       "Bash(DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push --accept-data-loss 2>&1 | tail)",
       "Bash(git add app/\\\\\\(dashboard\\\\\\)/dashboard/profile/page.tsx app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx components/profile/WGOInvolvementsSection.tsx && git commit -m \"$\\(cat <<'EOF'\nUpdate profile and WGO labels for clarity\n\nRename \"Referral Link\" to \"Brite Pool Referral Link\", \"Username\" to\n\"Brite Pool Username\" on profile, use WGO name in \"About the X\nOpportunity\" heading, and clarify WGO section description.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(sed -n '640,700p' /home/runner/workspace/app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx)"
+      "Bash(sed -n '640,700p' /home/runner/workspace/app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx)",
+      "Bash(wc -l /home/runner/workspace/app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx)"
     ],
     "deny": []
   },
