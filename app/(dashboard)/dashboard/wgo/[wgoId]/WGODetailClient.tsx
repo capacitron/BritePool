@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Video,
   Copy,
+  Bell,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,14 +35,12 @@ import {
 } from '@/lib/wgo/categories'
 
 const WGO_ROLE_LABELS: Record<string, string> = {
-  LEADER: 'Leader',
   COORDINATOR: 'Coordinator',
   PARTICIPANT: 'Participant',
   OBSERVER: 'Observer',
 }
 
 const WGO_ROLE_COLORS: Record<string, string> = {
-  LEADER: 'bg-purple-100 text-purple-800',
   COORDINATOR: 'bg-blue-100 text-blue-800',
   PARTICIPANT: 'bg-green-100 text-green-800',
   OBSERVER: 'bg-gray-100 text-gray-800',
@@ -97,11 +96,11 @@ interface WGO {
   isInvolved: boolean
   userInvolvement: Involvement | null
   isCreator: boolean
-  isLeader: boolean
   isCoordinator: boolean
   referrerAffiliateLink: string | null
   referrerName: string | null
   fallbackAffiliateLink: string | null
+  hasNotifiedReferrer: boolean
 }
 
 interface RelatedEvent {
@@ -138,6 +137,9 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
   const [publishLoading, setPublishLoading] = useState(false)
   const [eventsPage, setEventsPage] = useState(1)
   const [affiliateLinkInput, setAffiliateLinkInput] = useState('')
+  const [interestNotified, setInterestNotified] = useState(false)
+  const [notifyInterestLoading, setNotifyInterestLoading] = useState(false)
+  const [notifyInterestError, setNotifyInterestError] = useState<string | null>(null)
 
   const isAdmin = ADMIN_ROLES.includes(userRole)
 
@@ -258,6 +260,30 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
       setAffiliateLinkError('Failed to activate. Please try again.')
     } finally {
       setActionLoading(false)
+    }
+  }
+
+  const handleNotifyInterest = async () => {
+    setNotifyInterestLoading(true)
+    setNotifyInterestError(null)
+    try {
+      const res = await fetch(`/api/wgo/${wgoId}/interest`, {
+        method: 'POST',
+      })
+
+      if (res.ok) {
+        setInterestNotified(true)
+      } else if (res.status === 409) {
+        setInterestNotified(true)
+      } else {
+        const data = await res.json()
+        setNotifyInterestError(data.error || 'Failed to send notification')
+      }
+    } catch (err) {
+      console.error('Error notifying interest:', err)
+      setNotifyInterestError('Failed to send notification. Please try again.')
+    } finally {
+      setNotifyInterestLoading(false)
     }
   }
 
@@ -452,7 +478,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
     )
   }
 
-  const canEdit = wgo.isCreator || wgo.isLeader || wgo.isCoordinator || isAdmin
+  const canEdit = wgo.isCreator || wgo.isCoordinator || isAdmin
   const canDelete = wgo.isCreator || isAdmin
   const canPost = wgo.isInvolved && wgo.userInvolvement?.role !== 'OBSERVER'
   const progressPercentage = wgo.targetAmount
@@ -655,13 +681,73 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                             <ExternalLink className="h-4 w-4" />
                             Sign Up with {wgo.referrerName}
                           </a>
+                          {!(wgo.hasNotifiedReferrer || interestNotified) ? (
+                            <div className="mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                onClick={handleNotifyInterest}
+                                disabled={notifyInterestLoading}
+                              >
+                                {notifyInterestLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <Bell className="h-4 w-4 mr-2" />
+                                )}
+                                Click here to notify {wgo.referrerName} you are interested
+                              </Button>
+                              {notifyInterestError && (
+                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3" />
+                                  {notifyInterestError}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {wgo.referrerName} has been notified of your interest.
+                            </p>
+                          )}
                         </div>
                       ) : wgo.referrerName ? (
-                        <p className="text-sm text-forest-600">
-                          Your BritePool Partner is{' '}
-                          <span className="font-semibold">{wgo.referrerName}</span>. Reach out to
-                          them for a referral link to this opportunity.
-                        </p>
+                        <div>
+                          <p className="text-sm text-forest-600 mb-2">
+                            Your BritePool Partner is{' '}
+                            <span className="font-semibold">{wgo.referrerName}</span>. Reach out to
+                            them for a referral link to this opportunity.
+                          </p>
+                          {!(wgo.hasNotifiedReferrer || interestNotified) ? (
+                            <div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                onClick={handleNotifyInterest}
+                                disabled={notifyInterestLoading}
+                              >
+                                {notifyInterestLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <Bell className="h-4 w-4 mr-2" />
+                                )}
+                                Click here to notify {wgo.referrerName} you are interested
+                              </Button>
+                              {notifyInterestError && (
+                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3" />
+                                  {notifyInterestError}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-emerald-600 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {wgo.referrerName} has been notified of your interest.
+                            </p>
+                          )}
+                        </div>
                       ) : wgo.fallbackAffiliateLink ? (
                         <div>
                           <p className="text-sm text-forest-600 mb-2">
@@ -992,7 +1078,7 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                       ? new Date(wgo.userInvolvement.joinedAt).toLocaleDateString()
                       : 'N/A'}
                   </p>
-                  {!wgo.isCreator && !wgo.isLeader && (
+                  {!wgo.isCreator && (
                     <Button
                       variant="outline"
                       className="w-full text-red-600 border-red-300 hover:bg-red-50"

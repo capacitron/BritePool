@@ -113,6 +113,22 @@ export async function GET(
       fallbackAffiliateLink = creatorInvolvement?.affiliateLink || wgo.defaultAffiliateLink || null
     }
 
+    // Check if user already sent an interest notification for this WGO
+    let hasNotifiedReferrer = false
+    if (currentUser?.referredById) {
+      const existingNotifications = await prisma.notification.findMany({
+        where: {
+          userId: currentUser.referredById,
+          type: 'WGO_UPDATE',
+        },
+        select: { id: true, metadata: true },
+      })
+      hasNotifiedReferrer = existingNotifications.some((n) => {
+        const meta = n.metadata as Record<string, unknown> | null
+        return meta?.interestedUserId === session.user.id && meta?.wgoId === wgoId
+      })
+    }
+
     return NextResponse.json({
       ...wgo,
       involvementCount: wgo._count.involvements,
@@ -120,11 +136,11 @@ export async function GET(
       isInvolved: !!userInvolvement,
       userInvolvement: userInvolvement || null,
       isCreator: wgo.creatorId === session.user.id,
-      isLeader: userInvolvement?.role === 'LEADER',
       isCoordinator: userInvolvement?.role === 'COORDINATOR',
       referrerAffiliateLink,
       referrerName,
       fallbackAffiliateLink,
+      hasNotifiedReferrer,
     })
   } catch (error) {
     logError(error, { action: 'fetch_wgo' })
@@ -149,7 +165,7 @@ export async function PATCH(
 
     const { wgoId } = await params
 
-    // Check if user has permission to update (creator, leader, or coordinator)
+    // Check if user has permission to update (creator, coordinator, or admin)
     const existingWGO = await prisma.wealthOpportunity.findUnique({
       where: { id: wgoId },
       include: {
@@ -165,11 +181,10 @@ export async function PATCH(
 
     const userInvolvement = existingWGO.involvements[0]
     const isCreator = existingWGO.creatorId === session.user.id
-    const isLeaderOrCoordinator =
-      userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
+    const isCoordinator = userInvolvement?.role === 'COORDINATOR'
     const userIsAdmin = isAdmin(session.user.role)
 
-    if (!isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
+    if (!isCreator && !isCoordinator && !userIsAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to update this WGO' },
         { status: 403 }

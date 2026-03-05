@@ -17,7 +17,7 @@ const joinWGOSchema = z.object({
 
 const updateInvolvementSchema = z.object({
   involvementId: z.string().min(1),
-  role: z.enum(['LEADER', 'COORDINATOR', 'PARTICIPANT', 'OBSERVER']).optional(),
+  role: z.enum(['COORDINATOR', 'PARTICIPANT', 'OBSERVER']).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).optional(),
   affiliateLink: z.string().url().max(2000).optional().nullable(),
 })
@@ -224,13 +224,12 @@ export async function PATCH(request: NextRequest) {
     // Check if user has permission to update involvement
     const userInvolvement = involvement.wgo.involvements[0]
     const isCreator = involvement.wgo.creatorId === session.user.id
-    const isLeaderOrCoordinator =
-      userInvolvement?.role === 'LEADER' || userInvolvement?.role === 'COORDINATOR'
+    const isCoordinator = userInvolvement?.role === 'COORDINATOR'
     const userIsAdmin = isAdmin(session.user.role)
     const isOwnInvolvement = involvement.userId === session.user.id
 
     // Users can only update their own status to INACTIVE (leaving)
-    if (isOwnInvolvement && !isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
+    if (isOwnInvolvement && !isCreator && !isCoordinator && !userIsAdmin) {
       if (role || (status && status !== 'INACTIVE')) {
         return NextResponse.json(
           { error: 'Forbidden: You can only update your own status to leave' },
@@ -239,30 +238,12 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Only leaders, coordinators, and admins can change roles
-    if (role && !isCreator && !isLeaderOrCoordinator && !userIsAdmin) {
+    // Only coordinators, creators, and admins can change roles
+    if (role && !isCreator && !isCoordinator && !userIsAdmin) {
       return NextResponse.json(
-        { error: 'Forbidden: Only leaders and coordinators can change roles' },
+        { error: 'Forbidden: Only coordinators can change roles' },
         { status: 403 }
       )
-    }
-
-    // Cannot demote yourself if you're the only leader
-    if (isOwnInvolvement && role && role !== 'LEADER' && userInvolvement?.role === 'LEADER') {
-      const leaderCount = await prisma.userWGOInvolvement.count({
-        where: {
-          wgoId: involvement.wgoId,
-          role: 'LEADER',
-          status: 'ACTIVE',
-        },
-      })
-
-      if (leaderCount === 1) {
-        return NextResponse.json(
-          { error: 'Cannot demote yourself as the only leader. Assign another leader first.' },
-          { status: 400 }
-        )
-      }
     }
 
     const updateData: Record<string, unknown> = {}
@@ -380,27 +361,6 @@ export async function DELETE(request: NextRequest) {
 
     if (!involvement) {
       return NextResponse.json({ error: 'You are not involved in this WGO' }, { status: 404 })
-    }
-
-    // Cannot leave if you're the only leader
-    if (involvement.role === 'LEADER') {
-      const leaderCount = await prisma.userWGOInvolvement.count({
-        where: {
-          wgoId,
-          role: 'LEADER',
-          status: 'ACTIVE',
-        },
-      })
-
-      if (leaderCount === 1) {
-        return NextResponse.json(
-          {
-            error:
-              'Cannot leave as the only leader. Assign another leader first or delete the WGO.',
-          },
-          { status: 400 }
-        )
-      }
     }
 
     await prisma.userWGOInvolvement.delete({
