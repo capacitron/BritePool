@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Users, Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Users, Search, ChevronLeft, ChevronRight, Eye, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface User {
@@ -136,6 +136,32 @@ export default function AdminUsersPage() {
   function formatDate(dateStr: string | null) {
     if (!dateStr) return 'N/A'
     return new Date(dateStr).toLocaleDateString()
+  }
+
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null)
+
+  async function handleImpersonate(e: React.MouseEvent, userId: string) {
+    e.preventDefault()
+    e.stopPropagation()
+    setImpersonatingUserId(userId)
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      if (res.ok) {
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Failed to impersonate user')
+        setImpersonatingUserId(null)
+      }
+    } catch {
+      alert('Network error. Please try again.')
+      setImpersonatingUserId(null)
+    }
   }
 
   function getRoleBadgeClass(role: string) {
@@ -278,7 +304,22 @@ export default function AdminUsersPage() {
                       </p>
                       <p className="text-sm text-earth-brown-light truncate">{user.email}</p>
                     </div>
-                    <Eye className="h-4 w-4 text-earth-brown-light shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center gap-1.5 shrink-0 mt-1">
+                      {user.role !== 'WEB_STEWARD' && (
+                        <button
+                          onClick={(e) => handleImpersonate(e, user.id)}
+                          disabled={impersonatingUserId === user.id}
+                          className="p-1 rounded text-amber-600 hover:bg-amber-100 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                          title={`Impersonate ${user.name}`}
+                        >
+                          {impersonatingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     <span

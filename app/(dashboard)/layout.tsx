@@ -6,6 +6,7 @@ import { DashboardClientWrapper } from '@/components/dashboard/DashboardClientWr
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { getEffectiveUserId, getImpersonatingUserId } from '@/lib/impersonation'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -28,12 +29,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
-  const isAdmin = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
-  if (!dbUser.onboardingCompleted && !isAdmin) {
+  const isAdminUser = dbUser.role === 'WEB_STEWARD' || dbUser.role === 'BOARD_CHAIR'
+  if (!dbUser.onboardingCompleted && !isAdminUser) {
     redirect('/onboarding/welcome')
   }
 
-  const user = dbUser
+  // Check for impersonation
+  const effectiveUserId = await getEffectiveUserId(session.user.id, dbUser.role as UserRole)
+  const impersonatingId = await getImpersonatingUserId()
+  const isImpersonating =
+    isAdminUser && impersonatingId !== null && impersonatingId !== session.user.id
+
+  let user = dbUser
+  let impersonatedUserName: string | undefined
+
+  if (isImpersonating) {
+    const impersonatedUser = await prisma.user.findUnique({
+      where: { id: effectiveUserId },
+      select: {
+        name: true,
+        email: true,
+        role: true,
+        onboardingCompleted: true,
+      },
+    })
+    if (impersonatedUser) {
+      user = impersonatedUser
+      impersonatedUserName = impersonatedUser.name || impersonatedUser.email
+    }
+  }
 
   return (
     <DashboardClientWrapper userRole={user.role}>
@@ -43,7 +67,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Sidebar userRole={user.role} />
         </div>
         <div className="flex-1 flex flex-col">
-          <DashboardHeader userName={user.name} userEmail={user.email} userRole={user.role} />
+          <DashboardHeader
+            userName={user.name}
+            userEmail={user.email}
+            userRole={user.role}
+            isImpersonating={isImpersonating}
+            impersonatedUserName={impersonatedUserName}
+          />
           <main className="flex-1 p-4 sm:p-6 bg-sand-50">
             <Breadcrumbs />
             {children}

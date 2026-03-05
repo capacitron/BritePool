@@ -19,6 +19,8 @@ import {
   Pencil,
   X,
   Search,
+  Eye,
+  Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -169,9 +171,33 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
     name: string
     email: string
   } | null>(null)
+  const [impersonating, setImpersonating] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   )
+
+  async function handleImpersonate() {
+    if (!user) return
+    setImpersonating(true)
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      if (res.ok) {
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setFeedback({ type: 'error', message: data.error || 'Failed to impersonate user' })
+        setImpersonating(false)
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Network error. Please try again.' })
+      setImpersonating(false)
+    }
+  }
 
   useEffect(() => {
     fetchUser()
@@ -341,6 +367,22 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
               Back
             </Link>
           </Button>
+          {user.role !== 'WEB_STEWARD' && (
+            <Button
+              onClick={handleImpersonate}
+              variant="outline"
+              size="sm"
+              disabled={impersonating}
+              className="border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              {impersonating ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4 mr-1" />
+              )}
+              Impersonate
+            </Button>
+          )}
           <Button onClick={handleDelete} variant="destructive" size="sm" disabled={deleting}>
             <Trash2 className="h-4 w-4 mr-1" />
             {deleting ? 'Deleting...' : 'Delete'}
