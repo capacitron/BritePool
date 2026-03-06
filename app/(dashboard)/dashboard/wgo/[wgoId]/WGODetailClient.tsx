@@ -657,122 +657,126 @@ export function WGODetailClient({ wgoId, userId, userRole }: WGODetailClientProp
                     Get Started
                   </h4>
 
-                  {/* Step 1: Sign Up */}
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
-                      1
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="text-sm font-semibold text-forest-800 mb-1">
-                        Sign up for {wgo.title}
-                      </h5>
-                      {wgo.referrerName && wgo.referrerAffiliateLink ? (
-                        <div>
-                          <p className="text-sm text-forest-600 mb-2">
-                            {wgo.referrerName} shared this opportunity with you. Click their link
-                            below to create your account.
-                          </p>
-                          <a
-                            href={wgo.referrerAffiliateLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Sign Up with {wgo.referrerName}
-                          </a>
-                          {!(wgo.hasNotifiedReferrer || interestNotified) ? (
-                            <div className="mt-3">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                                onClick={handleNotifyInterest}
-                                disabled={notifyInterestLoading}
-                              >
-                                {notifyInterestLoading ? (
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                ) : (
-                                  <Bell className="h-4 w-4 mr-2" />
-                                )}
-                                Click here to notify {wgo.referrerName} you are interested
-                              </Button>
-                              {notifyInterestError && (
-                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                                  <AlertCircle className="h-3 w-3" />
-                                  {notifyInterestError}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {wgo.referrerName} has been notified of your interest.
-                            </p>
-                          )}
+                  {/* Step 1: Sign Up — hidden once user has entered their affiliate link */}
+                  {!affiliateLinkInput.trim() && (
+                    <>
+                      <div className="flex gap-3">
+                        <div className="flex-shrink-0 h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+                          1
                         </div>
-                      ) : wgo.referrerName ? (
-                        <div>
-                          <p className="text-sm text-forest-600 mb-2">
-                            Your BritePool Partner is{' '}
-                            <span className="font-semibold">{wgo.referrerName}</span>. Reach out to
-                            them for a referral link to this opportunity.
-                          </p>
-                          {!(wgo.hasNotifiedReferrer || interestNotified) ? (
+                        <div className="flex-1">
+                          <h5 className="text-sm font-semibold text-forest-800 mb-1">
+                            Sign up for {wgo.title}
+                          </h5>
+                          {wgo.referrerName && wgo.referrerAffiliateLink ? (
                             <div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                                onClick={handleNotifyInterest}
-                                disabled={notifyInterestLoading}
+                              <p className="text-sm text-forest-600 mb-2">
+                                {wgo.referrerName} shared this opportunity with you. Click their
+                                link below to create your account.
+                              </p>
+                              <a
+                                href={wgo.referrerAffiliateLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
                               >
-                                {notifyInterestLoading ? (
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                ) : (
-                                  <Bell className="h-4 w-4 mr-2" />
-                                )}
-                                Click here to notify {wgo.referrerName} you are interested
-                              </Button>
-                              {notifyInterestError && (
-                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                                  <AlertCircle className="h-3 w-3" />
-                                  {notifyInterestError}
+                                <ExternalLink className="h-4 w-4" />
+                                Sign Up with {wgo.referrerName}
+                              </a>
+                              {!(wgo.hasNotifiedReferrer || interestNotified) ? (
+                                <div className="mt-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                    onClick={handleNotifyInterest}
+                                    disabled={notifyInterestLoading}
+                                  >
+                                    {notifyInterestLoading ? (
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    ) : (
+                                      <Bell className="h-4 w-4 mr-2" />
+                                    )}
+                                    Click here to notify {wgo.referrerName} you are interested
+                                  </Button>
+                                  {notifyInterestError && (
+                                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                      <AlertCircle className="h-3 w-3" />
+                                      {notifyInterestError}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  {wgo.referrerName} has been notified of your interest.
                                 </p>
                               )}
                             </div>
+                          ) : wgo.referrerName ? (
+                            <div>
+                              <p className="text-sm text-forest-600 mb-2">
+                                Your BritePool Partner is{' '}
+                                <span className="font-semibold">{wgo.referrerName}</span>. Reach out
+                                to them for a referral link to this opportunity.
+                              </p>
+                              {!(wgo.hasNotifiedReferrer || interestNotified) ? (
+                                <div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                    onClick={handleNotifyInterest}
+                                    disabled={notifyInterestLoading}
+                                  >
+                                    {notifyInterestLoading ? (
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    ) : (
+                                      <Bell className="h-4 w-4 mr-2" />
+                                    )}
+                                    Click here to notify {wgo.referrerName} you are interested
+                                  </Button>
+                                  {notifyInterestError && (
+                                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                      <AlertCircle className="h-3 w-3" />
+                                      {notifyInterestError}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  {wgo.referrerName} has been notified of your interest.
+                                </p>
+                              )}
+                            </div>
+                          ) : wgo.fallbackAffiliateLink ? (
+                            <div>
+                              <p className="text-sm text-forest-600 mb-2">
+                                Click the link below to create your account.
+                              </p>
+                              <a
+                                href={wgo.fallbackAffiliateLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Sign Up with {wgo.title}
+                              </a>
+                            </div>
                           ) : (
-                            <p className="text-xs text-emerald-600 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {wgo.referrerName} has been notified of your interest.
+                            <p className="text-sm text-forest-500">
+                              No sign-up link is available yet. Check back soon.
                             </p>
                           )}
                         </div>
-                      ) : wgo.fallbackAffiliateLink ? (
-                        <div>
-                          <p className="text-sm text-forest-600 mb-2">
-                            Click the link below to create your account.
-                          </p>
-                          <a
-                            href={wgo.fallbackAffiliateLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Sign Up with {wgo.title}
-                          </a>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-forest-500">
-                          No sign-up link is available yet. Check back soon.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-emerald-200" />
+                      {/* Divider */}
+                      <div className="border-t border-emerald-200" />
+                    </>
+                  )}
 
                   {/* Step 2: Paste Affiliate Link */}
                   <div className="flex gap-3">
