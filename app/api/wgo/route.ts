@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/auth/roles'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { logWGOCreated } from '@/lib/audit'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -74,6 +76,8 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     const userIsAdmin = isAdmin(session.user.role)
+    // Use effective user ID for READ (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
 
     const where: Record<string, unknown> = {}
 
@@ -85,13 +89,13 @@ export async function GET(request: NextRequest) {
       // Non-admins filtering by DRAFT should only see their own drafts
       if (status === 'DRAFT' && !userIsAdmin) {
         where.status = 'DRAFT'
-        where.creatorId = session.user.id
+        where.creatorId = effectiveUserId
       } else {
         where.status = status
       }
     } else if (!userIsAdmin) {
       // Non-admins only see their own drafts; all other statuses are visible
-      where.OR = [{ status: { not: 'DRAFT' } }, { creatorId: session.user.id }]
+      where.OR = [{ status: { not: 'DRAFT' } }, { creatorId: effectiveUserId }]
     }
 
     if (search) {
@@ -125,9 +129,9 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.wealthOpportunity.count({ where }),
-      // Separate query for the current user's involvements to avoid take:5 miss
+      // Separate query for the current (or impersonated) user's involvements
       prisma.userWGOInvolvement.findMany({
-        where: { userId: session.user.id },
+        where: { userId: effectiveUserId },
         select: {
           wgoId: true,
           id: true,

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/auth/roles'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -43,6 +45,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use effective user ID for READ (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const wgoId = searchParams.get('wgoId')
@@ -51,7 +56,7 @@ export async function GET(request: NextRequest) {
     const userIsAdmin = isAdmin(session.user.role)
 
     // Only admins can view other users' involvements
-    if (userId && userId !== session.user.id) {
+    if (userId && userId !== effectiveUserId) {
       if (!userIsAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -60,11 +65,11 @@ export async function GET(request: NextRequest) {
       // When querying by wgoId, non-admins can only see their own involvement
       // Admins can see all involvements for the WGO
       if (!userIsAdmin) {
-        where.userId = session.user.id
+        where.userId = effectiveUserId
       }
     } else {
-      // Default to current user's involvements
-      where.userId = session.user.id
+      // Default to current (or impersonated) user's involvements
+      where.userId = effectiveUserId
     }
 
     if (wgoId) {
