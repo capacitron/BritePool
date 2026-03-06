@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/auth/roles'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -66,19 +68,22 @@ export async function GET(
       return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
     }
 
+    // Use effective user ID for READ (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     // Draft WGOs are only visible to the creator and admins
     if (wgo.status === 'DRAFT') {
       const userIsAdmin = isAdmin(session.user.role)
-      if (wgo.creatorId !== session.user.id && !userIsAdmin) {
+      if (wgo.creatorId !== effectiveUserId && !userIsAdmin) {
         return NextResponse.json({ error: 'Wealth opportunity not found' }, { status: 404 })
       }
     }
 
-    const userInvolvement = wgo.involvements.find((inv) => inv.userId === session.user.id)
+    const userInvolvement = wgo.involvements.find((inv) => inv.userId === effectiveUserId)
 
     // Look up the current user's referrer's affiliate link for this WGO
     const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: { referredById: true },
     })
 
@@ -125,7 +130,7 @@ export async function GET(
       })
       hasNotifiedReferrer = existingNotifications.some((n) => {
         const meta = n.metadata as Record<string, unknown> | null
-        return meta?.interestedUserId === session.user.id && meta?.wgoId === wgoId
+        return meta?.interestedUserId === effectiveUserId && meta?.wgoId === wgoId
       })
     }
 
@@ -135,7 +140,7 @@ export async function GET(
       forumPostCount: wgo._count.forumPosts,
       isInvolved: !!userInvolvement,
       userInvolvement: userInvolvement || null,
-      isCreator: wgo.creatorId === session.user.id,
+      isCreator: wgo.creatorId === effectiveUserId,
       isCoordinator: userInvolvement?.role === 'COORDINATOR',
       referrerAffiliateLink,
       referrerName,

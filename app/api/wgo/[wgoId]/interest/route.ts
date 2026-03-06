@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
+import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
+import { UserRole } from '@prisma/client'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -21,6 +23,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use effective user ID (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     const { wgoId } = await params
 
     // Fetch the WGO title for the notification message
@@ -35,7 +40,7 @@ export async function POST(
 
     // Get current user's name and referrer
     const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: { name: true, referredById: true },
     })
 
@@ -59,7 +64,7 @@ export async function POST(
 
     const alreadySent = existingNotifications.some((n) => {
       const meta = n.metadata as Record<string, unknown> | null
-      return meta?.interestedUserId === session.user.id && meta?.wgoId === wgoId
+      return meta?.interestedUserId === effectiveUserId && meta?.wgoId === wgoId
     })
 
     if (alreadySent) {
@@ -79,7 +84,7 @@ export async function POST(
       `/dashboard/wgo/${wgoId}`,
       {
         wgoTitle: wgo.title,
-        interestedUserId: session.user.id,
+        interestedUserId: effectiveUserId,
         interestedUserName: userName,
         wgoId: wgoId,
       }
