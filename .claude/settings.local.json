@@ -90,7 +90,8 @@
       "Bash(sed -n '640,700p' /home/runner/workspace/app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx)",
       "Bash(wc -l /home/runner/workspace/app/\\\\\\(dashboard\\\\\\)/dashboard/wgo/\\\\[wgoId\\\\]/WGODetailClient.tsx)",
       "Bash(env DATABASE_URL=\"${NEON_DB_URL}\" npx prisma db push 2>&1 | tail -5)",
-      "Bash(env DATABASE_URL=\"${NEON_DB_URL}\" npx prisma db push 2>&1 | tail -3)"
+      "Bash(env DATABASE_URL=\"${NEON_DB_URL}\" npx prisma db push 2>&1 | tail -3)",
+      "Bash(git add app/\\\\\\(auth\\\\\\)/login/page.tsx app/api/auth/reset-password/route.ts lib/auth/config.ts lib/auth/lockout.ts lib/email.ts app/api/admin/users/\\\\[id\\\\]/reset-password/route.ts app/api/admin/users/\\\\[id\\\\]/unlock/route.ts)"
     ],
     "deny": []
   },
