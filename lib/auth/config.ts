@@ -9,6 +9,8 @@ import {
   getLockoutExpiration,
   shouldLockAccount,
   isAccountLocked,
+  isLockoutExpired,
+  getEffectiveAttempts,
   getLockoutErrorMessage,
 } from './lockout'
 
@@ -34,30 +36,48 @@ export const authConfig: NextAuthConfig = {
 
         if (!user) return null
 
-        // Check if account is locked
+        // Check if account is actively locked (lockout has NOT expired)
         if (isAccountLocked(user.lockedUntil)) {
           throw new Error(getLockoutErrorMessage(user.lockedUntil))
         }
 
-        // Check if account is suspended or locked
+        // Self-healing: if a previous lockout has expired, clear the slate automatically.
+        // This is the permanent fix — users can never get stuck in a lockout loop.
+        if (isLockoutExpired(user.lockedUntil, user.loginAttempts || 0)) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { loginAttempts: 0, lockedUntil: null },
+          })
+          user.loginAttempts = 0
+          user.lockedUntil = null
+        }
+
+        // Check if account is suspended or admin-locked
         if (user.status === 'SUSPENDED') {
-          throw new Error('Account has been suspended')
+          throw new Error('ACCOUNT_SUSPENDED')
         }
 
         if (user.status === 'LOCKED') {
-          throw new Error('Account has been locked. Please contact support.')
+          throw new Error('ACCOUNT_LOCKED')
         }
 
         const passwordMatch = await bcrypt.compare(password, user.passwordHash)
 
         if (!passwordMatch) {
-          // Increment login attempts
-          const newAttempts = (user.loginAttempts || 0) + 1
-          const updateData: { loginAttempts: number; lockedUntil?: Date } = {
+          // Use effective attempts (accounts for expired lockouts)
+          const effectiveAttempts = getEffectiveAttempts(user.loginAttempts || 0, user.lockedUntil)
+          const newAttempts = effectiveAttempts + 1
+          const remaining = LOCKOUT_CONFIG.MAX_ATTEMPTS - newAttempts
+          const updateData: { loginAttempts: number; lockedUntil?: Date | null } = {
             loginAttempts: newAttempts,
           }
 
-          // Lock account after configured max attempts
+          // Clear any stale lockedUntil when starting fresh count
+          if (effectiveAttempts === 0 && user.lockedUntil) {
+            updateData.lockedUntil = null
+          }
+
+          // Lock account after max attempts
           if (shouldLockAccount(newAttempts)) {
             updateData.lockedUntil = getLockoutExpiration()
           }
@@ -67,11 +87,14 @@ export const authConfig: NextAuthConfig = {
             data: updateData,
           })
 
-          // Throw specific error if account is now locked
-          if (updateData.lockedUntil) {
-            throw new Error(
-              `Too many failed login attempts. Account locked for ${LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES} minutes.`
-            )
+          // Tell the user exactly what happened
+          if (updateData.lockedUntil && updateData.lockedUntil > new Date()) {
+            throw new Error(`ACCOUNT_LOCKED_ATTEMPTS:${LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES}`)
+          }
+
+          // Warn user about remaining attempts when getting close
+          if (remaining > 0 && remaining <= 2) {
+            throw new Error(`ATTEMPTS_WARNING:${remaining}`)
           }
 
           return null

@@ -59,10 +59,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Account is suspended or locked
-    if (resetToken.user.status === 'SUSPENDED' || resetToken.user.status === 'LOCKED') {
+    // Only block suspended accounts — LOCKED users should be able to recover via reset
+    if (resetToken.user.status === 'SUSPENDED') {
       return NextResponse.json(
-        { error: 'Your account is not active. Please contact support.' },
+        { error: 'Your account has been suspended. Please contact support.' },
         { status: 403 }
       )
     }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Hash the new password
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Update password, clear lockout, mark token used — all in one transaction
+    // Update password, clear lockout, reactivate if LOCKED, mark token used
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetToken.userId },
@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
           passwordHash,
           loginAttempts: 0,
           lockedUntil: null,
+          // Reactivate LOCKED accounts (locked by brute force, not admin)
+          ...(resetToken.user.status === 'LOCKED' ? { status: 'ACTIVE' } : {}),
         },
       }),
       prisma.passwordResetToken.update({

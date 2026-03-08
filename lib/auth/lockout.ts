@@ -1,8 +1,8 @@
 /**
  * Account Lockout Configuration and Utilities
  *
- * Provides centralized configuration for account lockout protection
- * to prevent brute-force login attacks.
+ * Uses a self-healing approach: lockout counters automatically become
+ * irrelevant once the lockout window expires. No manual reset needed.
  */
 
 export const LOCKOUT_CONFIG = {
@@ -29,11 +29,29 @@ export function shouldLockAccount(loginAttempts: number): boolean {
 }
 
 /**
- * Checks if an account is currently locked
+ * Checks if an account is currently locked (lockout has NOT yet expired)
  */
 export function isAccountLocked(lockedUntil: Date | null): boolean {
   if (!lockedUntil) return false
   return lockedUntil > new Date()
+}
+
+/**
+ * Checks if a previous lockout has expired and attempts need clearing.
+ * Returns true when lockedUntil is in the past and loginAttempts >= MAX_ATTEMPTS.
+ */
+export function isLockoutExpired(lockedUntil: Date | null, loginAttempts: number): boolean {
+  if (!lockedUntil) return false
+  return lockedUntil <= new Date() && loginAttempts >= LOCKOUT_CONFIG.MAX_ATTEMPTS
+}
+
+/**
+ * Returns the effective login attempts, accounting for expired lockouts.
+ * If the lockout window has passed, attempts are effectively 0.
+ */
+export function getEffectiveAttempts(loginAttempts: number, lockedUntil: Date | null): number {
+  if (isLockoutExpired(lockedUntil, loginAttempts)) return 0
+  return loginAttempts
 }
 
 /**
@@ -52,9 +70,9 @@ export function getRemainingLockoutMinutes(lockedUntil: Date | null): number {
 export function getLockoutErrorMessage(lockedUntil: Date | null): string {
   const remainingMinutes = getRemainingLockoutMinutes(lockedUntil)
   if (remainingMinutes <= 1) {
-    return 'Account is temporarily locked. Try again in about a minute.'
+    return 'LOCKOUT_ACTIVE:1'
   }
-  return `Account is temporarily locked. Try again in ${remainingMinutes} minutes.`
+  return `LOCKOUT_ACTIVE:${remainingMinutes}`
 }
 
 /**

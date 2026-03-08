@@ -25,12 +25,14 @@ function LoginForm() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showResetLink, setShowResetLink] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    setShowResetLink(false)
     setFieldErrors({})
 
     const formData = new FormData(e.currentTarget)
@@ -61,7 +63,32 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        const errorMsg = result.error
+        if (errorMsg.includes('ACCOUNT_SUSPENDED')) {
+          setError('This account has been suspended. Please contact support.')
+        } else if (errorMsg.includes('ACCOUNT_LOCKED_ATTEMPTS')) {
+          const minutes = errorMsg.split(':')[1] || '15'
+          setError(`Too many failed attempts. Account locked for ${minutes} minutes.`)
+          setShowResetLink(true)
+        } else if (errorMsg.includes('LOCKOUT_ACTIVE')) {
+          const minutes = errorMsg.split(':')[1] || 'a few'
+          setError(
+            `Account is temporarily locked. Try again in ${minutes} minute${minutes === '1' ? '' : 's'}.`
+          )
+          setShowResetLink(true)
+        } else if (errorMsg.includes('ACCOUNT_LOCKED')) {
+          setError('This account has been locked. Please contact support or reset your password.')
+          setShowResetLink(true)
+        } else if (errorMsg.includes('ATTEMPTS_WARNING')) {
+          const remaining = errorMsg.split(':')[1] || '1'
+          setError(
+            `Invalid password. ${remaining} attempt${remaining === '1' ? '' : 's'} remaining before your account is locked.`
+          )
+          setShowResetLink(true)
+        } else {
+          setError('Invalid email or password.')
+          setShowResetLink(true)
+        }
       } else if (result?.ok) {
         // Fetch session to determine redirect destination
         const sessionRes = await fetch('/api/auth/session')
@@ -108,7 +135,17 @@ function LoginForm() {
           {/* Error message */}
           {error && (
             <div className="bg-earth-100 border border-earth-300 text-earth-700 px-4 py-3 rounded-lg text-sm font-body">
-              {error}
+              <p>{error}</p>
+              {showResetLink && (
+                <p className="mt-2">
+                  <Link
+                    href="/forgot-password"
+                    className="text-forest-700 hover:text-forest-800 underline font-medium"
+                  >
+                    Reset your password
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 
