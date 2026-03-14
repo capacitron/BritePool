@@ -5,7 +5,23 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Download, Trash2, Edit, X, Save, Image, Video, Camera, Plane, Calendar, User, FileType, HardDrive } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Trash2,
+  Edit,
+  X,
+  Save,
+  Image,
+  Video,
+  Camera,
+  Plane,
+  Music,
+  Calendar,
+  User,
+  FileType,
+  HardDrive,
+} from 'lucide-react'
 
 interface MediaItem {
   id: string
@@ -15,8 +31,14 @@ interface MediaItem {
   filename: string
   filesize: number
   mimeType: string
-  type: 'PHOTO' | 'VIDEO' | 'DRONE_FOOTAGE' | 'TIMELAPSE'
-  category: 'PROJECT_PROGRESS' | 'EVENTS' | 'SANCTUARY_NATURE' | 'CONSTRUCTION' | 'COMMUNITY' | 'AERIAL'
+  type: 'PHOTO' | 'VIDEO' | 'AUDIO' | 'DRONE_FOOTAGE' | 'TIMELAPSE'
+  category:
+    | 'PROJECT_PROGRESS'
+    | 'EVENTS'
+    | 'SANCTUARY_NATURE'
+    | 'CONSTRUCTION'
+    | 'COMMUNITY'
+    | 'AERIAL'
   tags: string[]
   uploadedBy: { id: string; name: string }
   createdAt: string
@@ -72,11 +94,18 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'PHOTO': return <Image className="h-5 w-5" />
-      case 'VIDEO': return <Video className="h-5 w-5" />
-      case 'DRONE_FOOTAGE': return <Plane className="h-5 w-5" />
-      case 'TIMELAPSE': return <Camera className="h-5 w-5" />
-      default: return <Image className="h-5 w-5" />
+      case 'PHOTO':
+        return <Image className="h-5 w-5" />
+      case 'VIDEO':
+        return <Video className="h-5 w-5" />
+      case 'DRONE_FOOTAGE':
+        return <Plane className="h-5 w-5" />
+      case 'AUDIO':
+        return <Music className="h-5 w-5" />
+      case 'TIMELAPSE':
+        return <Camera className="h-5 w-5" />
+      default:
+        return <Image className="h-5 w-5" />
     }
   }
 
@@ -89,7 +118,10 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
         body: JSON.stringify({
           filename: editData.filename,
           category: editData.category,
-          tags: editData.tags.split(',').map(t => t.trim()).filter(Boolean),
+          tags: editData.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
         }),
       })
 
@@ -118,7 +150,13 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
     }
   }
 
-  const isVideo = mediaItem.type === 'VIDEO' || mediaItem.type === 'DRONE_FOOTAGE' || mediaItem.type === 'TIMELAPSE'
+  const isVideo =
+    mediaItem.type === 'VIDEO' ||
+    mediaItem.type === 'DRONE_FOOTAGE' ||
+    mediaItem.type === 'TIMELAPSE'
+  const isAudio = mediaItem.type === 'AUDIO'
+  // mediumUrl stores the Bunny embed URL if uploaded via Bunny CDN
+  const hasBunnyEmbed = mediaItem.mediumUrl?.includes('mediadelivery.net')
 
   return (
     <div className="space-y-6">
@@ -135,13 +173,28 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
         <div className="lg:col-span-2">
           <Card className="overflow-hidden">
             <div className="bg-black flex items-center justify-center min-h-[400px]">
-              {isVideo ? (
+              {(isVideo || isAudio) && hasBunnyEmbed ? (
+                <iframe
+                  src={mediaItem.mediumUrl!}
+                  loading="lazy"
+                  className="w-full aspect-video"
+                  style={{ border: 'none', minHeight: '400px' }}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : isVideo ? (
                 <video
                   src={mediaItem.url}
                   controls
                   poster={mediaItem.thumbnailUrl}
                   className="max-w-full max-h-[600px]"
                 />
+              ) : isAudio ? (
+                <div className="flex flex-col items-center justify-center p-8 w-full">
+                  <Music className="h-16 w-16 text-forest-400 mb-4" />
+                  <p className="text-white font-body mb-4">{mediaItem.filename}</p>
+                  <audio src={mediaItem.url} controls className="w-full max-w-md" />
+                </div>
               ) : (
                 <img
                   src={mediaItem.url}
@@ -182,10 +235,17 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
                     <select
                       className="w-full px-3 py-2 border rounded-lg"
                       value={editData.category}
-                      onChange={(e) => setEditData({ ...editData, category: e.target.value as typeof editData.category })}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          category: e.target.value as typeof editData.category,
+                        })
+                      }
                     >
                       {CATEGORIES.map((cat) => (
-                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -280,7 +340,12 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <a href={mediaItem.url} download={mediaItem.filename} target="_blank" rel="noopener noreferrer">
+              <a
+                href={mediaItem.url}
+                download={mediaItem.filename}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button variant="outline" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -293,16 +358,30 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
                     <div className="space-y-2">
                       <p className="text-sm text-center text-red-600">Delete this item?</p>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setIsDeleting(false)} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsDeleting(false)}
+                          className="flex-1"
+                        >
                           Cancel
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={handleDelete} className="flex-1">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDelete}
+                          className="flex-1"
+                        >
                           Delete
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <Button variant="destructive" className="w-full" onClick={() => setIsDeleting(true)}>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setIsDeleting(true)}
+                    >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>

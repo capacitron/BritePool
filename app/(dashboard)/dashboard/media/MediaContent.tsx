@@ -6,7 +6,7 @@ import NextImage from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
-import { Image, Video, Upload, Filter, X, Play, Camera, Plane } from 'lucide-react'
+import { Image, Video, Upload, Filter, X, Play, Camera, Plane, Music } from 'lucide-react'
 
 interface MediaItem {
   id: string
@@ -15,7 +15,7 @@ interface MediaItem {
   filename: string
   filesize: number
   mimeType: string
-  type: 'PHOTO' | 'VIDEO' | 'DRONE_FOOTAGE' | 'TIMELAPSE'
+  type: 'PHOTO' | 'VIDEO' | 'AUDIO' | 'DRONE_FOOTAGE' | 'TIMELAPSE'
   category:
     | 'PROJECT_PROGRESS'
     | 'EVENTS'
@@ -31,6 +31,7 @@ interface MediaItem {
 const MEDIA_TYPES = [
   { value: 'PHOTO', label: 'Photos', icon: Image },
   { value: 'VIDEO', label: 'Videos', icon: Video },
+  { value: 'AUDIO', label: 'Audio', icon: Music },
   { value: 'DRONE_FOOTAGE', label: 'Drone Footage', icon: Plane },
   { value: 'TIMELAPSE', label: 'Timelapse', icon: Camera },
 ]
@@ -95,6 +96,8 @@ export function MediaContent() {
         return <Video className="h-4 w-4" />
       case 'DRONE_FOOTAGE':
         return <Plane className="h-4 w-4" />
+      case 'AUDIO':
+        return <Music className="h-4 w-4" />
       case 'TIMELAPSE':
         return <Camera className="h-4 w-4" />
       default:
@@ -317,45 +320,64 @@ export function MediaContent() {
 }
 
 function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [formData, setFormData] = useState({
-    url: '',
-    thumbnailUrl: '',
-    filename: '',
-    filesize: 1024000,
-    mimeType: 'image/jpeg',
-    type: 'PHOTO' as const,
-    category: 'COMMUNITY' as const,
-    tags: '',
-  })
+  const [file, setFile] = useState<File | null>(null)
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('COMMUNITY')
+  const [tags, setTags] = useState('')
+  const [mediaType, setMediaType] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [progress, setProgress] = useState('')
   const [error, setError] = useState('')
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0]
+    if (!selected) return
+    setFile(selected)
+    if (!title) setTitle(selected.name.replace(/\.[^.]+$/, ''))
+    // Auto-detect type
+    if (selected.type.startsWith('audio/')) {
+      setMediaType('AUDIO')
+    } else if (selected.type.startsWith('video/')) {
+      setMediaType('VIDEO')
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!file) return
     setSubmitting(true)
     setError('')
+    setProgress('Uploading to CDN...')
 
     try {
-      const response = await fetch('/api/media', {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('title', title)
+      formData.append('category', category)
+      formData.append('tags', tags)
+      if (mediaType) formData.append('type', mediaType)
+
+      const response = await fetch('/api/media/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          tags: formData.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
-        }),
+        body: formData,
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to upload media')
+        throw new Error(data.error || 'Upload failed')
       }
 
+      setProgress('Upload complete!')
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
+      setProgress('')
     } finally {
       setSubmitting(false)
     }
@@ -371,6 +393,7 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               variant="ghost"
               size="sm"
               onClick={onClose}
+              disabled={submitting}
               className="text-forest-600 hover:text-forest-700"
             >
               <X className="h-4 w-4" />
@@ -383,61 +406,60 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               <div className="bg-red-50 text-red-600 p-3 rounded text-sm font-body">{error}</div>
             )}
 
+            {progress && (
+              <div className="bg-forest-50 text-forest-700 p-3 rounded text-sm font-body">
+                {progress}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1 font-body text-forest-700">
-                Media URL *
+                File *
               </label>
               <input
-                type="url"
+                type="file"
                 required
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
-                placeholder="https://example.com/image.jpg"
-                value={formData.url}
-                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                accept="video/*,audio/*"
+                onChange={handleFileChange}
+                disabled={submitting}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-100 file:text-forest-700 file:font-body file:text-sm"
               />
+              {file && (
+                <p className="text-xs text-forest-500 mt-1 font-body">
+                  {file.type} &middot; {formatFileSize(file.size)}
+                </p>
+              )}
+              <p className="text-xs text-forest-400 mt-1 font-body">
+                Video and audio files up to 500MB. Uploaded to Bunny CDN for streaming.
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1 font-body text-forest-700">
-                Thumbnail URL *
-              </label>
-              <input
-                type="url"
-                required
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
-                placeholder="https://example.com/thumbnail.jpg"
-                value={formData.thumbnailUrl}
-                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 font-body text-forest-700">
-                Filename *
+                Title
               </label>
               <input
                 type="text"
-                required
                 className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
-                placeholder="my-photo.jpg"
-                value={formData.filename}
-                onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
+                placeholder="Video title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1 font-body text-forest-700">
-                  Type *
+                  Type
                 </label>
                 <select
-                  required
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as typeof formData.type })
-                  }
+                  value={mediaType}
+                  onChange={(e) => setMediaType(e.target.value)}
+                  disabled={submitting}
                 >
+                  <option value="">Auto-detect</option>
                   {MEDIA_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
@@ -448,18 +470,13 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
               <div>
                 <label className="block text-sm font-medium mb-1 font-body text-forest-700">
-                  Category *
+                  Category
                 </label>
                 <select
-                  required
                   className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      category: e.target.value as typeof formData.category,
-                    })
-                  }
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={submitting}
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -478,8 +495,9 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                 type="text"
                 className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:ring-forest-500 font-body"
                 placeholder="nature, landscape, sunset"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
@@ -488,16 +506,17 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                 type="button"
                 variant="outline"
                 onClick={onClose}
+                disabled={submitting}
                 className="flex-1 border-forest-600 text-forest-700 hover:bg-forest-50"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !file}
                 className="flex-1 bg-forest-600 hover:bg-forest-700 text-white"
               >
-                {submitting ? 'Uploading...' : 'Upload'}
+                {submitting ? 'Uploading...' : 'Upload to CDN'}
               </Button>
             </div>
           </form>

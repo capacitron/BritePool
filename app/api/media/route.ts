@@ -11,7 +11,7 @@ const createMediaSchema = z.object({
   filename: z.string().min(1).max(255),
   filesize: z.number().int().positive(),
   mimeType: z.string().min(1),
-  type: z.enum(['PHOTO', 'VIDEO', 'DRONE_FOOTAGE', 'TIMELAPSE']),
+  type: z.enum(['PHOTO', 'VIDEO', 'AUDIO', 'DRONE_FOOTAGE', 'TIMELAPSE']),
   category: z.enum([
     'PROJECT_PROGRESS',
     'EVENTS',
