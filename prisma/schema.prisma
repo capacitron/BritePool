@@ -528,6 +528,7 @@ model AlbumItem {
 enum MediaType {
   PHOTO
   VIDEO
+  AUDIO
   DRONE_FOOTAGE
   TIMELAPSE
 }

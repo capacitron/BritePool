@@ -24,6 +24,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.amazonaws.com',
       },
+      {
+        protocol: 'https',
+        hostname: '**.b-cdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.bunnycdn.com',
+      },
     ],
   },
   experimental: {
