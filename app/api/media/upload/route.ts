@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Video not found on Bunny Stream' }, { status: 404 })
       }
 
-      const resolvedType = resolveMediaType(mediaType, bunnyVideo.videoUrl)
+      const isAudioType = mediaType === 'AUDIO' || (file?.type || '').startsWith('audio/')
+      const resolvedType = resolveMediaType(mediaType, bunnyVideo.videoUrl, isAudioType)
       const resolvedCategory = resolveCategory(category)
       const parsedTags = parseTags(tags)
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
           mediumUrl: getEmbedUrl(tusVideoId),
           filename: title || bunnyVideo.title || 'Untitled',
           filesize: bunnyVideo.storageSize,
-          mimeType: file?.type || 'video/mp4',
+          mimeType: file?.type || (isAudioType ? 'audio/mpeg' : 'video/mp4'),
           type: resolvedType,
           category: resolvedCategory,
           tags: parsedTags,

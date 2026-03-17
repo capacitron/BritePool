@@ -22,6 +22,7 @@ import {
   FileType,
   HardDrive,
 } from 'lucide-react'
+import { AudioPlayer } from '@/components/media/AudioPlayer'
 
 interface MediaItem {
   id: string
@@ -173,7 +174,13 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
         <div className="lg:col-span-2">
           <Card className="overflow-hidden">
             <div className="bg-black flex items-center justify-center min-h-[400px]">
-              {(isVideo || isAudio) && hasBunnyEmbed ? (
+              {isAudio ? (
+                <div className="flex flex-col items-center justify-center p-12 w-full bg-gradient-to-br from-forest-700 to-forest-900 min-h-[400px]">
+                  <Music className="h-16 w-16 text-white/40 mb-4" />
+                  <p className="text-white font-display text-lg mb-8">{mediaItem.filename}</p>
+                  <AudioPlayer src={mediaItem.url} />
+                </div>
+              ) : isVideo && hasBunnyEmbed ? (
                 <iframe
                   src={mediaItem.mediumUrl!}
                   loading="lazy"
@@ -189,12 +196,6 @@ export function MediaDetailClient({ mediaItem, userId, userRole }: MediaDetailCl
                   poster={mediaItem.thumbnailUrl}
                   className="max-w-full max-h-[600px]"
                 />
-              ) : isAudio ? (
-                <div className="flex flex-col items-center justify-center p-8 w-full">
-                  <Music className="h-16 w-16 text-forest-400 mb-4" />
-                  <p className="text-white font-body mb-4">{mediaItem.filename}</p>
-                  <audio src={mediaItem.url} controls className="w-full max-w-md" />
-                </div>
               ) : (
                 <img
                   src={mediaItem.url}

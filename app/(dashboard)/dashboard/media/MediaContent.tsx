@@ -256,19 +256,30 @@ export function MediaContent() {
             <Link key={item.id} href={`/dashboard/media/${item.id}`}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-sand-200">
                 <div className="aspect-square relative bg-sand-100">
-                  <NextImage
-                    src={item.thumbnailUrl}
-                    alt={item.filename}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    className="object-cover"
-                  />
-                  {(item.type === 'VIDEO' ||
-                    item.type === 'DRONE_FOOTAGE' ||
-                    item.type === 'TIMELAPSE') && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
-                      <Play className="h-12 w-12 text-white" />
+                  {item.type === 'AUDIO' ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-forest-700 to-forest-900">
+                      <Music className="h-16 w-16 text-white/80 mb-2" />
+                      <p className="text-white/70 text-xs font-body px-4 text-center truncate max-w-full">
+                        {item.filename}
+                      </p>
                     </div>
+                  ) : (
+                    <>
+                      <NextImage
+                        src={item.thumbnailUrl}
+                        alt={item.filename}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover"
+                      />
+                      {(item.type === 'VIDEO' ||
+                        item.type === 'DRONE_FOOTAGE' ||
+                        item.type === 'TIMELAPSE') && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                          <Play className="h-12 w-12 text-white" />
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs flex items-center gap-1 font-body">
                     {getTypeIcon(item.type)}
