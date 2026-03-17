@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { isAdmin } from '@/lib/auth/roles'
 import { logError } from '@/lib/api-utils'
 import { uploadVideo, isStreamConfigured, getEmbedUrl } from '@/lib/bunny'
-import type { UserRole, MediaType, MediaCategory } from '@prisma/client'
+import type { MediaType, MediaCategory } from '@prisma/client'
 
 /**
  * POST /api/media/upload
  * Upload a video/audio file to Bunny Stream, then create a MediaItem DB record.
- * Requires admin role. Accepts multipart form data.
+ * Requires authentication. Accepts multipart form data.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -17,11 +16,6 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const userRole = session.user.role as UserRole
-    if (!isAdmin(userRole)) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
     if (!isStreamConfigured()) {
