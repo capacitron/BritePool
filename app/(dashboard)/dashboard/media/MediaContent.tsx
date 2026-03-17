@@ -319,6 +319,9 @@ export function MediaContent() {
   )
 }
 
+// TUS upload threshold: files over 50MB use TUS resumable upload
+const TUS_THRESHOLD = 50 * 1024 * 1024
+
 function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
@@ -327,6 +330,7 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
   const [mediaType, setMediaType] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState('')
+  const [uploadPercent, setUploadPercent] = useState(0)
   const [error, setError] = useState('')
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,7 +338,6 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     if (!selected) return
     setFile(selected)
     if (!title) setTitle(selected.name.replace(/\.[^.]+$/, ''))
-    // Auto-detect type
     if (selected.type.startsWith('audio/')) {
       setMediaType('AUDIO')
     } else if (selected.type.startsWith('video/')) {
@@ -348,29 +351,112 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   }
 
+  const uploadViaTus = async (file: File, title: string): Promise<string> => {
+    // Step 1: Get TUS credentials from our server
+    setProgress('Preparing upload...')
+    const sigRes = await fetch('/api/media/tus-signature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
+
+    if (!sigRes.ok) {
+      const data = await sigRes.json()
+      throw new Error(data.error || 'Failed to get upload credentials')
+    }
+
+    const { videoId, tusEndpoint, authSignature, authExpire, libraryId } = await sigRes.json()
+
+    // Step 2: Upload via TUS with chunking and resume
+    const { Upload } = await import('tus-js-client')
+
+    return new Promise<string>((resolve, reject) => {
+      const upload = new Upload(file, {
+        endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          AuthorizationSignature: authSignature,
+          AuthorizationExpire: String(authExpire),
+          VideoId: videoId,
+          LibraryId: libraryId,
+        },
+        metadata: {
+          filetype: file.type,
+          title: title,
+        },
+        onError: (err) => {
+          reject(new Error(`Upload failed: ${err.message}`))
+        },
+        onProgress: (bytesUploaded, bytesTotal) => {
+          const pct = Math.round((bytesUploaded / bytesTotal) * 100)
+          setUploadPercent(pct)
+          setProgress(`Uploading... ${pct}%`)
+        },
+        onSuccess: () => {
+          setUploadPercent(100)
+          setProgress('Upload complete! Encoding...')
+          resolve(videoId)
+        },
+      })
+
+      upload.start()
+    })
+  }
+
+  const uploadViaPut = async (file: File): Promise<void> => {
+    setProgress('Uploading to CDN...')
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('title', title)
+    formData.append('category', category)
+    formData.append('tags', tags)
+    if (mediaType) formData.append('type', mediaType)
+
+    const response = await fetch('/api/media/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Upload failed')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return
     setSubmitting(true)
     setError('')
-    setProgress('Uploading to CDN...')
+    setUploadPercent(0)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('title', title)
-      formData.append('category', category)
-      formData.append('tags', tags)
-      if (mediaType) formData.append('type', mediaType)
+      if (file.size > TUS_THRESHOLD) {
+        // Large file: TUS resumable upload (client → Bunny direct)
+        const videoId = await uploadViaTus(file, title || file.name.replace(/\.[^.]+$/, ''))
 
-      const response = await fetch('/api/media/upload', {
-        method: 'POST',
-        body: formData,
-      })
+        // Create DB record via our server
+        setProgress('Saving metadata...')
+        const formData = new FormData()
+        formData.append('file', new Blob(), file.name) // empty blob, video already uploaded
+        formData.append('title', title)
+        formData.append('category', category)
+        formData.append('tags', tags)
+        formData.append('videoId', videoId)
+        if (mediaType) formData.append('type', mediaType)
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Upload failed')
+        const saveRes = await fetch('/api/media/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!saveRes.ok) {
+          const data = await saveRes.json()
+          throw new Error(data.error || 'Failed to save upload record')
+        }
+      } else {
+        // Small file: server-side PUT (simpler, file goes through our server)
+        await uploadViaPut(file)
       }
 
       setProgress('Upload complete!')
@@ -378,6 +464,7 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setProgress('')
+      setUploadPercent(0)
     } finally {
       setSubmitting(false)
     }
@@ -408,7 +495,15 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
             {progress && (
               <div className="bg-forest-50 text-forest-700 p-3 rounded text-sm font-body">
-                {progress}
+                <p>{progress}</p>
+                {uploadPercent > 0 && uploadPercent < 100 && (
+                  <div className="mt-2 w-full bg-sand-200 rounded-full h-2">
+                    <div
+                      className="bg-forest-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadPercent}%` }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

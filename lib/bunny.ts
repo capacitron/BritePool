@@ -6,6 +6,8 @@
  * Storage: thumbnails, documents, general assets
  */
 
+import { createHash } from 'crypto'
+
 // Bunny Stream (Video Library)
 const STREAM_API_KEY = process.env.BUNNY_STREAM_API_KEY || ''
 const STREAM_LIBRARY_ID = process.env.BUNNY_STREAM_LIBRARY_ID || ''
@@ -70,6 +72,37 @@ function streamHeaders(): Record<string, string> {
 }
 
 /**
+ * Create a video placeholder in Bunny Stream (Step 1 of upload flow).
+ * Returns the guid needed for both PUT and TUS uploads.
+ */
+export async function createVideoObject(
+  title: string,
+  collectionId?: string
+): Promise<{ guid: string }> {
+  if (!STREAM_API_KEY || !STREAM_LIBRARY_ID) {
+    throw new Error(
+      'Bunny Stream not configured: missing BUNNY_STREAM_API_KEY or BUNNY_STREAM_LIBRARY_ID'
+    )
+  }
+
+  const createBody: Record<string, string> = { title }
+  if (collectionId) createBody.collectionId = collectionId
+
+  const res = await fetch(`https://video.bunnycdn.com/library/${STREAM_LIBRARY_ID}/videos`, {
+    method: 'POST',
+    headers: { ...streamHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(createBody),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Failed to create video: ${res.status} ${text}`)
+  }
+
+  return (await res.json()) as { guid: string }
+}
+
+/**
  * Create a video placeholder in Bunny Stream, then upload the file to it.
  */
 export async function uploadVideo(
@@ -109,7 +142,7 @@ export async function uploadVideo(
         AccessKey: STREAM_API_KEY,
         'Content-Type': 'application/octet-stream',
       },
-      body: file,
+      body: file as unknown as BodyInit,
     }
   )
 
@@ -222,6 +255,25 @@ export async function getVideo(videoId: string): Promise<BunnyVideo | null> {
 }
 
 /**
+ * Poll a video's encoding status from Bunny Stream.
+ * Status codes: 0=Uploading, 1=Queued, 2=Processing, 3=Encoding, 4=Finished, 5=Error
+ */
+export async function getVideoStatus(videoId: string): Promise<{
+  status: number
+  statusLabel: string
+  encodeProgress: number
+} | null> {
+  const video = await getVideo(videoId)
+  if (!video) return null
+
+  return {
+    status: video.status,
+    statusLabel: getVideoStatusLabel(video.status),
+    encodeProgress: video.encodeProgress,
+  }
+}
+
+/**
  * Delete a video from Bunny Stream.
  */
 export async function deleteVideo(videoId: string): Promise<boolean> {
@@ -255,13 +307,13 @@ export async function uploadFile(file: Uint8Array, path: string): Promise<string
   // Normalize path — no leading slash
   const cleanPath = path.replace(/^\/+/, '')
 
-  const res = await fetch(`https://storage.bunnycdn.com/${STORAGE_ZONE}/${cleanPath}`, {
+  const res = await fetch(`https://la.storage.bunnycdn.com/${STORAGE_ZONE}/${cleanPath}`, {
     method: 'PUT',
     headers: {
       ...storageHeaders(),
       'Content-Type': 'application/octet-stream',
     },
-    body: file,
+    body: file as unknown as BodyInit,
   })
 
   if (!res.ok) {
@@ -280,7 +332,7 @@ export async function deleteStorageFile(path: string): Promise<boolean> {
 
   const cleanPath = path.replace(/^\/+/, '')
 
-  const res = await fetch(`https://storage.bunnycdn.com/${STORAGE_ZONE}/${cleanPath}`, {
+  const res = await fetch(`https://la.storage.bunnycdn.com/${STORAGE_ZONE}/${cleanPath}`, {
     method: 'DELETE',
     headers: storageHeaders(),
   })
@@ -296,8 +348,8 @@ export async function listStorageFiles(directory = ''): Promise<BunnyStorageFile
 
   const cleanDir = directory.replace(/^\/+/, '')
   const url = cleanDir
-    ? `https://storage.bunnycdn.com/${STORAGE_ZONE}/${cleanDir}/`
-    : `https://storage.bunnycdn.com/${STORAGE_ZONE}/`
+    ? `https://la.storage.bunnycdn.com/${STORAGE_ZONE}/${cleanDir}/`
+    : `https://la.storage.bunnycdn.com/${STORAGE_ZONE}/`
 
   const res = await fetch(url, { headers: storageHeaders() })
 
@@ -335,7 +387,7 @@ export async function healthCheck(): Promise<{
   // Check Storage API
   if (STORAGE_ZONE && STORAGE_PASSWORD) {
     try {
-      const res = await fetch(`https://storage.bunnycdn.com/${STORAGE_ZONE}/`, {
+      const res = await fetch(`https://la.storage.bunnycdn.com/${STORAGE_ZONE}/`, {
         headers: storageHeaders(),
       })
       result.storage.ok = res.ok
@@ -370,7 +422,37 @@ export function isStorageConfigured(): boolean {
  * Build an embed-friendly iframe URL for a Bunny Stream video.
  */
 export function getEmbedUrl(videoId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${STREAM_LIBRARY_ID}/${videoId}?autoplay=false&preload=true`
+  return `https://player.mediadelivery.net/embed/${STREAM_LIBRARY_ID}/${videoId}?autoplay=false&preload=true`
+}
+
+/**
+ * Generate a TUS upload signature for client-side resumable uploads.
+ * The signature is SHA256(libraryId + apiKey + expirationTime + videoId).
+ * This must be generated server-side to protect the API key.
+ */
+export function generateTusSignature(
+  videoId: string,
+  expirationTime: number
+): {
+  signature: string
+  expirationTime: number
+  libraryId: string
+  videoId: string
+} {
+  if (!STREAM_API_KEY || !STREAM_LIBRARY_ID) {
+    throw new Error('Bunny Stream not configured')
+  }
+
+  const signature = createHash('sha256')
+    .update(STREAM_LIBRARY_ID + STREAM_API_KEY + expirationTime + videoId)
+    .digest('hex')
+
+  return {
+    signature,
+    expirationTime,
+    libraryId: STREAM_LIBRARY_ID,
+    videoId,
+  }
 }
 
 /**
