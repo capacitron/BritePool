@@ -9,14 +9,14 @@
 import { createHash } from 'crypto'
 
 // Bunny Stream (Video Library)
-const STREAM_API_KEY = process.env.BUNNY_STREAM_API_KEY || ''
-const STREAM_LIBRARY_ID = process.env.BUNNY_STREAM_LIBRARY_ID || ''
-const STREAM_CDN_HOSTNAME = process.env.BUNNY_STREAM_CDN_HOSTNAME || ''
+const STREAM_API_KEY = (process.env.BUNNY_STREAM_API_KEY || '').trim()
+const STREAM_LIBRARY_ID = (process.env.BUNNY_STREAM_LIBRARY_ID || '').trim()
+const STREAM_CDN_HOSTNAME = (process.env.BUNNY_STREAM_CDN_HOSTNAME || '').trim()
 
 // Bunny Storage (General assets)
-const STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE || ''
-const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD || ''
-const STORAGE_CDN_HOSTNAME = process.env.BUNNY_STORAGE_CDN_HOSTNAME || ''
+const STORAGE_ZONE = (process.env.BUNNY_STORAGE_ZONE || '').trim()
+const STORAGE_PASSWORD = (process.env.BUNNY_STORAGE_PASSWORD || '').trim()
+const STORAGE_CDN_HOSTNAME = (process.env.BUNNY_STORAGE_CDN_HOSTNAME || '').trim()
 
 // --- Types ---
 
