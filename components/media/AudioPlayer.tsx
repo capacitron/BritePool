@@ -14,8 +14,8 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animFrameRef = useRef<number>(0)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
   const contextRef = useRef<AudioContext | null>(null)
+  const visualizerActiveRef = useRef(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -25,68 +25,26 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
   const initAudioContext = useCallback(() => {
     if (contextRef.current || !audioRef.current) return
 
-    const ctx = new AudioContext()
-    const analyser = ctx.createAnalyser()
-    analyser.fftSize = 128
-    analyser.smoothingTimeConstant = 0.8
+    try {
+      const ctx = new AudioContext()
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 128
+      analyser.smoothingTimeConstant = 0.8
 
-    const source = ctx.createMediaElementSource(audioRef.current)
-    source.connect(analyser)
-    analyser.connect(ctx.destination)
+      const source = ctx.createMediaElementSource(audioRef.current)
+      source.connect(analyser)
+      analyser.connect(ctx.destination)
 
-    contextRef.current = ctx
-    analyserRef.current = analyser
-    sourceRef.current = source
-  }, [])
-
-  const drawVisualizer = useCallback(() => {
-    const canvas = canvasRef.current
-    const analyser = analyserRef.current
-    if (!canvas || !analyser) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const bufferLength = analyser.frequencyBinCount
-    const dataArray = new Uint8Array(bufferLength)
-
-    const draw = () => {
-      animFrameRef.current = requestAnimationFrame(draw)
-      analyser.getByteFrequencyData(dataArray)
-
-      const { width, height } = canvas
-      ctx.clearRect(0, 0, width, height)
-
-      const barCount = Math.min(bufferLength, 48)
-      const gap = 2
-      const barWidth = (width - gap * (barCount - 1)) / barCount
-      const centerY = height / 2
-
-      for (let i = 0; i < barCount; i++) {
-        const value = dataArray[i] / 255
-        const barHeight = Math.max(2, value * centerY * 0.9)
-
-        const hue = 140 + i * (40 / barCount)
-        const lightness = 35 + value * 25
-        ctx.fillStyle = `hsl(${hue}, 50%, ${lightness}%)`
-
-        const x = i * (barWidth + gap)
-
-        // Mirror bars from center
-        ctx.beginPath()
-        ctx.roundRect(x, centerY - barHeight, barWidth, barHeight, 1)
-        ctx.fill()
-
-        ctx.beginPath()
-        ctx.roundRect(x, centerY, barWidth, barHeight, 1)
-        ctx.fill()
-      }
+      contextRef.current = ctx
+      analyserRef.current = analyser
+      visualizerActiveRef.current = true
+    } catch {
+      // CORS or browser restriction — visualizer won't work but audio still plays
+      visualizerActiveRef.current = false
     }
-
-    draw()
   }, [])
 
-  const drawIdleBars = useCallback(() => {
+  const drawBars = useCallback((dataArray: Uint8Array | null) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -101,14 +59,68 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     const centerY = height / 2
 
     for (let i = 0; i < barCount; i++) {
+      const value = dataArray ? dataArray[i] / 255 : 0
+      const barHeight = Math.max(2, value * centerY * 0.9)
+
       const hue = 140 + i * (40 / barCount)
-      ctx.fillStyle = `hsl(${hue}, 30%, 40%)`
+      const lightness = dataArray ? 35 + value * 25 : 40
+      const saturation = dataArray ? 50 : 30
+      ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`
+
       const x = i * (barWidth + gap)
+
       ctx.beginPath()
-      ctx.roundRect(x, centerY - 1, barWidth, 2, 1)
+      ctx.roundRect(x, centerY - barHeight, barWidth, barHeight, 1)
+      ctx.fill()
+
+      ctx.beginPath()
+      ctx.roundRect(x, centerY, barWidth, barHeight, 1)
       ctx.fill()
     }
   }, [])
+
+  const drawSimulatedBars = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const barCount = 48
+    const fakeData = new Uint8Array(barCount)
+
+    const draw = () => {
+      animFrameRef.current = requestAnimationFrame(draw)
+      const time = Date.now() / 1000
+
+      for (let i = 0; i < barCount; i++) {
+        const wave1 = Math.sin(time * 2 + i * 0.3) * 0.3
+        const wave2 = Math.sin(time * 3.7 + i * 0.5) * 0.2
+        const wave3 = Math.sin(time * 1.3 + i * 0.15) * 0.15
+        const base = 0.15 + Math.sin((i / barCount) * Math.PI) * 0.2
+        fakeData[i] = Math.max(0, Math.min(255, (base + wave1 + wave2 + wave3) * 255))
+      }
+
+      drawBars(fakeData)
+    }
+
+    draw()
+  }, [drawBars])
+
+  const drawVisualizer = useCallback(() => {
+    const analyser = analyserRef.current
+    if (!analyser) return
+
+    const bufferLength = analyser.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
+
+    const draw = () => {
+      animFrameRef.current = requestAnimationFrame(draw)
+      analyser.getByteFrequencyData(dataArray)
+      drawBars(dataArray)
+    }
+
+    draw()
+  }, [drawBars])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -117,39 +129,47 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     const resizeObserver = new ResizeObserver(() => {
       canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1)
       canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1)
-      if (!isPlaying) drawIdleBars()
+      if (!isPlaying) drawBars(null)
     })
 
     resizeObserver.observe(canvas)
     return () => resizeObserver.disconnect()
-  }, [isPlaying, drawIdleBars])
+  }, [isPlaying, drawBars])
 
   useEffect(() => {
     if (isPlaying) {
-      drawVisualizer()
+      if (visualizerActiveRef.current && analyserRef.current) {
+        drawVisualizer()
+      } else {
+        drawSimulatedBars()
+      }
     } else {
       cancelAnimationFrame(animFrameRef.current)
-      drawIdleBars()
+      drawBars(null)
     }
 
     return () => cancelAnimationFrame(animFrameRef.current)
-  }, [isPlaying, drawVisualizer, drawIdleBars])
+  }, [isPlaying, drawVisualizer, drawSimulatedBars, drawBars])
 
   const togglePlay = async () => {
     const audio = audioRef.current
     if (!audio) return
 
-    initAudioContext()
-    if (contextRef.current?.state === 'suspended') {
-      await contextRef.current.resume()
-    }
-
-    if (isPlaying) {
-      audio.pause()
+    if (!isPlaying) {
+      initAudioContext()
+      if (contextRef.current?.state === 'suspended') {
+        await contextRef.current.resume()
+      }
+      try {
+        await audio.play()
+        setIsPlaying(true)
+      } catch (err) {
+        console.error('Playback failed:', err)
+      }
     } else {
-      await audio.play()
+      audio.pause()
+      setIsPlaying(false)
     }
-    setIsPlaying(!isPlaying)
   }
 
   const toggleMute = () => {
@@ -178,7 +198,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         src={src}
-        crossOrigin="anonymous"
+        preload="metadata"
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
         onEnded={() => setIsPlaying(false)}
