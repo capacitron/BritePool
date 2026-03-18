@@ -516,7 +516,7 @@ export default function ProfilePage() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  username: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                  username: e.target.value.replace(/[^a-zA-Z0-9-]/g, ''),
                 })
               }
               placeholder="your-username"

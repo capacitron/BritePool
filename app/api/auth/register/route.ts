@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const { name, email, username, password } = parsed.data
     const normalizedEmail = email.toLowerCase()
-    const normalizedUsername = username && username.length >= 3 ? username.toLowerCase() : undefined
+    const normalizedUsername = username && username.length >= 3 ? username : undefined
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -40,8 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (normalizedUsername) {
-      const existingUsername = await prisma.user.findUnique({
-        where: { username: normalizedUsername },
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username: { equals: normalizedUsername, mode: 'insensitive' },
+        },
         select: { id: true },
       })
       if (existingUsername) {
@@ -58,8 +60,8 @@ export async function POST(request: NextRequest) {
     // Look up referrer by username
     let referredById: string | undefined
     if (referrer) {
-      const referrerUser = await prisma.user.findUnique({
-        where: { username: referrer.toLowerCase() },
+      const referrerUser = await prisma.user.findFirst({
+        where: { username: { equals: referrer, mode: 'insensitive' } },
         select: { id: true },
       })
       if (referrerUser) {

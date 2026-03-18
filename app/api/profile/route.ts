@@ -106,15 +106,18 @@ export async function PATCH(request: NextRequest) {
     const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
     if (username !== undefined) {
-      const lowerUsername = username.toLowerCase()
-      const existing = await prisma.user.findUnique({
-        where: { username: lowerUsername },
+      // Case-insensitive uniqueness check — preserve user's chosen casing
+      const existing = await prisma.user.findFirst({
+        where: {
+          username: { equals: username, mode: 'insensitive' },
+          NOT: { id: session.user.id },
+        },
         select: { id: true },
       })
-      if (existing && existing.id !== session.user.id) {
+      if (existing) {
         return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
       }
-      updateData.username = lowerUsername
+      updateData.username = username
     }
 
     const profileUpdateData: Record<string, unknown> = {}
