@@ -571,13 +571,13 @@ export default function ProfilePage() {
             </Button>
           </div>
 
-          {profile?.username && (
+          {(formData.username.length >= 3) && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-forest-700 font-body">Your Shareable Referral Link</Label>
                 <div className="flex gap-2">
                   <Input
-                    value={`https://britepool.org/${profile.username}`}
+                    value={`https://britepool.org/${formData.username}`}
                     readOnly
                     className="border-sand-300 bg-sand-50 text-forest-700"
                   />
@@ -586,7 +586,7 @@ export default function ProfilePage() {
                     variant="outline"
                     className="shrink-0 border-forest-600 text-forest-700 hover:bg-forest-600 hover:text-white"
                     onClick={() => {
-                      navigator.clipboard.writeText(`https://britepool.org/${profile.username}`)
+                      navigator.clipboard.writeText(`https://britepool.org/${formData.username}`)
                       setLinkCopied(true)
                       setTimeout(() => setLinkCopied(false), 2000)
                     }}
@@ -614,7 +614,7 @@ export default function ProfilePage() {
                 <Label className="text-forest-700 font-body">Quick Share</Label>
                 <div className="flex flex-wrap gap-2">
                   {(() => {
-                    const url = encodeURIComponent(`https://britepool.org/${profile.username}`)
+                    const url = encodeURIComponent(`https://britepool.org/${formData.username}`)
                     const text = encodeURIComponent('Join me on BritePool!')
                     return (
                       <>
