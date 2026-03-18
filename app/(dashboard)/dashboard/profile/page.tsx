@@ -524,8 +524,51 @@ export default function ProfilePage() {
               maxLength={30}
             />
             <p className="text-xs text-forest-400 font-body">
-              Lowercase letters, numbers, and hyphens only. 3-30 characters.
+              Letters, numbers, and hyphens only. 3-30 characters.
             </p>
+            <Button
+              type="button"
+              disabled={saving || formData.username === (profile?.username || '') || formData.username.length < 3}
+              onClick={async () => {
+                setSaving(true)
+                setMessage(null)
+                try {
+                  const res = await fetch('/api/profile', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: formData.username }),
+                  })
+                  if (!res.ok) {
+                    const data = await res.json()
+                    throw new Error(data.error || 'Failed to save username')
+                  }
+                  await updateSession()
+                  setMessage({ type: 'success', text: 'Username saved successfully' })
+                  fetchProfile()
+                } catch (error) {
+                  setMessage({
+                    type: 'error',
+                    text: error instanceof Error ? error.message : 'Failed to save username',
+                  })
+                } finally {
+                  setSaving(false)
+                }
+              }}
+              className="bg-forest-600 hover:bg-forest-700 text-white"
+              size="sm"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Username
+                </>
+              )}
+            </Button>
           </div>
 
           {profile?.username && (
