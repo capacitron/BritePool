@@ -5,6 +5,18 @@ import { logError } from '@/lib/api-utils'
 import { uploadVideo, getVideo, isStreamConfigured, getEmbedUrl } from '@/lib/bunny'
 import type { MediaType, MediaCategory } from '@prisma/client'
 
+// Allow uploads up to 500MB through this API route
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+}
+
+// Next.js App Router route segment config
+export const maxDuration = 120
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/media/upload
  * Upload a video/audio file to Bunny Stream, then create a MediaItem DB record.

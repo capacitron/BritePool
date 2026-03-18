@@ -27,6 +27,7 @@ import {
   CalendarClock,
   UserPlus,
 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { WGOInvolvementsSection } from '@/components/profile/WGOInvolvementsSection'
 import { PageHeader } from '@/components/PageHeader'
 
@@ -105,6 +106,7 @@ const DEFAULT_AVAILABILITY: Record<string, { enabled: boolean; start: string; en
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { update: updateSession } = useSession()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -188,6 +190,9 @@ export default function ProfilePage() {
         const data = await res.json()
         throw new Error(data.error || 'Failed to update profile')
       }
+
+      // Refresh the NextAuth session so name/username propagate app-wide
+      await updateSession()
 
       setMessage({ type: 'success', text: 'Profile updated successfully' })
       fetchProfile()

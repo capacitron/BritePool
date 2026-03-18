@@ -144,6 +144,8 @@ export const authConfig: NextAuthConfig = {
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: {
+            name: true,
+            username: true,
             onboardingCompleted: true,
             covenantAcceptedAt: true,
             covenantVersion: true,
@@ -152,6 +154,8 @@ export const authConfig: NextAuthConfig = {
           },
         })
         if (freshUser) {
+          token.name = freshUser.name
+          token.username = freshUser.username
           token.onboardingCompleted = freshUser.onboardingCompleted
           token.covenantAcceptedAt = freshUser.covenantAcceptedAt
           token.covenantVersion = freshUser.covenantVersion
@@ -164,6 +168,7 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.name = token.name as string
         session.user.email = token.email as string
         session.user.role = token.role as UserRole
         session.user.status = token.status as string

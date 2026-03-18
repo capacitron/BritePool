@@ -330,8 +330,9 @@ export function MediaContent() {
   )
 }
 
-// TUS upload threshold: files over 50MB use TUS resumable upload
-const TUS_THRESHOLD = 50 * 1024 * 1024
+// TUS upload threshold: files over 4MB use TUS resumable upload (direct to Bunny CDN)
+// This avoids Next.js API route body size limits and is more reliable for media files
+const TUS_THRESHOLD = 4 * 1024 * 1024
 
 function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null)
@@ -372,8 +373,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     })
 
     if (!sigRes.ok) {
-      const data = await sigRes.json()
-      throw new Error(data.error || 'Failed to get upload credentials')
+      const text = await sigRes.text()
+      let errorMsg = 'Failed to get upload credentials'
+      try { errorMsg = JSON.parse(text).error || errorMsg } catch {}
+      throw new Error(errorMsg)
     }
 
     const { videoId, tusEndpoint, authSignature, authExpire, libraryId } = await sigRes.json()
@@ -429,8 +432,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     })
 
     if (!response.ok) {
-      const data = await response.json()
-      throw new Error(data.error || 'Upload failed')
+      const text = await response.text()
+      let errorMsg = 'Upload failed'
+      try { errorMsg = JSON.parse(text).error || errorMsg } catch {}
+      throw new Error(errorMsg)
     }
   }
 
@@ -462,8 +467,10 @@ function UploadMediaModal({ onClose, onSuccess }: { onClose: () => void; onSucce
         })
 
         if (!saveRes.ok) {
-          const data = await saveRes.json()
-          throw new Error(data.error || 'Failed to save upload record')
+          const text = await saveRes.text()
+          let errorMsg = 'Failed to save upload record'
+          try { errorMsg = JSON.parse(text).error || errorMsg } catch {}
+          throw new Error(errorMsg)
         }
       } else {
         // Small file: server-side PUT (simpler, file goes through our server)
