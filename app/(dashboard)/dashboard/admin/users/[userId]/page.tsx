@@ -208,7 +208,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
 
   async function fetchUser() {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`)
+      const res = await fetch(`/api/admin/users/${userId}`, { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         const userData = data.user || data

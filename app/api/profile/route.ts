@@ -8,6 +8,8 @@ import { usernameSchema } from '@/lib/validations/username'
 import { syncProfileToLocal } from '@/lib/prisma-neon'
 import { UserRole } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 const availabilityDaySchema = z.object({
   enabled: z.boolean(),
   start: z.string(),

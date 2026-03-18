@@ -145,7 +145,7 @@ export default function ProfilePage() {
 
   async function fetchProfile() {
     try {
-      const res = await fetch('/api/profile')
+      const res = await fetch('/api/profile', { cache: 'no-store' })
       if (!res.ok) {
         if (res.status === 401) {
           router.push('/login')

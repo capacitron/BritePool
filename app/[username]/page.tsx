@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma'
 export default async function UsernamePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
 
-  const user = await prisma.user.findUnique({
-    where: { username: username.toLowerCase() },
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
     select: { id: true, username: true },
   })
 

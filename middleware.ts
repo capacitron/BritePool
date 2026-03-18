@@ -28,7 +28,7 @@ export default auth((req) => {
     '/_next',
   ]
   const isReferralRoute =
-    path !== '/' && !knownPrefixes.some((p) => path.startsWith(p)) && /^\/[a-z0-9-]+$/.test(path)
+    path !== '/' && !knownPrefixes.some((p) => path.startsWith(p)) && /^\/[a-zA-Z0-9-]+$/.test(path)
 
   // Redirect logged in users away from auth routes
   if (isAuthRoute && isLoggedIn) {
@@ -39,8 +39,8 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
   }
 
-  // Allow referral links through for unauthenticated users (e.g. /capacitron -> /register?ref=capacitron)
-  if (isReferralRoute && !isLoggedIn) {
+  // Allow referral links through (e.g. /TheNewFuture -> /register?ref=TheNewFuture)
+  if (isReferralRoute) {
     return NextResponse.next()
   }
 
