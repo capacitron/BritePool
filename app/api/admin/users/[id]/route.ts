@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$/).nullable().optional(),
   role: z
     .enum([
       'WEB_STEWARD',
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: true,
         email: true,
         name: true,
+        username: true,
         role: true,
         status: true,
         subscriptionTier: true,
@@ -197,6 +199,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const {
       name,
+      username: newUsername,
       role: newRole,
       status: newStatus,
       subscriptionTier: newTier,
@@ -214,6 +217,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const updateData: {
       name?: string
+      username?: string | null
       role?: UserRole
       status?: UserStatus
       subscriptionTier?: SubscriptionTier
@@ -223,6 +227,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (name) {
       updateData.name = name
+    }
+
+    if (newUsername !== undefined) {
+      if (newUsername === null || newUsername === '') {
+        updateData.username = null
+      } else {
+        const existing = await prisma.user.findFirst({
+          where: {
+            username: { equals: newUsername, mode: 'insensitive' },
+            NOT: { id },
+          },
+          select: { id: true },
+        })
+        if (existing) {
+          return NextResponse.json({ error: 'Username already taken' }, { status: 409 })
+        }
+        updateData.username = newUsername
+      }
     }
 
     if (newReferredById !== undefined) {
@@ -275,6 +297,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         id: true,
         email: true,
         name: true,
+        username: true,
         role: true,
         status: true,
         updatedAt: true,
@@ -285,6 +308,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const changes: Record<string, { old: unknown; new: unknown }> = {}
     if (updateData.name) {
       changes.name = { old: existingUser.name, new: updateData.name }
+    }
+    if (updateData.username !== undefined) {
+      changes.username = { old: existingUser.username, new: updateData.username }
     }
     if (updateData.role) {
       changes.role = { old: existingUser.role, new: updateData.role }

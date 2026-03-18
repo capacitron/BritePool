@@ -92,6 +92,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use effective user ID for WRITE (impersonated user if admin is impersonating)
+    const effectiveUserId = await getEffectiveUserId(session.user.id, session.user.role as UserRole)
+
     const body = await request.json()
     const parsed = updateProfileSchema.safeParse(body)
 
@@ -111,7 +114,7 @@ export async function PATCH(request: NextRequest) {
       const existing = await prisma.user.findFirst({
         where: {
           username: { equals: username, mode: 'insensitive' },
-          NOT: { id: session.user.id },
+          NOT: { id: effectiveUserId },
         },
         select: { id: true },
       })
@@ -130,7 +133,7 @@ export async function PATCH(request: NextRequest) {
     if (availability !== undefined) profileUpdateData.availability = availability
 
     const user = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       data: {
         ...updateData,
         profile: {
@@ -160,7 +163,7 @@ export async function PATCH(request: NextRequest) {
     })
 
     // Sync to local Replit DB in the background — Neon (primary) already updated
-    syncProfileToLocal(session.user.id, updateData, profileUpdateData)
+    syncProfileToLocal(effectiveUserId, updateData, profileUpdateData)
 
     return NextResponse.json(user)
   } catch (error) {

@@ -21,6 +21,8 @@ import {
   Search,
   Eye,
   Loader2,
+  Copy,
+  Link2,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -110,6 +112,7 @@ interface UserData {
   id: string
   email: string
   name: string
+  username: string | null
   role: string
   status: string
   subscriptionTier: string
@@ -159,6 +162,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
   const [editedStatus, setEditedStatus] = useState('')
   const [editedName, setEditedName] = useState('')
   const [editedAccountStatus, setEditedAccountStatus] = useState('')
+  const [editedUsername, setEditedUsername] = useState('')
   const [editedReferredById, setEditedReferredById] = useState<string | null>(null)
   const [editingReferrer, setEditingReferrer] = useState(false)
   const [referrerSearch, setReferrerSearch] = useState('')
@@ -213,6 +217,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
         setEditedTier(userData.subscriptionTier)
         setEditedStatus(userData.subscriptionStatus)
         setEditedName(userData.name)
+        setEditedUsername(userData.username || '')
         setEditedAccountStatus(userData.status || 'ACTIVE')
         setEditedReferredById(userData.referredBy?.id ?? null)
         setSelectedReferrer(userData.referredBy ?? null)
@@ -240,6 +245,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
           subscriptionStatus: editedStatus,
           status: editedAccountStatus,
           name: editedName,
+          username: editedUsername || null,
           referredById: editedReferredById,
         }),
       })
@@ -411,6 +417,47 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ user
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user.email} disabled className="bg-stone-warm" />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={editedUsername}
+                  onChange={(e) => setEditedUsername(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
+                  placeholder="username"
+                  maxLength={30}
+                />
+                <p className="text-xs text-earth-brown-light mt-1">
+                  Letters, numbers, and hyphens only. 3-30 characters.
+                </p>
+              </div>
+              <div>
+                <Label>Referral Link</Label>
+                {editedUsername.length >= 3 ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={`https://britepool.org/${editedUsername}`}
+                      readOnly
+                      className="bg-stone-warm text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://britepool.org/${editedUsername}`)
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-earth-brown-light italic mt-2">No username set</p>
+                )}
               </div>
             </div>
 
