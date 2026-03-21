@@ -187,6 +187,20 @@ export const PAGE_DESCRIPTIONS: Record<
       'Configure your account preferences, notification settings, and security options. Maintain control over your digital presence within the BRITE Pool ecosystem.',
   },
 
+  // Steward Projects
+  projects: {
+    title: 'Steward Projects',
+    description:
+      'Community-driven initiatives managed by visionary stewards. Each project follows a standard template for tracking leadership, documents, media, locations, contacts, and budget.',
+  },
+
+  'projects/aliento-de-vida': {
+    title: 'Aliento De Vida (Breath of Life)',
+    description:
+      'A transformative community project bringing life and renewal through stewardship and regenerative development.',
+    terms: ['Stewards', 'Budget', 'Documents', 'Media', 'Contacts', 'Map'],
+  },
+
   // Admin
   admin: {
     title: 'Administration',

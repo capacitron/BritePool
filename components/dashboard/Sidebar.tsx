@@ -4,117 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard,
-  Users,
-  CheckSquare,
-  Calendar,
-  BookOpen,
-  Clock,
-  UserCircle,
-  MessageSquare,
-  Wrench,
-  CreditCard,
-  Image,
-  Map,
-  Handshake,
-  Heart,
-  FileText,
-  Eye,
-  PieChart,
-  Settings,
-  Bell,
-  Wallet,
-  Globe,
-  Shield,
-  ClipboardList,
-  Megaphone,
-  BarChart3,
-  ChevronDown,
-} from 'lucide-react'
-
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  locked?: boolean
-}
-
-interface NavGroup {
-  title: string
-  items: NavItem[]
-}
-
-const navGroups: NavGroup[] = [
-  {
-    title: 'Main',
-    items: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/dashboard/profile', label: 'Profile', icon: UserCircle },
-      { href: '/dashboard/events', label: 'Events', icon: Calendar },
-      { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
-      { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
-    ],
-  },
-  {
-    title: 'Community',
-    items: [
-      { href: '/dashboard/gratitude', label: 'Gratitude', icon: Heart },
-      { href: '/dashboard/committees', label: 'Committees', icon: Users, locked: true },
-      { href: '/dashboard/forums', label: 'Forums', icon: MessageSquare },
-      { href: '/dashboard/wgo', label: 'WGO', icon: Globe },
-      { href: '/dashboard/stakeholder', label: 'Stakeholder', icon: PieChart, locked: true },
-    ],
-  },
-  {
-    title: 'Finance',
-    items: [
-      { href: '/dashboard/pools', label: 'Pools', icon: Wallet, locked: true },
-      { href: '/dashboard/participation', label: 'Participation', icon: Clock, locked: true },
-      { href: '/dashboard/subscription', label: 'Memberships', icon: CreditCard, locked: true },
-      { href: '/dashboard/transparency', label: 'Transparency', icon: Eye, locked: true },
-    ],
-  },
-  {
-    title: 'Resources',
-    items: [
-      { href: '/dashboard/outreach', label: 'Outreach', icon: Megaphone },
-      { href: '/dashboard/courses', label: 'Courses', icon: BookOpen, locked: true },
-      { href: '/dashboard/documents', label: 'Documents', icon: FileText, locked: true },
-      { href: '/dashboard/media', label: 'Media', icon: Image, locked: true },
-    ],
-  },
-  {
-    title: 'Other',
-    items: [
-      { href: '/dashboard/maintenance', label: 'Maintenance', icon: Wrench, locked: true },
-      { href: '/dashboard/map', label: 'Map', icon: Map, locked: true },
-      { href: '/dashboard/partners', label: 'Partners', icon: Handshake, locked: true },
-    ],
-  },
-]
-
-const adminNavItems: NavItem[] = [
-  { href: '/dashboard/admin', label: 'Admin Panel', icon: Settings },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-]
-
-const adminRoles = ['WEB_STEWARD', 'BOARD_CHAIR']
+import { ChevronDown } from 'lucide-react'
+import { navGroups, adminNavItems, adminRoles, isRouteInGroup, STORAGE_KEY } from '@/lib/navigation'
 
 interface SidebarProps {
   userRole?: string
 }
-
-// Helper to check if a route is within a nav group
-function isRouteInGroup(pathname: string, items: NavItem[]): boolean {
-  return items.some(
-    (item) =>
-      pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
-  )
-}
-
-// Storage key for persisting collapsed state
-const STORAGE_KEY = 'sidebar-collapsed-sections'
 
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
