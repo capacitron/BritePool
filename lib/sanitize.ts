@@ -1,37 +1,41 @@
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtmlLib from 'sanitize-html'
+
+const ALLOWED_TAGS = [
+  'p',
+  'br',
+  'strong',
+  'em',
+  'u',
+  's',
+  'h2',
+  'h3',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'pre',
+  'code',
+  'a',
+  'div',
+  'span',
+]
 
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
-      'p',
-      'br',
-      'strong',
-      'em',
-      'u',
-      's',
-      'h2',
-      'h3',
-      'ul',
-      'ol',
-      'li',
-      'blockquote',
-      'pre',
-      'code',
-      'a',
-      'div',
-      'span',
-    ],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-    ALLOW_DATA_ATTR: false,
+  return sanitizeHtmlLib(html, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+      '*': ['class'],
+    },
   })
 }
 
 export function sanitizeTitle(title: string): string {
-  return DOMPurify.sanitize(title, { ALLOWED_TAGS: [] }).trim()
+  return sanitizeHtmlLib(title, { allowedTags: [], allowedAttributes: {} }).trim()
 }
 
 export function stripHtml(html: string): string {
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+  return sanitizeHtmlLib(html, { allowedTags: [], allowedAttributes: {} })
 }
 
 export function isHtmlEmpty(html: string): boolean {
