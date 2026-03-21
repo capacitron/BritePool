@@ -94,7 +94,9 @@
       "Bash(git add app/\\\\\\(auth\\\\\\)/login/page.tsx app/api/auth/reset-password/route.ts lib/auth/config.ts lib/auth/lockout.ts lib/email.ts app/api/admin/users/\\\\[id\\\\]/reset-password/route.ts app/api/admin/users/\\\\[id\\\\]/unlock/route.ts)",
       "Bash(env DATABASE_URL=\"$NEON_DB_URL\" npx prisma db push)",
       "Bash(printf:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": []
   },
