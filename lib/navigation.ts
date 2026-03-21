@@ -3,14 +3,12 @@
 import {
   LayoutDashboard,
   Users,
-  CheckSquare,
   Calendar,
   BookOpen,
   Clock,
   UserCircle,
   MessageSquare,
   Wrench,
-  CreditCard,
   Eye,
   PieChart,
   Settings,
@@ -67,13 +65,6 @@ export const navGroups: NavGroup[] = [
   {
     title: 'Steward Projects',
     items: [
-      {
-        href: '/dashboard/subscription',
-        label: 'Community Members',
-        icon: CreditCard,
-        locked: true,
-      },
-      { href: '/dashboard/tasks', label: 'Tasks', icon: CheckSquare },
       { href: '/dashboard/projects/aliento-de-vida', label: 'Aliento De Vida', icon: Sprout },
     ],
   },
