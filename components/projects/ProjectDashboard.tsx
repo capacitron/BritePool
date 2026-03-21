@@ -15,7 +15,18 @@ import { Media } from './tabs/Media'
 import { MapView } from './tabs/MapView'
 import { ProfessionalContacts } from './tabs/ProfessionalContacts'
 import { Budget } from './tabs/Budget'
-import { Users, FileText, Image, MapPin, Contact, DollarSign } from 'lucide-react'
+import { CommunityMembers } from './tabs/CommunityMembers'
+import { Tasks } from './tabs/Tasks'
+import {
+  Users,
+  FileText,
+  Image,
+  MapPin,
+  Contact,
+  DollarSign,
+  CreditCard,
+  CheckSquare,
+} from 'lucide-react'
 
 interface ProjectDashboardProps {
   projectName: string
@@ -35,6 +46,8 @@ const tabs = [
   { value: 'map', label: 'Map', icon: MapPin },
   { value: 'contacts', label: 'Contacts', icon: Contact },
   { value: 'budget', label: 'Budget', icon: DollarSign },
+  { value: 'members', label: 'Members', icon: CreditCard },
+  { value: 'tasks', label: 'Tasks', icon: CheckSquare },
 ]
 
 export function ProjectDashboard({
@@ -103,6 +116,14 @@ export function ProjectDashboard({
 
         <TabsContent value="budget">
           <Budget items={budgetItems} />
+        </TabsContent>
+
+        <TabsContent value="members">
+          <CommunityMembers />
+        </TabsContent>
+
+        <TabsContent value="tasks">
+          <Tasks />
         </TabsContent>
       </Tabs>
     </div>
