@@ -12,6 +12,7 @@ import {
 } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { isAdmin } from '@/lib/auth/roles'
+import { sanitizeHtml, sanitizeTitle } from '@/lib/sanitize'
 import type { Prisma } from '@prisma/client'
 
 const querySchema = z.object({
@@ -138,7 +139,9 @@ export async function POST(request: NextRequest) {
     const { data: body, error: bodyError } = await validateBody(request, createPostSchema)
     if (bodyError) return bodyError
 
-    const { title, content, categoryId } = body
+    const { categoryId } = body
+    const title = sanitizeTitle(body.title)
+    const content = sanitizeHtml(body.content)
     const userIsAdmin = isAdmin(auth.user.role)
 
     // Verify category exists

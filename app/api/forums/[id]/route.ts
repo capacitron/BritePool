@@ -13,6 +13,7 @@ import {
 } from '@/lib/api-utils'
 import { rateLimit, RateLimitConfigs } from '@/lib/rate-limit'
 import { isAdmin } from '@/lib/auth/roles'
+import { sanitizeHtml, sanitizeTitle } from '@/lib/sanitize'
 
 const replySchema = z.object({
   content: z.string().min(1).max(10000),
@@ -128,9 +129,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data: body, error: bodyError } = await validateBody(request, replySchema)
     if (bodyError) return bodyError
 
+    const sanitizedContent = sanitizeHtml(body.content)
+
     const reply = await prisma.forumPost.create({
       data: {
-        content: body.content,
+        content: sanitizedContent,
         parentId: id,
         categoryId: parentPost.categoryId,
         authorId: auth.user.id,
@@ -188,8 +191,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (bodyError) return bodyError
 
     const updateData: Record<string, unknown> = {}
-    if (body.title !== undefined) updateData.title = body.title
-    if (body.content !== undefined) updateData.content = body.content
+    if (body.title !== undefined) updateData.title = sanitizeTitle(body.title)
+    if (body.content !== undefined) updateData.content = sanitizeHtml(body.content)
 
     const updated = await prisma.forumPost.update({
       where: { id },
