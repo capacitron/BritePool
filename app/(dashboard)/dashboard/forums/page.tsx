@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
+import { stripHtml } from '@/lib/sanitize'
 
 interface ForumPost {
   id: string
@@ -230,16 +232,14 @@ export default function ForumsPage() {
                         )}
                       </div>
 
-                      <p className="text-sm text-forest-600 line-clamp-2 mb-2">{post.content}</p>
+                      <p className="text-sm text-forest-600 line-clamp-2 mb-2">
+                        {stripHtml(post.content)}
+                      </p>
 
                       <div className="flex items-center gap-3 text-xs text-forest-500 flex-wrap">
-                        <span className="font-medium text-forest-700">
-                          {post.author.name}
-                        </span>
+                        <span className="font-medium text-forest-700">{post.author.name}</span>
                         {isAdmin && (
-                          <span className="text-forest-400">
-                            {getRoleBadge(post.author.role)}
-                          </span>
+                          <span className="text-forest-400">{getRoleBadge(post.author.role)}</span>
                         )}
                         {post.category && (
                           <Badge variant="outline" className="text-xs py-0 px-1.5">
@@ -370,19 +370,13 @@ function NewPostModal({
 
             <div>
               <label className="block text-sm font-medium text-forest-700 mb-1">Content *</label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={6}
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500"
+              <RichTextEditor
+                content={formData.content}
+                onChange={(html) => setFormData({ ...formData, content: html })}
                 placeholder="Share your thoughts..."
-                required
-                minLength={1}
                 maxLength={10000}
+                variant="full"
               />
-              <p className="text-xs text-forest-400 mt-1">
-                {formData.content.length}/10,000 characters
-              </p>
             </div>
 
             <p className="text-xs text-forest-500 bg-sand-50 p-3 rounded-lg">

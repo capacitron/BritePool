@@ -3,21 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  ArrowLeft,
-  Pin,
-  Clock,
-  MessageCircle,
-  Send,
-  Pencil,
-  Trash2,
-  X,
-  Check,
-} from 'lucide-react'
+import { ArrowLeft, Pin, Clock, MessageCircle, Send, Pencil, Trash2, X, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
+import { ForumContent } from '@/components/forums/ForumContent'
+import { isHtmlEmpty } from '@/lib/sanitize'
 
 interface Reply {
   id: string
@@ -89,6 +82,7 @@ export default function ForumPostPage() {
 
   // Reply state
   const [replyContent, setReplyContent] = useState('')
+  const [replyKey, setReplyKey] = useState(0)
   const [submittingReply, setSubmittingReply] = useState(false)
 
   // Edit state
@@ -134,7 +128,7 @@ export default function ForumPostPage() {
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!replyContent.trim()) return
+    if (isHtmlEmpty(replyContent)) return
 
     setSubmittingReply(true)
     try {
@@ -150,6 +144,7 @@ export default function ForumPostPage() {
       }
 
       setReplyContent('')
+      setReplyKey((k) => k + 1)
       fetchPost()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to post reply')
@@ -218,7 +213,10 @@ export default function ForumPostPage() {
   if (error || !post) {
     return (
       <div className="space-y-6">
-        <Link href="/dashboard/forums" className="inline-flex items-center text-sm text-forest-600 hover:text-forest-800">
+        <Link
+          href="/dashboard/forums"
+          className="inline-flex items-center text-sm text-forest-600 hover:text-forest-800"
+        >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Forums
         </Link>
@@ -232,7 +230,10 @@ export default function ForumPostPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Back link */}
-      <Link href="/dashboard/forums" className="inline-flex items-center text-sm text-forest-600 hover:text-forest-800">
+      <Link
+        href="/dashboard/forums"
+        className="inline-flex items-center text-sm text-forest-600 hover:text-forest-800"
+      >
         <ArrowLeft className="h-4 w-4 mr-1" />
         Back to Forums
       </Link>
@@ -268,9 +269,7 @@ export default function ForumPostPage() {
                   className="w-full text-xl font-bold text-forest-900 px-3 py-2 border border-sand-300 rounded-lg mb-2"
                 />
               ) : (
-                <h1 className="text-xl font-bold text-forest-900">
-                  {post.title || 'Untitled'}
-                </h1>
+                <h1 className="text-xl font-bold text-forest-900">{post.title || 'Untitled'}</h1>
               )}
             </div>
 
@@ -315,11 +314,10 @@ export default function ForumPostPage() {
           {/* Content */}
           {editingId === post.id ? (
             <div className="space-y-3">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border border-sand-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500"
+              <RichTextEditor
+                content={editContent}
+                onChange={(html) => setEditContent(html)}
+                variant="full"
               />
               <div className="flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
@@ -335,9 +333,7 @@ export default function ForumPostPage() {
               </div>
             </div>
           ) : (
-            <div className="text-forest-700 whitespace-pre-wrap leading-relaxed">
-              {post.content}
-            </div>
+            <ForumContent content={post.content} className="text-forest-700 leading-relaxed" />
           )}
         </CardContent>
       </Card>
@@ -393,11 +389,10 @@ export default function ForumPostPage() {
                   {/* Reply content */}
                   {editingId === reply.id ? (
                     <div className="space-y-2">
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
+                      <RichTextEditor
+                        content={editContent}
+                        onChange={(html) => setEditContent(html)}
+                        variant="compact"
                       />
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
@@ -413,7 +408,7 @@ export default function ForumPostPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-forest-700 whitespace-pre-wrap">{reply.content}</p>
+                    <ForumContent content={reply.content} className="text-sm text-forest-700" />
                   )}
                 </CardContent>
               </Card>
@@ -427,15 +422,13 @@ export default function ForumPostPage() {
         <CardContent className="p-4">
           <form onSubmit={handleReply} className="space-y-3">
             <label className="block text-sm font-medium text-forest-700">Write a Reply</label>
-            <textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              rows={3}
+            <RichTextEditor
+              key={replyKey}
+              content=""
+              onChange={(html) => setReplyContent(html)}
               placeholder="Share your thoughts..."
-              className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
-              required
-              minLength={1}
               maxLength={10000}
+              variant="compact"
             />
             <div className="flex items-center justify-between">
               <p className="text-xs text-forest-400">
@@ -444,7 +437,7 @@ export default function ForumPostPage() {
               <Button
                 type="submit"
                 className="bg-forest-600 hover:bg-forest-700 text-white"
-                disabled={submittingReply || !replyContent.trim()}
+                disabled={submittingReply || isHtmlEmpty(replyContent)}
               >
                 <Send className="h-4 w-4 mr-2" />
                 {submittingReply ? 'Posting...' : 'Reply'}
@@ -456,4 +449,3 @@ export default function ForumPostPage() {
     </div>
   )
 }
-
