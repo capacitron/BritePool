@@ -89,7 +89,7 @@ export async function PATCH(
     // Fetch author info
     const author = await prisma.user.findUnique({
       where: { id: updatedMessage.authorId },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, role: true },
     })
 
     return NextResponse.json({

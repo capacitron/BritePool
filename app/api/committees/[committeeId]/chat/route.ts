@@ -76,7 +76,7 @@ export async function GET(
     const authorIds = [...new Set(chat.messages.map((m) => m.authorId))]
     const authors = await prisma.user.findMany({
       where: { id: { in: authorIds } },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, role: true },
     })
 
     const authorMap = new Map(authors.map((a) => [a.id, a]))
@@ -176,7 +176,7 @@ export async function POST(
     // Fetch author info
     const author = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, role: true },
     })
 
     return NextResponse.json(
