@@ -5,7 +5,6 @@ import { getEffectiveUserId } from '@/lib/impersonation'
 import { logError } from '@/lib/api-utils'
 import { z } from 'zod'
 import { usernameSchema } from '@/lib/validations/username'
-import { syncProfileToLocal } from '@/lib/prisma-neon'
 import { UserRole } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -163,9 +162,6 @@ export async function PATCH(request: NextRequest) {
         },
       },
     })
-
-    // Sync to local Replit DB in the background — Neon (primary) already updated
-    syncProfileToLocal(effectiveUserId, updateData, profileUpdateData)
 
     return NextResponse.json(user)
   } catch (error) {

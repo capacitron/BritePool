@@ -4,13 +4,9 @@ declare global {
   var prisma: PrismaClient | undefined
 }
 
-// Neon is the primary database; fall back to DATABASE_URL (local Replit DB) if not set
-const primaryUrl = process.env.NEON_DB_URL || process.env.DATABASE_URL
-
 const prismaClientSingleton = () => {
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-    datasourceUrl: primaryUrl,
   })
 }
 
