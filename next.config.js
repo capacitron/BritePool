@@ -4,7 +4,7 @@ const nextConfig = {
   env: {
     AUTH_URL: process.env.AUTH_URL || process.env.NEXTAUTH_URL,
   },
-  allowedDevOrigins: ['*.replit.dev', '*.worf.replit.dev', '*.repl.co'],
+  allowedDevOrigins: ['localhost'],
   async headers() {
     return [
       {

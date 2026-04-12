@@ -42,9 +42,7 @@ export async function POST(request: NextRequest) {
     }
     const customerId = customer.id
 
-    const baseUrl =
-      process.env.NEXTAUTH_URL ||
-      (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000')
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://britepool.org'
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,

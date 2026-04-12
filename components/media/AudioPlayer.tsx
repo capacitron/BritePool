@@ -59,7 +59,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     const centerY = height / 2
 
     for (let i = 0; i < barCount; i++) {
-      const value = dataArray ? dataArray[i] / 255 : 0
+      const value = dataArray ? (dataArray[i] ?? 0) / 255 : 0
       const barHeight = Math.max(2, value * centerY * 0.9)
 
       const hue = 140 + i * (40 / barCount)

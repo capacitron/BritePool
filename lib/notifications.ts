@@ -4,7 +4,7 @@ import { broadcastNotification } from '@/lib/realtime'
 import { NotificationType, Prisma } from '@prisma/client'
 
 // Environment configuration
-const BASE_URL = process.env.NEXTAUTH_URL || `https://${process.env.REPLIT_DEV_DOMAIN || 'britepool.org'}`
+const BASE_URL = process.env.NEXTAUTH_URL || 'https://britepool.org'
 const FROM_NAME = process.env.FROM_NAME || 'BRITE POOL'
 
 // Notification metadata interface

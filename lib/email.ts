@@ -17,10 +17,9 @@ function getResendClient(): Resend | null {
 export const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@britepool.org'
 export const FROM_NAME = process.env.FROM_NAME || 'BRITE POOL'
 
-/** Get the base URL for email links — uses NEXTAUTH_URL, falls back to Replit domain */
+/** Get the base URL for email links */
 function getBaseUrl(): string {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
-  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`
   return 'https://britepool.org'
 }
 

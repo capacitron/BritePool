@@ -34,9 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const stripe = getStripe()
-    const baseUrl =
-      process.env.NEXTAUTH_URL ||
-      (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000')
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://britepool.org'
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
